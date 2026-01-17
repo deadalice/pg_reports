@@ -18,7 +18,6 @@ module PgReports
     # Display report to STDOUT
     def display
       puts to_text
-      self
     end
 
     # Send report to configured Telegram channel as a message
