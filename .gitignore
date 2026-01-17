@@ -1,0 +1,33 @@
+# Bundler
+/.bundle/
+/vendor/bundle
+
+# Gem build
+*.gem
+/pkg/
+
+# RSpec
+/spec/examples.txt
+/coverage/
+
+# IDE
+/.idea/
+/.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+/log/
+*.log
+
+# Temp files
+/tmp/
+*.tmp
+
+# Gemfile.lock for gems (optional, uncomment if you want to track it)
+# Gemfile.lock

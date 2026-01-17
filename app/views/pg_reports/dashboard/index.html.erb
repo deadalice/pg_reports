@@ -1,0 +1,303 @@
+<%= csrf_meta_tags %>
+
+<header class="header">
+  <div class="logo">
+    <div class="logo-icon">🐘</div>
+    <div class="logo-text">
+      <h1>PgReports</h1>
+      <span>PostgreSQL Analysis Dashboard</span>
+    </div>
+  </div>
+
+  <div class="header-actions">
+    <% unless @pg_stat_status[:ready] %>
+      <button class="btn btn-small btn-primary" onclick="enablePgStatStatements(this)" id="enable-btn">
+        ⚡ Create Extension
+      </button>
+      <button class="btn-info" onclick="showPgStatInfo()">?</button>
+    <% end %>
+    <div class="header-badge" id="pg-stat-badge">
+      <% if @pg_stat_status[:ready] %>
+        <span class="badge-dot"></span>
+        <span>pg_stat_statements ready</span>
+      <% elsif @pg_stat_status[:extension_installed] %>
+        <span class="badge-dot warning"></span>
+        <span>Extension installed, not preloaded</span>
+      <% elsif @pg_stat_status[:preloaded] %>
+        <span class="badge-dot warning"></span>
+        <span>Preloaded, extension not created</span>
+      <% else %>
+        <span class="badge-dot error"></span>
+        <span>Not configured</span>
+      <% end %>
+    </div>
+  </div>
+</header>
+
+<!-- pg_stat_statements info modal -->
+<div id="pg-stat-modal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Enable pg_stat_statements</h3>
+      <button class="modal-close" onclick="closePgStatModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p>To enable pg_stat_statements, follow these steps:</p>
+      <ol>
+        <li>
+          <strong>Edit postgresql.conf:</strong>
+          <pre>shared_preload_libraries = 'pg_stat_statements'
+pg_stat_statements.track = all</pre>
+        </li>
+        <li>
+          <strong>Restart PostgreSQL:</strong>
+          <pre>sudo systemctl restart postgresql</pre>
+        </li>
+        <li>
+          <strong>Create extension:</strong>
+          <pre>CREATE EXTENSION IF NOT EXISTS pg_stat_statements;</pre>
+          <p>Or click "Enable" button after restart.</p>
+        </li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<div class="categories-grid">
+  <% @categories.each do |category_key, category| %>
+    <div class="category-card<%= ' disabled' if category_key == :queries && !@pg_stat_status[:ready] %>">
+      <% if category_key == :queries && !@pg_stat_status[:ready] %>
+        <div class="category-warning">
+          <span>🔒</span> Requires pg_stat_statements
+        </div>
+      <% end %>
+      <div class="category-header">
+        <div class="category-icon" style="background: <%= category[:color] %>20; color: <%= category[:color] %>;">
+          <%= category[:icon] %>
+        </div>
+        <span class="category-title"><%= category[:name] %></span>
+        <span class="category-count"><%= category[:reports].size %> reports</span>
+      </div>
+
+      <div class="reports-list">
+        <% category[:reports].each do |report_key, report| %>
+          <% if category_key == :queries && !@pg_stat_status[:ready] %>
+            <div class="report-link disabled">
+              <span><%= report[:name] %></span>
+              <span class="lock">🔒</span>
+            </div>
+          <% else %>
+            <%= link_to report_path(category: category_key, report: report_key), class: "report-link" do %>
+              <span><%= report[:name] %></span>
+              <span class="arrow">→</span>
+            <% end %>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<style>
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn.btn-small {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+  }
+
+  .btn-info {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-info:hover {
+    background: var(--accent-purple);
+    color: white;
+    border-color: var(--accent-purple);
+  }
+
+  .badge-dot.error { background: var(--accent-rose); }
+
+  .category-card.disabled {
+    opacity: 0.7;
+  }
+
+  .category-warning {
+    padding: 0.625rem 1rem;
+    margin: -1.5rem -1.5rem 1rem -1.5rem;
+    background: rgba(245, 158, 11, 0.1);
+    border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: 16px 16px 0 0;
+    color: var(--accent-amber);
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-align: center;
+  }
+
+  .report-link.disabled {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: var(--bg-tertiary);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    cursor: not-allowed;
+  }
+
+  .report-link .lock {
+    font-size: 0.75rem;
+    opacity: 0.5;
+  }
+
+  /* Modal */
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: auto;
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .modal-header h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+
+  .modal-close {
+    width: 32px;
+    height: 32px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .modal-close:hover {
+    background: var(--accent-rose);
+    border-color: var(--accent-rose);
+    color: white;
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+  }
+
+  .modal-body p {
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+  }
+
+  .modal-body ol {
+    list-style-position: inside;
+    color: var(--text-secondary);
+  }
+
+  .modal-body li {
+    margin-bottom: 1.25rem;
+  }
+
+  .modal-body strong {
+    color: var(--text-primary);
+  }
+
+  .modal-body pre {
+    margin-top: 0.5rem;
+    padding: 1rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--accent-green);
+    overflow-x: auto;
+  }
+</style>
+
+<script>
+  function showPgStatInfo() {
+    document.getElementById('pg-stat-modal').style.display = 'flex';
+  }
+
+  function closePgStatModal() {
+    document.getElementById('pg-stat-modal').style.display = 'none';
+  }
+
+  // Close modal on backdrop click
+  document.getElementById('pg-stat-modal')?.addEventListener('click', function(e) {
+    if (e.target === this) closePgStatModal();
+  });
+
+  async function enablePgStatStatements(button) {
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></span> Creating...';
+
+    try {
+      const response = await fetch('/pg_reports/enable_pg_stat_statements', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        showToast(data.message);
+        // Reload page to update status
+        setTimeout(() => location.reload(), 1000);
+      } else {
+        showToast(data.message, 'error');
+        if (data.requires_restart) {
+          showPgStatInfo();
+        }
+        button.disabled = false;
+        button.innerHTML = '⚡ Create Extension';
+      }
+    } catch (error) {
+      showToast('Network error: ' + error.message, 'error');
+      button.disabled = false;
+      button.innerHTML = '⚡ Create Extension';
+    }
+  }
+</script>
