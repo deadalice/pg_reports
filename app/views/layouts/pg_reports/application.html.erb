@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="pg-reports-root" content="<%= pg_reports.root_path.chomp('/') %>">
   <title>PgReports Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -546,6 +547,8 @@
   <div id="toast" class="toast"></div>
 
   <script>
+    const pgReportsRoot = document.querySelector('meta[name="pg-reports-root"]')?.content || '/pg_reports';
+
     function showToast(message, type = 'success') {
       const toast = document.getElementById('toast');
       toast.textContent = message;
@@ -562,7 +565,7 @@
       }
 
       try {
-        const response = await fetch(`/pg_reports/${category}/${report}/telegram`, {
+        const response = await fetch(`${pgReportsRoot}/${category}/${report}/telegram`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

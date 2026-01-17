@@ -285,7 +285,7 @@
 
   function downloadReport(format) {
     document.getElementById('dropdown-menu').classList.remove('show');
-    window.location.href = `/pg_reports/${category}/${reportKey}/download?format=${format}`;
+    window.location.href = `${pgReportsRoot}/${category}/${reportKey}/download?format=${format}`;
   }
 
   function toggleRow(rowIndex) {
@@ -391,7 +391,7 @@
     if (telegramBtn) telegramBtn.style.display = 'none';
 
     try {
-      const response = await fetch(`/pg_reports/${cat}/${report}/run`, {
+      const response = await fetch(`${pgReportsRoot}/${cat}/${report}/run`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

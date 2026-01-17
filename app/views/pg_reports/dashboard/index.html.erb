@@ -374,7 +374,7 @@ pg_stat_statements.track = all</pre>
     button.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></span> Resetting...';
 
     try {
-      const response = await fetch('/pg_reports/reset_statistics', {
+      const response = await fetch(`${pgReportsRoot}/reset_statistics`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -404,7 +404,7 @@ pg_stat_statements.track = all</pre>
     button.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></span> Creating...';
 
     try {
-      const response = await fetch('/pg_reports/enable_pg_stat_statements', {
+      const response = await fetch(`${pgReportsRoot}/enable_pg_stat_statements`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
