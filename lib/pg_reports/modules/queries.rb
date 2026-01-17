@@ -15,10 +15,12 @@ module PgReports
         filtered = data.select { |row| row["mean_time_ms"].to_f >= threshold }
           .first(limit)
 
+        enriched = enrich_with_annotations(filtered)
+
         Report.new(
           title: "Slow Queries (mean time >= #{threshold}ms)",
-          data: filtered,
-          columns: %w[query calls mean_time_ms total_time_ms rows_per_call]
+          data: enriched,
+          columns: %w[query source calls mean_time_ms total_time_ms rows_per_call]
         )
       end
 
@@ -31,10 +33,12 @@ module PgReports
         filtered = data.select { |row| row["calls"].to_i >= threshold }
           .first(limit)
 
+        enriched = enrich_with_annotations(filtered)
+
         Report.new(
           title: "Heavy Queries (calls >= #{threshold})",
-          data: filtered,
-          columns: %w[query calls total_time_ms mean_time_ms cache_hit_ratio]
+          data: enriched,
+          columns: %w[query source calls total_time_ms mean_time_ms cache_hit_ratio]
         )
       end
 
@@ -47,10 +51,12 @@ module PgReports
         filtered = data.select { |row| row["total_time_ms"].to_f >= threshold }
           .first(limit)
 
+        enriched = enrich_with_annotations(filtered)
+
         Report.new(
           title: "Expensive Queries (total time >= #{threshold}ms)",
-          data: filtered,
-          columns: %w[query calls total_time_ms percent_of_total mean_time_ms]
+          data: enriched,
+          columns: %w[query source calls total_time_ms percent_of_total mean_time_ms]
         )
       end
 
@@ -60,10 +66,12 @@ module PgReports
         data = executor.execute_from_file(:queries, :missing_index_queries)
           .first(limit)
 
+        enriched = enrich_with_annotations(data)
+
         Report.new(
           title: "Queries Potentially Missing Indexes",
-          data: data,
-          columns: %w[query calls seq_scan_count rows_examined table_name]
+          data: enriched,
+          columns: %w[query source calls seq_scan_count rows_examined table_name]
         )
       end
 
@@ -75,10 +83,12 @@ module PgReports
         filtered = data.select { |row| row["calls"].to_i >= min_calls }
           .first(limit)
 
+        enriched = enrich_with_annotations(filtered)
+
         Report.new(
           title: "Queries with Low Cache Hit Ratio (min #{min_calls} calls)",
-          data: filtered,
-          columns: %w[query calls cache_hit_ratio shared_blks_hit shared_blks_read]
+          data: enriched,
+          columns: %w[query source calls cache_hit_ratio shared_blks_hit shared_blks_read]
         )
       end
 
@@ -88,10 +98,12 @@ module PgReports
         data = executor.execute_from_file(:queries, :all_queries)
           .first(limit)
 
+        enriched = enrich_with_annotations(data)
+
         Report.new(
           title: "All Query Statistics (top #{limit})",
-          data: data,
-          columns: %w[query calls total_time_ms mean_time_ms rows]
+          data: enriched,
+          columns: %w[query source calls total_time_ms mean_time_ms rows]
         )
       end
 
@@ -105,6 +117,25 @@ module PgReports
 
       def executor
         @executor ||= Executor.new
+      end
+
+      # Enrich query data with parsed annotations
+      def enrich_with_annotations(data)
+        return data unless PgReports.config.parse_annotations
+
+        data.map do |row|
+          query = row["query"].to_s
+          annotation = AnnotationParser.parse(query)
+
+          if annotation.any?
+            row.merge(
+              "source" => AnnotationParser.format_for_display(annotation),
+              "query" => AnnotationParser.strip_annotations(query)
+            )
+          else
+            row.merge("source" => nil)
+          end
+        end
       end
     end
   end

@@ -11,6 +11,8 @@ require_relative "pg_reports/sql_loader"
 require_relative "pg_reports/executor"
 require_relative "pg_reports/report"
 require_relative "pg_reports/telegram_sender"
+require_relative "pg_reports/annotation_parser"
+require_relative "pg_reports/query_annotator"
 
 # Modules
 require_relative "pg_reports/modules/queries"

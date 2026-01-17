@@ -27,6 +27,10 @@ module PgReports
     # Dashboard settings
     attr_accessor :dashboard_auth               # Proc for dashboard authentication
 
+    # Query annotation settings
+    attr_accessor :annotate_queries             # Attach annotator to ActiveRecord (adds source location)
+    attr_accessor :parse_annotations            # Parse annotations from pg_stat_statements
+
     def initialize
       # Telegram
       @telegram_bot_token = ENV.fetch("PG_REPORTS_TELEGRAM_TOKEN", nil)
@@ -52,6 +56,10 @@ module PgReports
 
       # Dashboard
       @dashboard_auth = nil
+
+      # Annotations
+      @annotate_queries = false
+      @parse_annotations = true
     end
 
     def connection

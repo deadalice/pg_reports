@@ -111,8 +111,54 @@ PgReports.configure do |config|
       user == "admin" && pass == "secret"
     end
   }
+
+  # Query annotation settings
+  config.annotate_queries = false             # Attach annotator to ActiveRecord (opt-in)
+  config.parse_annotations = true             # Parse annotations in reports
 end
 ```
+
+## Query Source Tracking
+
+PgReports can show you **where queries originated** in your code. It works with:
+- **Marginalia** gem annotations
+- **Rails 7+ Query Logs**
+- **PgReports built-in annotator**
+
+### Using Marginalia (recommended)
+
+If you use [marginalia](https://github.com/basecamp/marginalia), PgReports will automatically parse and display controller/action info.
+
+### Using Rails 7+ Query Logs
+
+```ruby
+# config/application.rb
+config.active_record.query_log_tags_enabled = true
+config.active_record.query_log_tags = [:controller, :action]
+```
+
+### Using PgReports Annotator
+
+Add source location (file:line) to all queries:
+
+```ruby
+# config/initializers/pg_reports.rb
+PgReports.configure do |config|
+  # Enable the query annotator (opt-in)
+  config.annotate_queries = Rails.env.development?
+end
+```
+
+Optionally, include controller info:
+
+```ruby
+# app/controllers/application_controller.rb
+class ApplicationController < ActionController::Base
+  include PgReports::QueryAnnotator::ControllerRuntime
+end
+```
+
+Now your query reports will show a **source** column with file:line and controller#action info!
 
 ## Available Reports
 
