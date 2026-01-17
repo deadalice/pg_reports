@@ -254,20 +254,25 @@
     .btn {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 0.5rem;
-      padding: 0.75rem 1.25rem;
-      border: none;
+      height: 40px;
+      padding: 0 1.25rem;
+      border: 1px solid transparent;
       border-radius: 10px;
       font-family: inherit;
       font-size: 0.9rem;
       font-weight: 500;
       cursor: pointer;
       transition: all 0.15s ease;
+      white-space: nowrap;
+      text-decoration: none;
     }
 
     .btn-primary {
       background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
       color: white;
+      border-color: transparent;
     }
 
     .btn-primary:hover {
@@ -289,10 +294,12 @@
     .btn-telegram {
       background: #0088cc;
       color: white;
+      border-color: #0088cc;
     }
 
     .btn-telegram:hover {
       background: #0077b5;
+      border-color: #0077b5;
     }
 
     .btn:disabled {

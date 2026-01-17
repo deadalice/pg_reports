@@ -206,6 +206,34 @@
     color: var(--accent-blue);
   }
 
+  .row-detail-value.source {
+    color: var(--accent-amber);
+    font-size: 0.75rem;
+  }
+
+  /* Source location badge in table */
+  .source-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent-amber);
+    white-space: nowrap;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .source-badge.empty {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
   /* Copy button */
   .copy-btn {
     align-self: flex-start;
@@ -314,9 +342,20 @@
       const value = row[col] ?? '';
       const strValue = String(value);
       const isQuery = col === 'query';
+      const isSource = col === 'source';
       const isNumber = typeof value === 'number' || (!isNaN(parseFloat(value)) && isFinite(value));
-      const valueClass = isQuery ? 'query' : (isNumber ? 'number' : '');
+
+      let valueClass = '';
+      if (isQuery) valueClass = 'query';
+      else if (isSource) valueClass = 'source';
+      else if (isNumber) valueClass = 'number';
+
       const isLongText = strValue.length > 100 || isQuery;
+
+      // Skip empty source in detail view
+      if (isSource && (!strValue || strValue === 'null' || strValue === '')) {
+        return;
+      }
 
       html += `
         <div class="row-detail-item${isLongText ? ' full-width' : ''}">
@@ -400,6 +439,16 @@
                 const value = row[col] ?? '';
                 const strValue = String(value);
                 const isQuery = col === 'query';
+                const isSource = col === 'source';
+
+                if (isSource) {
+                  if (strValue && strValue !== 'null' && strValue !== '') {
+                    return `<td><span class="source-badge" title="${escapeHtml(strValue)}">${escapeHtml(strValue)}</span></td>`;
+                  } else {
+                    return `<td><span class="source-badge empty">—</span></td>`;
+                  }
+                }
+
                 const displayValue = strValue.length > 80 ? strValue.substring(0, 80) + '...' : strValue;
                 return `<td class="${isQuery ? 'query-cell' : ''}">${escapeHtml(displayValue)}</td>`;
               }).join('');
