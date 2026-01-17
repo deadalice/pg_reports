@@ -10,7 +10,11 @@
   </div>
 
   <div class="header-actions">
-    <% unless @pg_stat_status[:ready] %>
+    <% if @pg_stat_status[:ready] %>
+      <button class="btn btn-small btn-muted" onclick="showResetConfirmModal()" id="reset-btn">
+        🗑️ Reset Statistics
+      </button>
+    <% else %>
       <button class="btn btn-small btn-primary" onclick="enablePgStatStatements(this)" id="enable-btn">
         ⚡ Create Extension
       </button>
@@ -59,6 +63,24 @@ pg_stat_statements.track = all</pre>
           <p>Or click "Enable" button after restart.</p>
         </li>
       </ol>
+    </div>
+  </div>
+</div>
+
+<!-- Reset statistics confirmation modal -->
+<div id="reset-confirm-modal" class="modal" style="display: none;">
+  <div class="modal-content modal-small">
+    <div class="modal-header modal-header-danger">
+      <h3>⚠️ Reset Statistics</h3>
+      <button class="modal-close" onclick="closeResetConfirmModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="warning-text">Are you sure you want to reset pg_stat_statements statistics?</p>
+      <p class="warning-subtext">This action will clear all collected query statistics and cannot be undone.</p>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeResetConfirmModal()">Cancel</button>
+        <button class="btn btn-danger" onclick="resetStatistics()" id="confirm-reset-btn">Yes, Reset</button>
+      </div>
     </div>
   </div>
 </div>
@@ -127,6 +149,35 @@ pg_stat_statements.track = all</pre>
     background: var(--accent-purple);
     color: white;
     border-color: var(--accent-purple);
+  }
+
+  .btn.btn-danger {
+    background: var(--accent-rose);
+    border-color: var(--accent-rose);
+  }
+  .btn.btn-danger:hover {
+    background: #e11d48;
+    border-color: #e11d48;
+  }
+
+  .btn.btn-secondary {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+  }
+  .btn.btn-secondary:hover {
+    background: var(--bg-card);
+    color: var(--text-primary);
+  }
+
+  .btn.btn-muted {
+    background: var(--bg-tertiary);
+    border-color: var(--accent-rose);
+    color: var(--text-secondary);
+  }
+  .btn.btn-muted:hover {
+    background: var(--bg-card);
+    color: var(--text-primary);
   }
 
   .badge-dot.error { background: var(--accent-rose); }
@@ -251,6 +302,43 @@ pg_stat_statements.track = all</pre>
     color: var(--accent-green);
     overflow-x: auto;
   }
+
+  .modal-small {
+    max-width: 420px;
+  }
+
+  .modal-header-danger {
+    background: rgba(244, 63, 94, 0.1);
+    border-bottom-color: rgba(244, 63, 94, 0.2);
+  }
+
+  .modal-header-danger h3 {
+    color: var(--accent-rose);
+  }
+
+  .warning-text {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-primary) !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .warning-subtext {
+    font-size: 0.875rem;
+    color: var(--text-muted) !important;
+    margin-bottom: 1.5rem !important;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+  }
+
+  .modal-actions .btn {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+  }
 </style>
 
 <script>
@@ -266,6 +354,50 @@ pg_stat_statements.track = all</pre>
   document.getElementById('pg-stat-modal')?.addEventListener('click', function(e) {
     if (e.target === this) closePgStatModal();
   });
+
+  function showResetConfirmModal() {
+    document.getElementById('reset-confirm-modal').style.display = 'flex';
+  }
+
+  function closeResetConfirmModal() {
+    document.getElementById('reset-confirm-modal').style.display = 'none';
+  }
+
+  // Close reset modal on backdrop click
+  document.getElementById('reset-confirm-modal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeResetConfirmModal();
+  });
+
+  async function resetStatistics() {
+    const button = document.getElementById('confirm-reset-btn');
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></span> Resetting...';
+
+    try {
+      const response = await fetch('/pg_reports/reset_statistics', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        closeResetConfirmModal();
+        showToast(data.message);
+      } else {
+        showToast(data.error || 'Failed to reset statistics', 'error');
+        button.disabled = false;
+        button.innerHTML = 'Yes, Reset';
+      }
+    } catch (error) {
+      showToast('Network error: ' + error.message, 'error');
+      button.disabled = false;
+      button.innerHTML = 'Yes, Reset';
+    }
+  }
 
   async function enablePgStatStatements(button) {
     button.disabled = true;
