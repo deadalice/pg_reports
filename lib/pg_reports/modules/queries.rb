@@ -119,10 +119,8 @@ module PgReports
         @executor ||= Executor.new
       end
 
-      # Enrich query data with parsed annotations
+      # Enrich query data with parsed annotations (Marginalia, Rails QueryLogs, etc.)
       def enrich_with_annotations(data)
-        return data unless PgReports.config.parse_annotations
-
         data.map do |row|
           query = row["query"].to_s
           annotation = AnnotationParser.parse(query)

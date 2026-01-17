@@ -18,12 +18,5 @@ module PgReports
         # Routes are mounted by the user in their routes.rb
       end
     end
-
-    # Attach query annotator if enabled in configuration
-    initializer "pg_reports.query_annotator", after: :load_config_initializers do
-      if PgReports.config.annotate_queries
-        PgReports::QueryAnnotator.attach!
-      end
-    end
   end
 end

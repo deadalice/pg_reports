@@ -3,7 +3,6 @@
 module PgReports
   # Parses SQL query comments to extract source location and metadata
   # Supports:
-  # - PgReports format: /*app:myapp,file:app/models/user.rb,line:42,method:find_active*/
   # - Marginalia format: /*application:myapp,controller:users,action:index*/
   # - Rails QueryLogs: /*action='index',controller='users'*/
   #
@@ -23,8 +22,14 @@ module PgReports
         result = {}
 
         comments.each do |comment|
-          parsed = parse_comment(comment)
-          result.merge!(parsed)
+          # Try short format first: "path/to/file.rb:42"
+          if (match = comment.match(%r{^(.+):(\d+)$}))
+            result[:file] = match[1]
+            result[:line] = match[2]
+          else
+            parsed = parse_comment(comment)
+            result.merge!(parsed)
+          end
         end
 
         result
@@ -63,9 +68,6 @@ module PgReports
           ca += "##{annotation[:action]}" if annotation[:action]
           parts << ca
         end
-
-        # Application name
-        parts << "[#{annotation[:app] || annotation[:application]}]" if annotation[:app] || annotation[:application]
 
         parts.join(" ")
       end

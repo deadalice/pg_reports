@@ -97,14 +97,6 @@ RSpec.describe PgReports::AnnotationParser do
       expect(result).to include("users#index")
     end
 
-    it "includes app name if present" do
-      annotation = {app: "myapp", file: "test.rb"}
-
-      result = described_class.format_for_display(annotation)
-
-      expect(result).to include("[myapp]")
-    end
-
     it "returns nil for empty annotation" do
       expect(described_class.format_for_display({})).to be_nil
     end
