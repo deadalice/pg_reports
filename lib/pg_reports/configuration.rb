@@ -27,6 +27,9 @@ module PgReports
     # Dashboard settings
     attr_accessor :dashboard_auth               # Proc for dashboard authentication
 
+    # Assets / privacy settings
+    attr_accessor :load_external_fonts          # When true, loads Google Fonts in the dashboard layout
+
     def initialize
       # Telegram
       @telegram_bot_token = ENV.fetch("PG_REPORTS_TELEGRAM_TOKEN", nil)
@@ -52,6 +55,9 @@ module PgReports
 
       # Dashboard
       @dashboard_auth = nil
+
+      # Assets / privacy
+      @load_external_fonts = ActiveModel::Type::Boolean.new.cast(ENV.fetch("PG_REPORTS_LOAD_EXTERNAL_FONTS", false))
     end
 
     def connection
