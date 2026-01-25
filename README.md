@@ -112,6 +112,12 @@ PgReports.configure do |config|
     end
   }
 
+  # External fonts (Google Fonts)
+  # Default: false (no external requests)
+  config.load_external_fonts = ENV["PG_REPORTS_LOAD_EXTERNAL_FONTS"] == "true"
+  # or simply:
+  # config.load_external_fonts = true
+
 end
 ```
 
@@ -278,6 +284,17 @@ PgReports.configure do |config|
   config.dashboard_auth = -> {
     redirect_to main_app.root_path unless current_user&.admin?
   }
+end
+```
+
+### External Fonts
+
+By default, PgReports does **not** load external fonts.
+
+```ruby
+PgReports.configure do |config|
+  # Enable loading Google Fonts (optional)
+  config.load_external_fonts = true
 end
 ```
 
