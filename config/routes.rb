@@ -6,6 +6,7 @@ PgReports::Engine.routes.draw do
   post "enable_pg_stat_statements", to: "dashboard#enable_pg_stat_statements", as: :enable_pg_stat_statements
   post "reset_statistics", to: "dashboard#reset_statistics", as: :reset_statistics
   post "explain_analyze", to: "dashboard#explain_analyze", as: :explain_analyze
+  post "execute_query", to: "dashboard#execute_query", as: :execute_query
   post "create_migration", to: "dashboard#create_migration", as: :create_migration
 
   get ":category/:report", to: "dashboard#show", as: :report

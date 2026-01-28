@@ -1,0 +1,105 @@
+<!-- IDE Settings Modal -->
+<div id="ide-settings-modal" class="modal" style="display: none;">
+  <div class="modal-content modal-small">
+    <div class="modal-header">
+      <h3>⚙️ IDE Settings</h3>
+      <button class="modal-close" onclick="closeIdeSettingsModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="settings-label">Default IDE for source links:</p>
+      <div class="ide-options">
+        <label class="ide-option">
+          <input type="radio" name="default-ide" value="" onchange="setDefaultIde('')">
+          <span>Show menu (default)</span>
+        </label>
+        <label class="ide-option">
+          <input type="radio" name="default-ide" value="vscode-wsl" onchange="setDefaultIde('vscode-wsl')">
+          <span>VS Code (WSL)</span>
+        </label>
+        <label class="ide-option">
+          <input type="radio" name="default-ide" value="vscode" onchange="setDefaultIde('vscode')">
+          <span>VS Code</span>
+        </label>
+        <label class="ide-option">
+          <input type="radio" name="default-ide" value="rubymine" onchange="setDefaultIde('rubymine')">
+          <span>RubyMine</span>
+        </label>
+        <label class="ide-option">
+          <input type="radio" name="default-ide" value="intellij" onchange="setDefaultIde('intellij')">
+          <span>IntelliJ IDEA</span>
+        </label>
+        <label class="ide-option">
+          <input type="radio" name="default-ide" value="cursor-wsl" onchange="setDefaultIde('cursor-wsl')">
+          <span>Cursor (WSL)</span>
+        </label>
+        <label class="ide-option">
+          <input type="radio" name="default-ide" value="cursor" onchange="setDefaultIde('cursor')">
+          <span>Cursor</span>
+        </label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Problem Explanation Modal -->
+<div id="problem-modal" class="problem-modal" style="display: none;">
+  <div class="problem-modal-content">
+    <div class="problem-modal-header">
+      <h3>⚠️ Problem Detected</h3>
+      <button class="modal-close" onclick="closeProblemModal()">&times;</button>
+    </div>
+    <div class="problem-modal-body" id="problem-modal-body">
+      <!-- Content will be filled dynamically -->
+    </div>
+  </div>
+</div>
+
+<!-- EXPLAIN ANALYZE Modal -->
+<div id="explain-modal" class="modal" style="display: none;">
+  <div class="modal-content modal-wide">
+    <div class="modal-header">
+      <h3>📊 Query Analyzer</h3>
+      <button class="modal-close" onclick="closeExplainModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="explain-modal-body">
+      <div class="explain-query-section">
+        <label class="explain-label">Query:</label>
+        <pre class="explain-query" id="explain-query-display"></pre>
+      </div>
+      <div id="explain-params-section" class="explain-params-section" style="display: none;">
+        <label class="explain-label">Parameters:</label>
+        <div id="explain-params-inputs"></div>
+      </div>
+      <div class="explain-actions">
+        <button class="btn btn-primary" onclick="executeExplainAnalyze()" id="btn-explain">
+          📊 EXPLAIN ANALYZE
+        </button>
+        <button class="btn btn-secondary" onclick="executeQuery()" id="btn-execute">
+          ▶ Execute Query
+        </button>
+      </div>
+      <div id="explain-loading" class="loading" style="display: none;">
+        <div class="spinner"></div>
+      </div>
+      <div id="explain-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Migration Modal -->
+<div id="migration-modal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>🗑️ Drop Index Migration</h3>
+      <button class="modal-close" onclick="closeMigrationModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="migration-modal-body">
+      <p class="settings-label">Generated migration to remove the index:</p>
+      <div id="migration-code" class="migration-code"></div>
+      <div class="migration-actions">
+        <button class="btn btn-secondary" onclick="copyMigrationCode()">📋 Copy Code</button>
+        <button class="btn btn-primary" onclick="createMigrationFile()">📁 Create File & Open in IDE</button>
+      </div>
+    </div>
+  </div>
+</div>

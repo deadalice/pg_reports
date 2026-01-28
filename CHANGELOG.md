@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] - 2026-01-28
+
+### Added
+
+- Query Analyzer modal with parameter input fields for `$1`, `$2`, etc. placeholders
+- Execute Query button to run queries and view results (alongside EXPLAIN ANALYZE)
+- Parameter syntax highlighting in Query Analyzer (rose color for `$1`, `$2`, etc.)
+
+### Changed
+
+- Split `show.html.erb` into partials for better maintainability:
+  - `_show_styles.html.erb` - CSS styles
+  - `_show_scripts.html.erb` - JavaScript
+  - `_show_modals.html.erb` - Modal dialogs
+- EXPLAIN ANALYZE button now only shown for SELECT queries
+- Query encoding uses base64 to handle special characters (newlines, quotes)
+
+### Fixed
+
+- EXPLAIN ANALYZE button not working for queries with special characters
+- Security: Only SELECT queries allowed for EXPLAIN ANALYZE, SELECT/SHOW for Execute Query
+
 ## [0.2.2] - 2026-01-28
 
 ### Added

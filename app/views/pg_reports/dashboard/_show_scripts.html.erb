@@ -1,0 +1,1301 @@
+<script>
+  let currentReportData = null;
+  const category = '<%= @category %>';
+  const reportKey = '<%= @report_key %>';
+  let syncingScroll = false;
+  let currentSort = { column: null, direction: 'asc' };
+
+  // Top scrollbar sync functionality
+  function setupTopScrollbar() {
+    const topScrollWrapper = document.getElementById('top-scroll-wrapper');
+    const topScrollContent = document.getElementById('top-scroll-content');
+    const tableWrapper = document.getElementById('results-table-wrapper');
+    const table = document.getElementById('results-table');
+
+    if (!topScrollWrapper || !topScrollContent || !tableWrapper || !table) return;
+
+    // Check if table overflows
+    if (table.scrollWidth > tableWrapper.clientWidth) {
+      topScrollWrapper.style.display = 'block';
+      topScrollContent.style.width = table.scrollWidth + 'px';
+
+      // Sync scrolls
+      topScrollWrapper.addEventListener('scroll', function() {
+        if (syncingScroll) return;
+        syncingScroll = true;
+        tableWrapper.scrollLeft = topScrollWrapper.scrollLeft;
+        syncingScroll = false;
+      });
+
+      tableWrapper.addEventListener('scroll', function() {
+        if (syncingScroll) return;
+        syncingScroll = true;
+        topScrollWrapper.scrollLeft = tableWrapper.scrollLeft;
+        syncingScroll = false;
+      });
+    } else {
+      topScrollWrapper.style.display = 'none';
+    }
+  }
+
+  // Sort data by column
+  function sortData(data, column, direction) {
+    return [...data].sort((a, b) => {
+      let aVal = a[column];
+      let bVal = b[column];
+
+      // Handle null/undefined
+      if (aVal == null) aVal = '';
+      if (bVal == null) bVal = '';
+
+      // Try numeric comparison
+      const aNum = parseFloat(aVal);
+      const bNum = parseFloat(bVal);
+      if (!isNaN(aNum) && !isNaN(bNum)) {
+        return direction === 'asc' ? aNum - bNum : bNum - aNum;
+      }
+
+      // String comparison
+      const aStr = String(aVal).toLowerCase();
+      const bStr = String(bVal).toLowerCase();
+      if (direction === 'asc') {
+        return aStr.localeCompare(bStr);
+      } else {
+        return bStr.localeCompare(aStr);
+      }
+    });
+  }
+
+  // Handle column header click for sorting
+  function handleSortClick(column) {
+    if (!currentReportData || !currentReportData.data) return;
+
+    // Toggle direction if same column, otherwise start with asc
+    if (currentSort.column === column) {
+      currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+      currentSort.column = column;
+      currentSort.direction = 'asc';
+    }
+
+    // Sort and re-render
+    const sortedData = sortData(currentReportData.data, column, currentSort.direction);
+    renderTableBody(sortedData, currentReportData.columns, currentReportData.thresholds, currentReportData.problem_fields);
+    updateSortIndicators();
+  }
+
+  // Update sort indicators in headers
+  function updateSortIndicators() {
+    document.querySelectorAll('.results-table th').forEach(th => {
+      th.classList.remove('sorted');
+      const indicator = th.querySelector('.sort-indicator');
+      if (indicator) {
+        indicator.textContent = '↕';
+      }
+    });
+
+    if (currentSort.column) {
+      const sortedTh = document.querySelector(`.results-table th[data-column="${currentSort.column}"]`);
+      if (sortedTh) {
+        sortedTh.classList.add('sorted');
+        const indicator = sortedTh.querySelector('.sort-indicator');
+        if (indicator) {
+          indicator.textContent = currentSort.direction === 'asc' ? '↑' : '↓';
+        }
+      }
+    }
+  }
+
+  // Render table body (extracted for reuse after sorting)
+  function renderTableBody(data, columns, thresholds, problemFields) {
+    const tableBody = document.getElementById('results-body');
+    if (!tableBody) return;
+
+    let rowsHtml = '';
+
+    data.forEach((row, idx) => {
+      // Check for problems
+      const problemInfo = getRowProblemLevel(row, thresholds, problemFields);
+      let rowClass = 'data-row';
+      let problemIndicator = '';
+
+      if (problemInfo && problemInfo.level) {
+        rowClass += problemInfo.level === 'critical' ? ' critical-row' : ' warning-row';
+        const indicatorClass = problemInfo.level === 'critical' ? 'critical' : 'warning';
+        const indicatorIcon = problemInfo.level === 'critical' ? '🔴' : '⚠️';
+        problemIndicator = `<span class="problem-indicator ${indicatorClass}" onclick="event.stopPropagation(); showProblemModal(${JSON.stringify(problemInfo.problems).replace(/"/g, '&quot;')}, ${JSON.stringify(row).replace(/"/g, '&quot;')})">${indicatorIcon}</span>`;
+      }
+
+      // Data row
+      rowsHtml += `<tr id="data-row-${idx}" class="${rowClass}" onclick="toggleRow(${idx})">`;
+      rowsHtml += columns.map((col, colIdx) => {
+        const value = row[col] ?? '';
+        const strValue = String(value);
+        const isQuery = col === 'query';
+        const isSource = col === 'source';
+
+        if (isSource) {
+          return `<td>${buildSourceBadge(strValue)}</td>`;
+        }
+
+        const displayValue = strValue.length > 80 ? strValue.substring(0, 80) + '...' : strValue;
+        // Add problem indicator to first column
+        const indicator = colIdx === 0 ? problemIndicator : '';
+        return `<td class="${isQuery ? 'query-cell' : ''}">${escapeHtml(displayValue)}${indicator}</td>`;
+      }).join('');
+      rowsHtml += '</tr>';
+
+      // Detail row (hidden by default)
+      rowsHtml += `<tr id="detail-row-${idx}" class="detail-row">`;
+      rowsHtml += `<td colspan="${columns.length}">${buildDetailRow(row, columns, idx, thresholds, problemFields)}</td>`;
+      rowsHtml += '</tr>';
+    });
+
+    tableBody.innerHTML = rowsHtml;
+
+    // Re-setup top scrollbar
+    setTimeout(setupTopScrollbar, 0);
+  }
+
+  // Problem explanations from I18n (passed from server)
+  const problemExplanations = <%= raw(I18n.t('pg_reports.problems').to_json) %>;
+
+  function toggleDropdown() {
+    document.getElementById('dropdown-menu').classList.toggle('show');
+  }
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', function(e) {
+    const dropdown = document.getElementById('download-dropdown');
+    if (dropdown && !dropdown.contains(e.target)) {
+      document.getElementById('dropdown-menu')?.classList.remove('show');
+    }
+    // Close IDE dropdowns
+    document.querySelectorAll('.ide-dropdown-menu.show').forEach(menu => {
+      if (!menu.parentElement.contains(e.target)) {
+        menu.classList.remove('show');
+      }
+    });
+  });
+
+  function downloadReport(format) {
+    document.getElementById('dropdown-menu').classList.remove('show');
+    window.location.href = `${pgReportsRoot}/${category}/${reportKey}/download?format=${format}`;
+  }
+
+  function toggleRow(rowIndex) {
+    const dataRow = document.getElementById(`data-row-${rowIndex}`);
+    const detailRow = document.getElementById(`detail-row-${rowIndex}`);
+
+    if (!dataRow || !detailRow) return;
+
+    const isExpanded = dataRow.classList.contains('expanded');
+
+    // Collapse all other rows
+    document.querySelectorAll('.data-row.expanded').forEach(row => {
+      row.classList.remove('expanded');
+    });
+    document.querySelectorAll('.detail-row.show').forEach(row => {
+      row.classList.remove('show');
+    });
+
+    // Toggle current row
+    if (!isExpanded) {
+      dataRow.classList.add('expanded');
+      detailRow.classList.add('show');
+    }
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function escapeHtmlAttr(text) {
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function copyQueryFromButton(btn) {
+    const query = btn.dataset.query;
+    copyToClipboard(query, btn);
+  }
+
+  function copyToClipboard(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+      const originalText = btn.textContent;
+      btn.textContent = '✓ Copied!';
+      btn.style.background = 'var(--accent-green)';
+      btn.style.borderColor = 'var(--accent-green)';
+      btn.style.color = 'white';
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.style.background = '';
+        btn.style.borderColor = '';
+        btn.style.color = '';
+      }, 1500);
+    }).catch(() => {
+      showToast('Failed to copy', 'error');
+    });
+  }
+
+  // Check if a value exceeds threshold
+  function checkThreshold(value, threshold, inverted = false) {
+    if (!threshold || value === null || value === undefined) return null;
+
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) return null;
+
+    if (inverted) {
+      // For inverted thresholds (lower is worse), like cache_hit_ratio
+      if (numValue <= threshold.critical) return 'critical';
+      if (numValue <= threshold.warning) return 'warning';
+    } else {
+      // Normal thresholds (higher is worse)
+      if (numValue >= threshold.critical) return 'critical';
+      if (numValue >= threshold.warning) return 'warning';
+    }
+    return null;
+  }
+
+  // Get row problem level
+  function getRowProblemLevel(row, thresholds, problemFields) {
+    if (!thresholds || !problemFields || problemFields.length === 0) return null;
+
+    let maxLevel = null;
+    const problems = [];
+
+    for (const field of problemFields) {
+      const value = row[field];
+      const threshold = thresholds[field];
+      if (!threshold) continue;
+
+      const level = checkThreshold(value, threshold, threshold.inverted);
+      if (level) {
+        problems.push({ field, value, level, threshold });
+        if (level === 'critical') maxLevel = 'critical';
+        else if (level === 'warning' && maxLevel !== 'critical') maxLevel = 'warning';
+      }
+    }
+
+    return { level: maxLevel, problems };
+  }
+
+  // Show problem modal
+  function showProblemModal(problems, row) {
+    const modal = document.getElementById('problem-modal');
+    const body = document.getElementById('problem-modal-body');
+
+    let html = '<div class="problem-details">';
+
+    for (const problem of problems) {
+      const levelClass = problem.level === 'critical' ? 'critical' : 'warning';
+      const levelText = problem.level === 'critical' ? '🔴 Critical' : '⚠️ Warning';
+
+      html += `
+        <div class="problem-field">
+          <span class="problem-field-label">${escapeHtml(problem.field)} (${levelText})</span>
+          <div class="problem-field-value ${levelClass}">
+            Current: ${escapeHtml(String(problem.value))}
+            <br>Threshold: warning=${problem.threshold.warning}, critical=${problem.threshold.critical}
+            ${problem.threshold.inverted ? '<br><em>(inverted: lower values are worse)</em>' : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    // Add explanation based on problem types
+    const explanationKey = getExplanationKey(problems);
+    const explanation = problemExplanations[explanationKey] || '';
+
+    if (explanation) {
+      html += `
+        <div class="problem-explanation">
+          <h4>💡 Recommendation</h4>
+          <p>${escapeHtml(explanation)}</p>
+        </div>
+      `;
+    }
+
+    html += '</div>';
+    body.innerHTML = html;
+    modal.style.display = 'flex';
+  }
+
+  function closeProblemModal() {
+    document.getElementById('problem-modal').style.display = 'none';
+  }
+
+  // Map problem fields to explanation keys
+  function getExplanationKey(problems) {
+    const fields = problems.map(p => p.field);
+
+    if (fields.includes('mean_time_ms')) return 'high_mean_time';
+    if (fields.includes('calls')) return 'high_calls';
+    if (fields.includes('total_time_ms')) return 'high_total_time';
+    if (fields.includes('cache_hit_ratio')) return 'low_cache_hit';
+    if (fields.includes('seq_scan') || fields.includes('seq_tup_read')) return 'high_seq_scan';
+    if (fields.includes('idx_scan')) return 'unused_index';
+    if (fields.includes('bloat_ratio') || fields.includes('bloat_size')) return 'high_bloat';
+    if (fields.includes('dead_tuple_ratio') || fields.includes('n_dead_tup')) return 'many_dead_tuples';
+    if (fields.includes('duration_seconds') || fields.includes('duration')) return 'long_running';
+    if (fields.includes('blocked_count')) return 'blocking';
+    if (fields.includes('idle_in_transaction')) return 'idle_in_transaction';
+
+    return '';
+  }
+
+  // Parse source location and generate IDE link
+  function parseSourceLocation(source) {
+    if (!source || source === 'null' || source === '') return null;
+
+    let filePath = null;
+    let lineNumber = null;
+    let methodName = null;
+
+    // Try to match file:line pattern
+    const fileLineMatch = source.match(/^([^:]+\.(rb|erb|js|ts|py|go|java)):(\d+)/);
+    if (fileLineMatch) {
+      filePath = fileLineMatch[1];
+      lineNumber = parseInt(fileLineMatch[3], 10);
+    }
+
+    // Try to match Controller#action pattern (e.g., PostsController#index)
+    const controllerMatch = source.match(/^(\w+Controller)#(\w+)/);
+    if (controllerMatch) {
+      methodName = `${controllerMatch[1]}#${controllerMatch[2]}`;
+
+      // Check known methods first for testing (if fake data is enabled)
+      if (typeof knownControllerMethods !== 'undefined' && knownControllerMethods[methodName]) {
+        filePath = knownControllerMethods[methodName].file;
+        lineNumber = knownControllerMethods[methodName].line;
+      } else {
+        // Derive file path from controller name
+        const controllerName = controllerMatch[1].replace(/Controller$/, '').toLowerCase();
+        filePath = `app/controllers/${controllerName}_controller.rb`;
+      }
+    }
+
+    // Try to match short controller#action pattern (e.g., posts#index, dashboard#show)
+    if (!filePath) {
+      const shortMatch = source.match(/^(\w+)#(\w+)$/);
+      if (shortMatch) {
+        const controllerName = shortMatch[1].toLowerCase();
+        methodName = `${shortMatch[1]}#${shortMatch[2]}`;
+        filePath = `app/controllers/${controllerName}_controller.rb`;
+      }
+    }
+
+    return { filePath, lineNumber, methodName, original: source };
+  }
+
+  // Rails.root path for IDE links
+  const railsRootPath = '<%= Rails.root.to_s %>';
+  const wslDistro = 'Ubuntu';
+
+  // Generate IDE URLs
+  function generateIdeUrls(filePath, lineNumber) {
+    if (!filePath) return [];
+
+    // Convert relative paths to absolute paths using Rails.root
+    let absolutePath = filePath;
+    if (!filePath.startsWith('/')) {
+      absolutePath = `${railsRootPath}/${filePath}`;
+    }
+
+    const line = lineNumber || 1;
+    const urls = [];
+
+    // VSCode (WSL Remote format)
+    urls.push({
+      name: 'VS Code (WSL)',
+      url: `vscode://vscode-remote/wsl+${wslDistro}${absolutePath}:${line}`
+    });
+
+    // VSCode (direct path - for native Linux or Windows)
+    urls.push({
+      name: 'VS Code',
+      url: `vscode://file${absolutePath}:${line}`
+    });
+
+    // JetBrains (RubyMine, IntelliJ, etc.)
+    urls.push({
+      name: 'RubyMine',
+      url: `x-mine://open?file=${absolutePath}&line=${line}`
+    });
+
+    urls.push({
+      name: 'IntelliJ',
+      url: `idea://open?file=${absolutePath}&line=${line}`
+    });
+
+    // Cursor (WSL Remote format)
+    urls.push({
+      name: 'Cursor (WSL)',
+      url: `cursor://vscode-remote/wsl+${wslDistro}${absolutePath}:${line}`
+    });
+
+    // Cursor (direct path)
+    urls.push({
+      name: 'Cursor',
+      url: `cursor://file${absolutePath}:${line}`
+    });
+
+    return urls;
+  }
+
+  // Map IDE key to URL index
+  const ideKeyMap = {
+    'vscode-wsl': 0,
+    'vscode': 1,
+    'rubymine': 2,
+    'intellij': 3,
+    'cursor-wsl': 4,
+    'cursor': 5
+  };
+
+  // Build source badge HTML with IDE links
+  function buildSourceBadge(source) {
+    const parsed = parseSourceLocation(source);
+
+    if (!parsed) {
+      return `<span class="source-badge empty">—</span>`;
+    }
+
+    const ideUrls = generateIdeUrls(parsed.filePath, parsed.lineNumber);
+
+    if (ideUrls.length === 0) {
+      return `<span class="source-badge" title="${escapeHtml(parsed.original)}">${escapeHtml(parsed.original)}</span>`;
+    }
+
+    // Check if user has a default IDE set
+    const defaultIde = getDefaultIde();
+    if (defaultIde && ideKeyMap[defaultIde] !== undefined) {
+      const ideUrl = ideUrls[ideKeyMap[defaultIde]];
+      if (ideUrl) {
+        return `<a class="source-badge clickable" href="${ideUrl.url}" onclick="event.stopPropagation();" title="${escapeHtml(parsed.original)}">${escapeHtml(parsed.original)}</a>`;
+      }
+    }
+
+    // No default IDE - show dropdown menu
+    const dropdownId = `ide-dropdown-${Math.random().toString(36).substr(2, 9)}`;
+
+    let dropdownHtml = `
+      <div class="ide-dropdown">
+        <span class="source-badge clickable" data-dropdown-id="${dropdownId}" title="${escapeHtml(parsed.original)}">${escapeHtml(parsed.original)}</span>
+        <div class="ide-dropdown-menu" id="${dropdownId}">
+    `;
+
+    for (const ide of ideUrls) {
+      dropdownHtml += `<a href="${ide.url}">${ide.name}</a>`;
+    }
+
+    dropdownHtml += '</div></div>';
+    return dropdownHtml;
+  }
+
+  function toggleIdeDropdown(dropdownId, badgeElement) {
+    const menu = document.getElementById(dropdownId);
+    if (!menu) return;
+
+    // Close other dropdowns
+    document.querySelectorAll('.ide-dropdown-menu.show').forEach(m => {
+      if (m.id !== dropdownId) m.classList.remove('show');
+    });
+
+    // Toggle current menu
+    const isShowing = menu.classList.toggle('show');
+
+    // Position the menu using fixed positioning
+    if (isShowing && badgeElement) {
+      const rect = badgeElement.getBoundingClientRect();
+      menu.style.top = (rect.bottom + 4) + 'px';
+      menu.style.left = rect.left + 'px';
+    }
+  }
+
+  // Event delegation for source badge clicks
+  document.addEventListener('click', function(e) {
+    const badge = e.target.closest('.source-badge.clickable[data-dropdown-id]');
+    if (badge) {
+      e.stopPropagation();
+      e.preventDefault();
+      const dropdownId = badge.dataset.dropdownId;
+      toggleIdeDropdown(dropdownId, badge);
+      return;
+    }
+
+    // Allow clicks on IDE dropdown menu links
+    const ideLink = e.target.closest('.ide-dropdown-menu a');
+    if (ideLink) {
+      e.stopPropagation();
+      // Let the link navigate normally
+      return;
+    }
+  }, true); // Use capture phase to intercept before row click
+
+  function buildDetailRow(row, columns, rowIndex, thresholds, problemFields) {
+    let html = '<div class="row-detail">';
+    const hasQuery = columns.includes('query') && row.query;
+    const hasIndexName = columns.includes('index_name') && row.index_name;
+    const rowId = generateRowId(row);
+
+    columns.forEach(col => {
+      const value = row[col] ?? '';
+      const strValue = String(value);
+      const isQuery = col === 'query';
+      const isSource = col === 'source';
+      const isNumber = typeof value === 'number' || (!isNaN(parseFloat(value)) && isFinite(value));
+
+      // Check if this field has a problem
+      let problemClass = '';
+      if (problemFields && problemFields.includes(col) && thresholds && thresholds[col]) {
+        const level = checkThreshold(value, thresholds[col], thresholds[col].inverted);
+        if (level === 'critical') problemClass = 'problem-critical';
+        else if (level === 'warning') problemClass = 'problem-warning';
+      }
+
+      let valueClass = '';
+      if (isQuery) valueClass = 'query';
+      else if (isSource) valueClass = 'source';
+      else if (isNumber) valueClass = 'number';
+      if (problemClass) valueClass += ' ' + problemClass;
+
+      const isLongText = strValue.length > 100 || isQuery;
+
+      // Skip empty source in detail view
+      if (isSource && (!strValue || strValue === 'null' || strValue === '')) {
+        return;
+      }
+
+      html += `
+        <div class="row-detail-item${isLongText ? ' full-width' : ''}">
+          <span class="row-detail-label">${escapeHtml(col)}</span>
+          <div class="row-detail-value ${valueClass}">${escapeHtml(strValue)}</div>
+          ${isQuery ? `<button class="copy-btn" data-query="${escapeHtmlAttr(strValue)}" onclick="event.stopPropagation(); copyQueryFromButton(this)">📋 Copy Query</button>` : ''}
+        </div>
+      `;
+    });
+
+    // Action buttons
+    const isSaved = isRecordSaved(rowId);
+    const rowJson = JSON.stringify(row).replace(/"/g, '&quot;');
+
+    html += `<div class="detail-actions">`;
+    html += `<button class="btn-save ${isSaved ? 'saved' : ''}" onclick="event.stopPropagation(); toggleSaveRecord('${rowId}', ${rowJson}, this)">${isSaved ? '📌 Saved' : '📌 Save for Comparison'}</button>`;
+
+    if (hasQuery) {
+      // Only show EXPLAIN ANALYZE for SELECT queries
+      const queryNormalized = row.query.trim().toLowerCase();
+      if (queryNormalized.startsWith('select')) {
+        // Use data attribute to avoid escaping issues with special characters
+        const queryBase64 = btoa(unescape(encodeURIComponent(row.query)));
+        html += `<button class="btn-explain" data-query-b64="${queryBase64}" onclick="event.stopPropagation(); runExplainAnalyzeFromButton(this)">📊 EXPLAIN ANALYZE</button>`;
+      }
+    }
+
+    // Show migration button for index reports
+    if (hasIndexName && (category === 'indexes')) {
+      const indexName = row.index_name;
+      const tableName = row.table_name || row.tablename || '';
+      const schemaName = row.schema_name || row.schemaname || 'public';
+      html += `<button class="btn-migration" onclick="event.stopPropagation(); showMigrationModal('${escapeHtml(indexName)}', '${escapeHtml(tableName)}', '${escapeHtml(schemaName)}')">🗑️ Generate Migration</button>`;
+    }
+
+    html += `</div>`;
+
+    html += '</div>';
+    return html;
+  }
+
+  async function runReport(cat, report, button) {
+    const tableBody = document.getElementById('results-body');
+    const tableHead = document.getElementById('results-head');
+    const loadingEl = document.getElementById('loading');
+    const emptyEl = document.getElementById('empty-state');
+    const metaEl = document.getElementById('results-meta');
+    const downloadDropdown = document.getElementById('download-dropdown');
+    const telegramBtn = document.getElementById('telegram-btn');
+
+    if (button) {
+      button.disabled = true;
+      button.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;vertical-align:middle;"></span> Running...';
+    }
+
+    if (loadingEl) loadingEl.style.display = 'flex';
+    if (emptyEl) emptyEl.style.display = 'none';
+    if (tableBody) tableBody.innerHTML = '';
+    if (downloadDropdown) downloadDropdown.style.display = 'none';
+    if (telegramBtn) telegramBtn.style.display = 'none';
+
+    try {
+      const response = await fetch(`${pgReportsRoot}/${cat}/${report}/run`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        }
+      });
+
+      const data = await response.json();
+
+      if (loadingEl) loadingEl.style.display = 'none';
+
+      if (data.success) {
+        // Inject fake source data for IDE link testing (if enabled)
+        if (typeof injectFakeSourceData === 'function') {
+          injectFakeSourceData(data);
+        }
+
+        currentReportData = data;
+        const thresholds = data.thresholds || {};
+        const problemFields = data.problem_fields || [];
+
+        if (metaEl) {
+          metaEl.innerHTML = `
+            <span>Total: ${data.total} rows</span>
+            <span>Generated: ${data.generated_at}</span>
+            <span class="row-hint">Click row to expand</span>
+          `;
+        }
+
+        // Show download and telegram buttons
+        if (downloadDropdown) downloadDropdown.style.display = 'inline-block';
+        if (telegramBtn) telegramBtn.style.display = 'inline-flex';
+
+        if (data.data.length === 0) {
+          if (emptyEl) emptyEl.style.display = 'block';
+        } else {
+          // Reset sort state for new data
+          currentSort = { column: null, direction: 'asc' };
+
+          // Build table header with sortable columns
+          if (tableHead) {
+            tableHead.innerHTML = '<tr>' + data.columns.map(col =>
+              `<th class="sortable" data-column="${escapeHtml(col)}" onclick="handleSortClick('${escapeHtml(col)}')">${escapeHtml(col)}<span class="sort-indicator">↕</span></th>`
+            ).join('') + '</tr>';
+          }
+
+          // Build table body with expandable rows
+          renderTableBody(data.data, data.columns, thresholds, problemFields);
+        }
+
+        showToast('Report generated successfully');
+      } else {
+        showToast(data.error || 'Failed to run report', 'error');
+      }
+    } catch (error) {
+      if (loadingEl) loadingEl.style.display = 'none';
+      showToast('Network error: ' + error.message, 'error');
+    }
+
+    if (button) {
+      button.disabled = false;
+      button.innerHTML = '▶ Run Report';
+    }
+  }
+
+  // Close modal on Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeProblemModal();
+      closeIdeSettingsModal();
+      closeExplainModal();
+      closeMigrationModal();
+    }
+  });
+
+  // Close modal on backdrop click
+  document.getElementById('problem-modal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+      closeProblemModal();
+    }
+  });
+
+  // IDE Settings functions
+  function showIdeSettingsModal() {
+    const modal = document.getElementById('ide-settings-modal');
+    modal.style.display = 'flex';
+    loadIdeSettingsState();
+  }
+
+  function closeIdeSettingsModal() {
+    document.getElementById('ide-settings-modal').style.display = 'none';
+  }
+
+  function setDefaultIde(ideKey) {
+    if (ideKey) {
+      localStorage.setItem('pgReportsDefaultIde', ideKey);
+    } else {
+      localStorage.removeItem('pgReportsDefaultIde');
+    }
+  }
+
+  function getDefaultIde() {
+    return localStorage.getItem('pgReportsDefaultIde') || '';
+  }
+
+  function loadIdeSettingsState() {
+    const currentIde = getDefaultIde();
+    const radios = document.querySelectorAll('input[name="default-ide"]');
+    radios.forEach(radio => {
+      radio.checked = (radio.value === currentIde);
+    });
+  }
+
+  // Close IDE settings modal on backdrop click
+  document.getElementById('ide-settings-modal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+      closeIdeSettingsModal();
+    }
+  });
+
+  // ==========================================
+  // SAVED RECORDS FUNCTIONALITY
+  // ==========================================
+
+  function getSavedRecordsKey() {
+    return `pgReports_saved_${category}_${reportKey}`;
+  }
+
+  function getSavedRecords() {
+    try {
+      const data = localStorage.getItem(getSavedRecordsKey());
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveSavedRecords(records) {
+    localStorage.setItem(getSavedRecordsKey(), JSON.stringify(records));
+  }
+
+  function generateRowId(row) {
+    // Generate a unique ID based on key fields
+    const keyFields = ['query', 'queryid', 'index_name', 'table_name', 'pid', 'datname'];
+    const parts = [];
+    for (const field of keyFields) {
+      if (row[field]) {
+        parts.push(String(row[field]).substring(0, 50));
+      }
+    }
+    // Simple hash
+    const str = parts.join('|');
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    return 'r' + Math.abs(hash).toString(36);
+  }
+
+  function isRecordSaved(rowId) {
+    const saved = getSavedRecords();
+    return saved.some(r => r.id === rowId);
+  }
+
+  function toggleSaveRecord(rowId, row, btn) {
+    const saved = getSavedRecords();
+    const existingIdx = saved.findIndex(r => r.id === rowId);
+
+    if (existingIdx >= 0) {
+      // Remove
+      saved.splice(existingIdx, 1);
+      btn.classList.remove('saved');
+      btn.textContent = '📌 Save for Comparison';
+      showToast('Record removed from saved');
+    } else {
+      // Add
+      saved.unshift({
+        id: rowId,
+        savedAt: new Date().toISOString(),
+        data: row
+      });
+      btn.classList.add('saved');
+      btn.textContent = '📌 Saved';
+      showToast('Record saved for comparison');
+    }
+
+    saveSavedRecords(saved);
+    renderSavedRecords();
+  }
+
+  function removeSavedRecord(rowId) {
+    const saved = getSavedRecords();
+    const filtered = saved.filter(r => r.id !== rowId);
+    saveSavedRecords(filtered);
+    renderSavedRecords();
+
+    // Update button in table if visible
+    const btn = document.querySelector(`.btn-save[onclick*="'${rowId}'"]`);
+    if (btn) {
+      btn.classList.remove('saved');
+      btn.textContent = '📌 Save for Comparison';
+    }
+
+    showToast('Record removed');
+  }
+
+  function clearAllSavedRecords() {
+    if (!confirm('Remove all saved records for this report?')) return;
+    saveSavedRecords([]);
+    renderSavedRecords();
+
+    // Update all buttons in table
+    document.querySelectorAll('.btn-save.saved').forEach(btn => {
+      btn.classList.remove('saved');
+      btn.textContent = '📌 Save for Comparison';
+    });
+
+    showToast('All saved records cleared');
+  }
+
+  function renderSavedRecords() {
+    const section = document.getElementById('saved-records-section');
+    const list = document.getElementById('saved-records-list');
+    const saved = getSavedRecords();
+
+    if (saved.length === 0) {
+      section.style.display = 'none';
+      return;
+    }
+
+    section.style.display = 'block';
+
+    // Fields to highlight for comparison
+    const highlightFields = ['mean_time_ms', 'total_time_ms', 'calls', 'rows', 'shared_blks_hit', 'shared_blks_read'];
+    // Key metrics to show in summary
+    const summaryFields = ['mean_time_ms', 'total_time_ms', 'calls', 'rows'];
+
+    let html = '';
+    saved.forEach((record, idx) => {
+      const savedTime = new Date(record.savedAt).toLocaleString();
+      const data = record.data;
+      const hasQuery = data.query;
+
+      html += `
+        <div class="saved-record-card" id="saved-card-${idx}" onclick="toggleSavedRecordDetail(${idx}, event)">
+          <div class="saved-record-header">
+            <span class="saved-record-time">▸ Saved: ${savedTime}</span>
+            <span class="saved-record-expand-hint">Click to expand</span>
+            <button class="saved-record-remove" onclick="event.stopPropagation(); removeSavedRecord('${record.id}')" title="Remove">×</button>
+          </div>
+          <div class="saved-record-data">
+      `;
+
+      // Show key metrics in summary
+      summaryFields.forEach(field => {
+        const value = data[field];
+        if (value === null || value === undefined) return;
+        const strValue = String(value);
+        html += `
+          <div class="saved-record-field">
+            <span class="saved-record-field-name">${escapeHtml(field)}</span>
+            <span class="saved-record-field-value highlight">${escapeHtml(strValue)}</span>
+          </div>
+        `;
+      });
+
+      // Show truncated query preview
+      if (hasQuery) {
+        const queryPreview = data.query.length > 100 ? data.query.substring(0, 100) + '...' : data.query;
+        html += `
+          <div class="saved-record-field" style="grid-column: 1 / -1;">
+            <span class="saved-record-field-name">query</span>
+            <span class="saved-record-field-value" style="color: var(--accent-green); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(queryPreview)}</span>
+          </div>
+        `;
+      }
+
+      // Expandable detail section
+      html += `
+          </div>
+          <div class="saved-record-detail">
+            <div class="saved-record-detail-grid">
+      `;
+
+      // Show all fields in detail
+      Object.keys(data).forEach(field => {
+        if (field === 'source') return;
+        const value = data[field];
+        if (value === null || value === undefined) return;
+        const strValue = String(value);
+        const isQuery = field === 'query';
+        const isNumber = typeof value === 'number' || (!isNaN(parseFloat(value)) && isFinite(value));
+
+        let valueClass = '';
+        if (isQuery) valueClass = 'query';
+        else if (isNumber) valueClass = 'number';
+
+        html += `
+          <div class="saved-record-detail-item ${isQuery ? 'full-width' : ''}">
+            <span class="saved-record-detail-label">${escapeHtml(field)}</span>
+            <div class="saved-record-detail-value ${valueClass}">${escapeHtml(strValue)}</div>
+          </div>
+        `;
+      });
+
+      html += `
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    list.innerHTML = html;
+  }
+
+  function toggleSavedRecordDetail(idx, event) {
+    // Don't toggle if clicking on remove button
+    if (event.target.classList.contains('saved-record-remove')) return;
+
+    const card = document.getElementById(`saved-card-${idx}`);
+    if (!card) return;
+
+    const wasExpanded = card.classList.contains('expanded');
+
+    // Collapse all cards
+    document.querySelectorAll('.saved-record-card.expanded').forEach(c => {
+      c.classList.remove('expanded');
+      const hint = c.querySelector('.saved-record-time');
+      if (hint) hint.textContent = hint.textContent.replace('▾', '▸');
+    });
+
+    // Toggle current card
+    if (!wasExpanded) {
+      card.classList.add('expanded');
+      const hint = card.querySelector('.saved-record-time');
+      if (hint) hint.textContent = hint.textContent.replace('▸', '▾');
+    }
+  }
+
+  // Render saved records on page load
+  document.addEventListener('DOMContentLoaded', renderSavedRecords);
+
+  // ==========================================
+  // EXPLAIN ANALYZE FUNCTIONALITY
+  // ==========================================
+
+  let currentExplainQuery = '';
+  let currentQueryParams = [];
+
+  // Parse $1, $2, etc. from query
+  function parseQueryParams(query) {
+    const matches = query.match(/\$(\d+)/g);
+    if (!matches) return [];
+
+    // Get unique param numbers and sort them
+    const paramNumbers = [...new Set(matches.map(m => parseInt(m.substring(1))))].sort((a, b) => a - b);
+    return paramNumbers;
+  }
+
+  // Decode base64 query from button and run analyzer
+  function runExplainAnalyzeFromButton(btn) {
+    const queryBase64 = btn.dataset.queryB64;
+    if (!queryBase64) return;
+
+    try {
+      const query = decodeURIComponent(escape(atob(queryBase64)));
+      runExplainAnalyze(query);
+    } catch (e) {
+      showToast('Failed to decode query', 'error');
+    }
+  }
+
+  // Show query analyzer modal
+  function runExplainAnalyze(query) {
+    currentExplainQuery = query;
+    currentQueryParams = parseQueryParams(query);
+
+    const modal = document.getElementById('explain-modal');
+    const queryDisplay = document.getElementById('explain-query-display');
+    const paramsSection = document.getElementById('explain-params-section');
+    const paramsInputs = document.getElementById('explain-params-inputs');
+    const loading = document.getElementById('explain-loading');
+    const content = document.getElementById('explain-content');
+
+    // Show query with highlighted parameters
+    const highlightedQuery = escapeHtml(query).replace(
+      /\$(\d+)/g,
+      '<span class="query-param">$$$1</span>'
+    );
+    queryDisplay.innerHTML = highlightedQuery;
+
+    // Show/hide params section
+    if (currentQueryParams.length > 0) {
+      paramsSection.style.display = 'block';
+
+      // Generate input fields
+      let inputsHtml = '<div class="explain-params-grid">';
+      currentQueryParams.forEach(num => {
+        inputsHtml += `
+          <div class="param-input-group">
+            <label class="param-input-label">$${num}</label>
+            <input type="text" class="param-input" id="param-input-${num}" placeholder="Value for $${num}" data-param="${num}">
+          </div>
+        `;
+      });
+      inputsHtml += '</div>';
+      paramsInputs.innerHTML = inputsHtml;
+    } else {
+      paramsSection.style.display = 'none';
+      paramsInputs.innerHTML = '';
+    }
+
+    // Reset content area
+    loading.style.display = 'none';
+    content.innerHTML = '';
+
+    modal.style.display = 'flex';
+  }
+
+  // Get parameter values from inputs
+  function getParamValues() {
+    const params = {};
+    currentQueryParams.forEach(num => {
+      const input = document.getElementById(`param-input-${num}`);
+      if (input) {
+        params[num] = input.value;
+      }
+    });
+    return params;
+  }
+
+  // Execute EXPLAIN ANALYZE with parameters
+  async function executeExplainAnalyze() {
+    const loading = document.getElementById('explain-loading');
+    const content = document.getElementById('explain-content');
+    const params = getParamValues();
+
+    loading.style.display = 'flex';
+    content.innerHTML = '';
+
+    try {
+      const response = await fetch(`${pgReportsRoot}/explain_analyze`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        },
+        body: JSON.stringify({ query: currentExplainQuery, params: params })
+      });
+
+      const data = await response.json();
+      loading.style.display = 'none';
+
+      if (data.success) {
+        let html = '';
+
+        // Show stats if available
+        if (data.stats) {
+          html += '<div class="explain-stats">';
+          if (data.stats.planning_time) {
+            html += `<div class="explain-stat"><span class="explain-stat-label">Planning Time</span><span class="explain-stat-value">${data.stats.planning_time} ms</span></div>`;
+          }
+          if (data.stats.execution_time) {
+            html += `<div class="explain-stat"><span class="explain-stat-label">Execution Time</span><span class="explain-stat-value">${data.stats.execution_time} ms</span></div>`;
+          }
+          if (data.stats.total_cost) {
+            html += `<div class="explain-stat"><span class="explain-stat-label">Total Cost</span><span class="explain-stat-value">${data.stats.total_cost}</span></div>`;
+          }
+          if (data.stats.rows) {
+            html += `<div class="explain-stat"><span class="explain-stat-label">Rows</span><span class="explain-stat-value">${data.stats.rows}</span></div>`;
+          }
+          html += '</div>';
+        }
+
+        html += `<div class="explain-result">${escapeHtml(data.explain)}</div>`;
+        content.innerHTML = html;
+      } else {
+        content.innerHTML = `<div class="error-message">${escapeHtml(data.error || 'Failed to run EXPLAIN ANALYZE')}</div>`;
+      }
+    } catch (error) {
+      loading.style.display = 'none';
+      content.innerHTML = `<div class="error-message">Network error: ${escapeHtml(error.message)}</div>`;
+    }
+  }
+
+  // Execute query and show results
+  async function executeQuery() {
+    const loading = document.getElementById('explain-loading');
+    const content = document.getElementById('explain-content');
+    const params = getParamValues();
+
+    loading.style.display = 'flex';
+    content.innerHTML = '';
+
+    try {
+      const response = await fetch(`${pgReportsRoot}/execute_query`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        },
+        body: JSON.stringify({ query: currentExplainQuery, params: params })
+      });
+
+      const data = await response.json();
+      loading.style.display = 'none';
+
+      if (data.success) {
+        let html = '';
+
+        // Show info
+        html += `<div class="query-results-info">
+          <span>Rows: <span class="count">${data.count}</span></span>
+          <span>Execution time: <span class="time">${data.execution_time} ms</span></span>
+        </div>`;
+
+        if (data.rows && data.rows.length > 0) {
+          html += '<div class="query-results-wrapper">';
+          html += '<table class="query-results-table">';
+
+          // Header
+          html += '<thead><tr>';
+          data.columns.forEach(col => {
+            html += `<th>${escapeHtml(col)}</th>`;
+          });
+          html += '</tr></thead>';
+
+          // Body
+          html += '<tbody>';
+          data.rows.forEach(row => {
+            html += '<tr>';
+            data.columns.forEach(col => {
+              const value = row[col];
+              const displayValue = value === null ? '<null>' : String(value);
+              html += `<td title="${escapeHtmlAttr(displayValue)}">${escapeHtml(displayValue)}</td>`;
+            });
+            html += '</tr>';
+          });
+          html += '</tbody>';
+
+          html += '</table>';
+          html += '</div>';
+
+          if (data.truncated) {
+            html += `<p style="margin-top: 0.5rem; color: var(--text-muted); font-size: 0.75rem;">Showing first ${data.rows.length} of ${data.total_count} rows</p>`;
+          }
+        } else {
+          html += '<p style="margin-top: 1rem; color: var(--text-muted);">No rows returned</p>';
+        }
+
+        content.innerHTML = html;
+      } else {
+        content.innerHTML = `<div class="error-message">${escapeHtml(data.error || 'Failed to execute query')}</div>`;
+      }
+    } catch (error) {
+      loading.style.display = 'none';
+      content.innerHTML = `<div class="error-message">Network error: ${escapeHtml(error.message)}</div>`;
+    }
+  }
+
+  function closeExplainModal() {
+    document.getElementById('explain-modal').style.display = 'none';
+  }
+
+  document.getElementById('explain-modal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeExplainModal();
+  });
+
+  // ==========================================
+  // MIGRATION GENERATION FUNCTIONALITY
+  // ==========================================
+
+  let currentMigrationData = null;
+
+  function showMigrationModal(indexName, tableName, schemaName) {
+    const migrationName = `remove_${indexName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+    const timestamp = new Date().toISOString().replace(/[-:T]/g, '').substring(0, 14);
+    const className = migrationName.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+
+    const fullIndexName = schemaName && schemaName !== 'public'
+      ? `${schemaName}.${indexName}`
+      : indexName;
+
+    const migrationCode = `# frozen_string_literal: true
+
+class ${className} < ActiveRecord::Migration[7.0]
+  def change
+    remove_index :${tableName}, name: :${indexName}, if_exists: true
+  end
+end
+`;
+
+    currentMigrationData = {
+      fileName: `${timestamp}_${migrationName}.rb`,
+      code: migrationCode,
+      indexName,
+      tableName,
+      schemaName
+    };
+
+    document.getElementById('migration-code').textContent = migrationCode;
+    document.getElementById('migration-modal').style.display = 'flex';
+  }
+
+  function closeMigrationModal() {
+    document.getElementById('migration-modal').style.display = 'none';
+  }
+
+  document.getElementById('migration-modal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeMigrationModal();
+  });
+
+  function copyMigrationCode() {
+    if (!currentMigrationData) return;
+    navigator.clipboard.writeText(currentMigrationData.code).then(() => {
+      showToast('Migration code copied to clipboard');
+    }).catch(() => {
+      showToast('Failed to copy', 'error');
+    });
+  }
+
+  async function createMigrationFile() {
+    if (!currentMigrationData) return;
+
+    try {
+      const response = await fetch(`${pgReportsRoot}/create_migration`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        },
+        body: JSON.stringify({
+          file_name: currentMigrationData.fileName,
+          code: currentMigrationData.code
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        showToast('Migration file created');
+        closeMigrationModal();
+
+        // Open in IDE if path provided
+        if (data.file_path) {
+          const ideUrls = generateIdeUrls(data.file_path, 1);
+          const defaultIde = getDefaultIde();
+
+          if (defaultIde && ideKeyMap[defaultIde] !== undefined) {
+            window.location.href = ideUrls[ideKeyMap[defaultIde]].url;
+          } else if (ideUrls.length > 0) {
+            window.location.href = ideUrls[0].url;
+          }
+        }
+      } else {
+        showToast(data.error || 'Failed to create migration', 'error');
+      }
+    } catch (error) {
+      showToast('Network error: ' + error.message, 'error');
+    }
+  }
+</script>

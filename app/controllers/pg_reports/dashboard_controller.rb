@@ -114,31 +114,33 @@ module PgReports
 
     def explain_analyze
       query = params[:query]
+      query_params = params[:params] || {}
 
       if query.blank?
         render json: {success: false, error: "Query is required"}, status: :unprocessable_entity
         return
       end
 
-      # Security: Only allow SELECT queries for EXPLAIN ANALYZE
+      # Security: Only allow SELECT queries for EXPLAIN ANALYZE (SHOW not supported by EXPLAIN)
       normalized = query.strip.gsub(/\s+/, " ").downcase
       unless normalized.start_with?("select")
         render json: {success: false, error: "Only SELECT queries are allowed for EXPLAIN ANALYZE"}, status: :unprocessable_entity
         return
       end
 
-      # Check for parameterized queries (from pg_stat_statements normalization)
-      if query.match?(/\$\d+/)
+      # Substitute parameters if provided
+      final_query = substitute_params(query, query_params)
+
+      # Check for remaining unsubstituted parameters
+      if final_query.match?(/\$\d+/)
         render json: {
           success: false,
-          error: "This query contains parameter placeholders ($1, $2, etc.) from pg_stat_statements normalization. " \
-                 "EXPLAIN ANALYZE cannot be run on parameterized queries without actual values. " \
-                 "Copy the query and replace parameters with real values to analyze it manually."
+          error: "Please provide values for all parameter placeholders ($1, $2, etc.)"
         }, status: :unprocessable_entity
         return
       end
 
-      result = ActiveRecord::Base.connection.execute("EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) #{query}")
+      result = ActiveRecord::Base.connection.execute("EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) #{final_query}")
       explain_output = result.map { |r| r["QUERY PLAN"] }.join("\n")
 
       # Extract stats from the output
@@ -157,6 +159,69 @@ module PgReports
       end
 
       render json: {success: true, explain: explain_output, stats: stats}
+    rescue => e
+      render json: {success: false, error: e.message}, status: :unprocessable_entity
+    end
+
+    def execute_query
+      query = params[:query]
+      query_params = params[:params] || {}
+
+      if query.blank?
+        render json: {success: false, error: "Query is required"}, status: :unprocessable_entity
+        return
+      end
+
+      # Security: Only allow SELECT and SHOW queries
+      normalized = query.strip.gsub(/\s+/, " ").downcase
+      unless normalized.start_with?("select") || normalized.start_with?("show")
+        render json: {success: false, error: "Only SELECT and SHOW queries are allowed"}, status: :unprocessable_entity
+        return
+      end
+
+      # Substitute parameters if provided
+      final_query = substitute_params(query, query_params)
+
+      # Check for remaining unsubstituted parameters
+      if final_query.match?(/\$\d+/)
+        render json: {
+          success: false,
+          error: "Please provide values for all parameter placeholders ($1, $2, etc.)"
+        }, status: :unprocessable_entity
+        return
+      end
+
+      # Execute with LIMIT to prevent huge result sets
+      limited_query = add_limit_if_missing(final_query, 100)
+
+      start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      result = ActiveRecord::Base.connection.execute(limited_query)
+      end_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      execution_time = ((end_time - start_time) * 1000).round(2)
+
+      rows = result.to_a
+      columns = rows.first&.keys || []
+
+      # Check if we need to get total count
+      total_count = rows.size
+      truncated = false
+
+      if rows.size >= 100
+        # Check if there are more rows
+        count_result = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM (#{final_query}) AS count_query")
+        total_count = count_result.first["count"].to_i
+        truncated = total_count > 100
+      end
+
+      render json: {
+        success: true,
+        columns: columns,
+        rows: rows,
+        count: rows.size,
+        total_count: total_count,
+        truncated: truncated,
+        execution_time: execution_time
+      }
     rescue => e
       render json: {success: false, error: e.message}, status: :unprocessable_entity
     end
@@ -217,6 +282,52 @@ module PgReports
       end
 
       mod.public_send(report_key)
+    end
+
+    def substitute_params(query, params_hash)
+      result = query.dup
+
+      # Sort by param number descending to replace $10 before $1
+      params_hash.keys.map(&:to_i).sort.reverse.each do |num|
+        value = params_hash[num.to_s] || params_hash[num]
+        next if value.nil? || value.to_s.empty?
+
+        # Quote the value appropriately
+        quoted_value = quote_param_value(value)
+        result = result.gsub("$#{num}", quoted_value)
+      end
+
+      result
+    end
+
+    def quote_param_value(value)
+      str = value.to_s
+
+      # Check if it looks like a number
+      if str.match?(/\A-?\d+(\.\d+)?\z/)
+        str
+      # Check if it looks like a boolean
+      elsif str.downcase.in?(["true", "false"])
+        str.downcase
+      # Check if it looks like NULL
+      elsif str.downcase == "null"
+        "NULL"
+      else
+        # Quote as string, escape single quotes
+        "'#{str.gsub("'", "''")}'"
+      end
+    end
+
+    def add_limit_if_missing(query, limit)
+      # Simple check - if query doesn't end with LIMIT clause, add one
+      normalized = query.strip.gsub(/\s+/, " ").downcase
+
+      if normalized.match?(/\blimit\s+\d+\s*(?:offset\s+\d+\s*)?\z/i)
+        # Already has LIMIT
+        query
+      else
+        "#{query} LIMIT #{limit}"
+      end
     end
   end
 end
