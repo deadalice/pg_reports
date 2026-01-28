@@ -75,6 +75,10 @@
             <span>IntelliJ IDEA</span>
           </label>
           <label class="ide-option">
+            <input type="radio" name="default-ide" value="cursor-wsl" onchange="setDefaultIde('cursor-wsl')">
+            <span>Cursor (WSL)</span>
+          </label>
+          <label class="ide-option">
             <input type="radio" name="default-ide" value="cursor" onchange="setDefaultIde('cursor')">
             <span>Cursor</span>
           </label>
@@ -1564,44 +1568,6 @@
     return '';
   }
 
-  // TEMP: Known controller methods with line numbers (for IDE link testing)
-  const knownControllerMethods = {
-    'PostsController#show': { file: 'app/controllers/posts_controller.rb', line: 33 },
-    'PostsController#index': { file: 'app/controllers/posts_controller.rb', line: 19 },
-    'PostsController#create': { file: 'app/controllers/posts_controller.rb', line: 43 },
-    'PostsController#update': { file: 'app/controllers/posts_controller.rb', line: 62 },
-    'PostsController#destroy': { file: 'app/controllers/posts_controller.rb', line: 76 }
-  };
-
-  // TEMP: Fake source values for testing IDE links
-  const fakeSourceValues = [
-    'PostsController#show',
-    'PostsController#index',
-    'PostsController#create',
-    'PostsController#update',
-    'PostsController#destroy',
-    'app/controllers/posts_controller.rb:33',
-    'app/controllers/posts_controller.rb:19',
-    'app/models/post.rb:45:in `find_by_slug`'
-  ];
-
-  // TEMP: Inject fake source values into data for testing
-  function injectFakeSourceData(data) {
-    if (!data.data || data.data.length === 0) return;
-
-    // Add 'source' column if not present
-    if (!data.columns.includes('source')) {
-      data.columns.push('source');
-    }
-
-    // Inject fake source values
-    data.data.forEach((row, idx) => {
-      if (!row.source || row.source === '' || row.source === null) {
-        row.source = fakeSourceValues[idx % fakeSourceValues.length];
-      }
-    });
-  }
-
   // Parse source location and generate IDE link
   function parseSourceLocation(source) {
     if (!source || source === 'null' || source === '') return null;
@@ -1627,40 +1593,30 @@
     const controllerMatch = source.match(/^(\w+Controller)#(\w+)/);
     if (controllerMatch) {
       methodName = `${controllerMatch[1]}#${controllerMatch[2]}`;
-
-      // TEMP: Check known methods first for testing
-      const knownMethod = knownControllerMethods[methodName];
-      if (knownMethod) {
-        filePath = knownMethod.file;
-        lineNumber = knownMethod.line;
-      } else {
-        // Try to derive file path
-        const controllerName = controllerMatch[1].replace(/Controller$/, '').toLowerCase();
-        filePath = `app/controllers/${controllerName}_controller.rb`;
-      }
+      // Derive file path from controller name
+      const controllerName = controllerMatch[1].replace(/Controller$/, '').toLowerCase();
+      filePath = `app/controllers/${controllerName}_controller.rb`;
     }
 
     return { filePath, lineNumber, methodName, original: source };
   }
 
-  // TEMP: Base path for parent project (for IDE link testing)
-  const parentProjectPath = '/home/deadalice/vmist-server';
+  // Rails.root path for IDE links
+  const railsRootPath = '<%= Rails.root.to_s %>';
+  const wslDistro = 'Ubuntu';
 
   // Generate IDE URLs
   function generateIdeUrls(filePath, lineNumber) {
     if (!filePath) return [];
 
-    // TEMP: Convert relative paths to absolute paths in parent project
+    // Convert relative paths to absolute paths using Rails.root
     let absolutePath = filePath;
     if (!filePath.startsWith('/')) {
-      absolutePath = `${parentProjectPath}/${filePath}`;
+      absolutePath = `${railsRootPath}/${filePath}`;
     }
 
     const line = lineNumber || 1;
     const urls = [];
-
-    // TEMP: WSL distro name for VS Code Remote
-    const wslDistro = 'Ubuntu';
 
     // VSCode (WSL Remote format)
     urls.push({
@@ -1685,7 +1641,13 @@
       url: `idea://open?file=${absolutePath}&line=${line}`
     });
 
-    // Cursor (VSCode-based)
+    // Cursor (WSL Remote format)
+    urls.push({
+      name: 'Cursor (WSL)',
+      url: `cursor://vscode-remote/wsl+${wslDistro}${absolutePath}:${line}`
+    });
+
+    // Cursor (direct path)
     urls.push({
       name: 'Cursor',
       url: `cursor://file${absolutePath}:${line}`
@@ -1700,7 +1662,8 @@
     'vscode': 1,
     'rubymine': 2,
     'intellij': 3,
-    'cursor': 4
+    'cursor-wsl': 4,
+    'cursor': 5
   };
 
   // Build source badge HTML with IDE links
@@ -1866,9 +1829,6 @@
       if (loadingEl) loadingEl.style.display = 'none';
 
       if (data.success) {
-        // TEMP: Inject fake source data for IDE link testing
-        injectFakeSourceData(data);
-
         currentReportData = data;
         const thresholds = data.thresholds || {};
         const problemFields = data.problem_fields || [];
