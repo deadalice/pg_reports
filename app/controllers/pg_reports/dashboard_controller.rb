@@ -23,6 +23,19 @@ module PgReports
       render json: {success: false, error: e.message}, status: :unprocessable_entity
     end
 
+    def live_metrics
+      threshold = params[:long_query_threshold]&.to_i || 60
+      data = Modules::System.live_metrics(long_query_threshold: threshold)
+
+      render json: {
+        success: true,
+        metrics: data,
+        timestamp: Time.current.to_i
+      }
+    rescue => e
+      render json: {success: false, error: e.message}, status: :unprocessable_entity
+    end
+
     def show
       @category = params[:category].to_sym
       @report_key = params[:report].to_sym

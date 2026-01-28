@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-01-28
+
+### Added
+
+- **Live Monitoring Panel** on the main dashboard with real-time metrics:
+  - Connections (active/idle/total, % of max_connections)
+  - TPS (transactions per second, calculated from pg_stat_database)
+  - Cache Hit Ratio (heap blocks from cache)
+  - Long Running Queries (count of queries > 60s)
+  - Blocked Processes (waiting for locks)
+- SVG sparkline charts showing 2.5 minutes of history (30 data points)
+- Color-coded status indicators (green/yellow/red) based on thresholds
+- Pause/resume button for live monitoring (state saved to localStorage)
+- Auto-refresh every 5 seconds
+- Responsive grid layout for metric cards
+- New `/live_metrics` API endpoint
+
+### Changed
+
+- Dashboard now shows live monitoring panel above the categories grid
+
 ## [0.2.3] - 2026-01-28
 
 ### Added

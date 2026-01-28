@@ -3,6 +3,8 @@
 PgReports::Engine.routes.draw do
   root to: "dashboard#index"
 
+  get "live_metrics", to: "dashboard#live_metrics", as: :live_metrics
+
   post "enable_pg_stat_statements", to: "dashboard#enable_pg_stat_statements", as: :enable_pg_stat_statements
   post "reset_statistics", to: "dashboard#reset_statistics", as: :reset_statistics
   post "explain_analyze", to: "dashboard#explain_analyze", as: :explain_analyze
