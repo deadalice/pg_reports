@@ -1,0 +1,310 @@
+en:
+  pg_reports:
+    documentation:
+      # === QUERIES ===
+      slow_queries:
+        title: "Slow Queries"
+        what: "Queries with high mean execution time."
+        how: "Data is collected from pg_stat_statements — a PostgreSQL extension that tracks execution statistics for all SQL queries. Mean time is calculated as total_time / calls."
+        nuances:
+          - "PostgreSQL planner may NOT use indexes for small tables (< 10-50K rows) if sequential scan is faster — this is normal behavior."
+          - "High mean time can be caused by: missing index, suboptimal plan, locks, disk I/O load."
+          - "For composite indexes, column order matters — index (a, b) is effective for WHERE a = ? and WHERE a = ? AND b = ?, but not for WHERE b = ?."
+          - "Queries with LIKE '%pattern%' cannot use B-tree indexes — consider pg_trgm or full-text search."
+
+      heavy_queries:
+        title: "Heavy Queries"
+        what: "Most frequently called queries (by number of calls)."
+        how: "Counts the calls field from pg_stat_statements. High call count increases overall database load, even if each individual query is fast."
+        nuances:
+          - "Frequent queries are prime candidates for application-level caching (Redis, Memcached)."
+          - "N+1 problem: if you see many similar queries with different IDs — this is a sign of N+1, need eager loading."
+          - "Consider batch operations instead of multiple single queries."
+          - "Prepared statements can reduce parsing overhead for frequent queries."
+
+      expensive_queries:
+        title: "Expensive Queries"
+        what: "Queries consuming the most total time (total_time = mean_time × calls)."
+        how: "Sorting by total_time shows queries with the greatest impact on overall database performance."
+        nuances:
+          - "A query can be fast but called so often that it takes a lot of time in total."
+          - "Optimizing expensive queries has the greatest effect on overall system performance."
+          - "Consider: adding indexes, rewriting the query, caching results, materialized views."
+
+      missing_index_queries:
+        title: "Missing Index Queries"
+        what: "Queries performing sequential scans on large tables instead of using indexes."
+        how: "Analyzes seq_scan and seq_tup_read counts for tables affected by queries. High number of rows read during seq_scan indicates potential need for an index."
+        nuances:
+          - "Sequential scan is NORMAL for: small tables, queries returning >5-10% of data, tables without suitable columns for indexing."
+          - "Composite index (a, b, c) covers: WHERE a, WHERE a AND b, WHERE a AND b AND c, but does NOT cover WHERE b or WHERE c."
+          - "EXPLAIN ANALYZE will show the actual query execution plan."
+          - "Partial indexes (CREATE INDEX ... WHERE condition) save space and speed up specific queries."
+
+      low_cache_hit_queries:
+        title: "Low Cache Hit Queries"
+        what: "Queries with low cache hit ratio (shared_buffers)."
+        how: "Calculated as shared_blks_hit / (shared_blks_hit + shared_blks_read). Low cache hit ratio means frequent disk reads."
+        nuances:
+          - "Target cache hit ratio: >95% for active data."
+          - "Low cache hit may indicate: insufficient shared_buffers, tables too large, inefficient queries scanning too much data."
+          - "Increasing shared_buffers helps, but there's a limit to effectiveness (typically 25% of RAM)."
+          - "Covering indexes (INCLUDE) allow index-only scans without accessing the table."
+
+      all_queries:
+        title: "All Queries"
+        what: "Complete statistics for all queries from pg_stat_statements."
+        how: "Displays all tracked queries with their metrics: calls, total_time, mean_time, rows, etc."
+        nuances:
+          - "pg_stat_statements normalizes queries by replacing literals with $1, $2, etc."
+          - "Statistics are reset on: PostgreSQL restart, pg_stat_statements_reset() call, reaching track_activity_query_size limit."
+          - "The pg_stat_statements.max parameter controls the maximum number of tracked queries (default 5000)."
+
+      # === INDEXES ===
+      unused_indexes:
+        title: "Unused Indexes"
+        what: "Indexes that are rarely or never used for scanning."
+        how: "Analyzes idx_scan from pg_stat_user_indexes. Indexes with zero or very low scan counts are candidates for removal."
+        nuances:
+          - "Before removal, ensure statistics were collected over a sufficient period (including all workload types: reports, batch operations)."
+          - "Indexes are still updated on INSERT/UPDATE/DELETE, even if not used for reading — this is overhead."
+          - "Unique indexes (UNIQUE) may have 0 scans but are needed for constraints."
+          - "Foreign key indexes are important for DELETE/UPDATE performance on parent tables."
+
+      duplicate_indexes:
+        title: "Duplicate Indexes"
+        what: "Indexes that duplicate other indexes (one is a prefix of another)."
+        how: "Compares index definitions. Index (a) is redundant when (a, b) exists. Also detects full duplicates."
+        nuances:
+          - "Duplicates waste disk space and slow down INSERT/UPDATE/DELETE."
+          - "However, sometimes a 'duplicate' is needed: different index types (B-tree vs GIN), partial vs full index."
+          - "Index (a, b) does NOT fully replace (b, a) — column order is critical."
+
+      invalid_indexes:
+        title: "Invalid Indexes"
+        what: "Indexes that failed to build successfully (invalid state)."
+        how: "Checks the indisvalid flag in pg_index. False means the index won't be used by the planner."
+        nuances:
+          - "Usually appear after a failed CREATE INDEX CONCURRENTLY."
+          - "Solution: DROP INDEX and recreate."
+          - "REINDEX CONCURRENTLY can help for existing invalid indexes (PostgreSQL 12+)."
+
+      missing_indexes:
+        title: "Missing Indexes"
+        what: "Tables with high sequential scan counts that probably need indexes."
+        how: "Analyzes the ratio of seq_scan vs idx_scan and number of rows read (seq_tup_read)."
+        nuances:
+          - "Not all seq_scans are bad — for small tables it's optimal."
+          - "Analyze specific queries via pg_stat_statements to understand which columns to index."
+          - "Use EXPLAIN ANALYZE to verify if an index will be used."
+
+      index_usage:
+        title: "Index Usage"
+        what: "Index usage statistics: how many times scanned, how many rows returned."
+        how: "Data from pg_stat_user_indexes shows the effectiveness of each index."
+        nuances:
+          - "idx_scan — number of index scan operations."
+          - "idx_tup_read — rows read from the index."
+          - "idx_tup_fetch — rows fetched from table after index scan (for non-covering indexes)."
+
+      bloated_indexes:
+        title: "Bloated Indexes"
+        what: "Indexes with high bloat level due to dead tuples."
+        how: "Estimates the ratio of actual size to expected size. Bloat appears after UPDATE/DELETE operations."
+        nuances:
+          - "REINDEX or REINDEX CONCURRENTLY rebuilds the index without bloat."
+          - "Regular VACUUM keeps bloat at acceptable levels."
+          - "pg_repack allows rebuilding indexes without locks."
+          - "Bloat >30-50% — reason for action."
+
+      index_sizes:
+        title: "Index Sizes"
+        what: "Index sizes on disk."
+        how: "Shows pg_relation_size for each index."
+        nuances:
+          - "Large indexes require more memory for effective caching."
+          - "Partial indexes can significantly reduce size: CREATE INDEX ... WHERE active = true."
+          - "BRIN indexes are much more compact than B-tree for certain data patterns (e.g., timestamp columns)."
+
+      # === TABLES ===
+      table_sizes:
+        title: "Table Sizes"
+        what: "Table sizes on disk (data + TOAST + indexes)."
+        how: "Uses pg_total_relation_size for complete size including all related objects."
+        nuances:
+          - "TOAST stores large values (>2KB) in a separate table."
+          - "Partitioning helps manage large tables."
+          - "Regular VACUUM FULL can reduce size, but locks the table."
+
+      bloated_tables:
+        title: "Bloated Tables"
+        what: "Tables with high dead tuple percentage."
+        how: "Analyzes n_dead_tup from pg_stat_user_tables. Dead tuples appear after UPDATE/DELETE."
+        nuances:
+          - "VACUUM removes dead tuples and frees space for reuse."
+          - "VACUUM FULL physically reduces file size, but locks the table."
+          - "autovacuum should handle this automatically — check its settings if you see high bloat."
+          - "Dead tuple ratio >20% — signal of vacuum problems."
+
+      vacuum_needed:
+        title: "Vacuum Needed"
+        what: "Tables that need VACUUM based on dead tuple statistics and last vacuum time."
+        how: "Combines data about dead tuples, last vacuum, and table size."
+        nuances:
+          - "last_vacuum and last_autovacuum show when vacuum last ran."
+          - "If autovacuum can't keep up, you can: lower autovacuum_vacuum_threshold, increase autovacuum_vacuum_scale_factor, add workers."
+          - "For critical tables, you can set individual parameters: ALTER TABLE SET (autovacuum_vacuum_threshold = 1000)."
+
+      row_counts:
+        title: "Row Counts"
+        what: "Approximate row counts in tables."
+        how: "Uses n_live_tup from pg_stat_user_tables (updated by ANALYZE) or reltuples from pg_class."
+        nuances:
+          - "This is an approximate estimate, exact COUNT(*) may differ."
+          - "ANALYZE updates statistics, autovacuum runs it automatically."
+          - "For exact count use SELECT COUNT(*), but this can be slow on large tables."
+
+      cache_hit_ratios:
+        title: "Cache Hit Ratios"
+        what: "Cache hit ratio (shared buffers) for each table."
+        how: "Calculated as heap_blks_hit / (heap_blks_hit + heap_blks_read)."
+        nuances:
+          - "Target value: >95% for actively used tables."
+          - "Low cache hit: table too large for cache or rarely used."
+          - "Solutions: increase shared_buffers, optimize queries, add indexes to reduce scanned data."
+
+      seq_scans:
+        title: "Sequential Scans"
+        what: "Tables with high sequential scan operation count."
+        how: "Data from pg_stat_user_tables shows seq_scan vs idx_scan."
+        nuances:
+          - "seq_scan is not always bad — for small tables it's optimal."
+          - "seq_tup_read shows how many rows were read — this is more important than scan count."
+          - "High seq_tup_read/seq_scan = many rows per scan = probably normal."
+          - "Low seq_tup_read/seq_scan = many small scans = possibly N+1."
+
+      recently_modified:
+        title: "Recently Modified"
+        what: "Tables with recent INSERT/UPDATE/DELETE activity."
+        how: "Analyzes n_tup_ins, n_tup_upd, n_tup_del from pg_stat_user_tables."
+        nuances:
+          - "Helps understand write patterns to the database."
+          - "High UPDATE activity creates dead tuples — monitor vacuum."
+          - "HOT updates (Heap Only Tuple) are more efficient — indexes are not updated."
+
+      # === CONNECTIONS ===
+      active_connections:
+        title: "Active Connections"
+        what: "Current database connections."
+        how: "Data from pg_stat_activity shows all active backend processes."
+        nuances:
+          - "Each connection consumes memory (~10MB per connection)."
+          - "max_connections limits the total number — don't set it too high."
+          - "Use a connection pooler (PgBouncer, pgpool-II) for scaling."
+          - "state: active = executing query, idle = waiting, idle in transaction = dangerous."
+
+      connection_stats:
+        title: "Connection Stats"
+        what: "Connection statistics grouped by state."
+        how: "Aggregation of pg_stat_activity by state field."
+        nuances:
+          - "idle in transaction: transaction open but not active — blocks VACUUM, holds locks."
+          - "idle in transaction (aborted): error in transaction, waiting for ROLLBACK."
+          - "Configure idle_in_transaction_session_timeout for automatic termination."
+
+      long_running_queries:
+        title: "Long Running Queries"
+        what: "Queries running longer than the specified threshold."
+        how: "Filters pg_stat_activity by duration = now() - query_start."
+        nuances:
+          - "Long queries can hold locks and interfere with other processes."
+          - "statement_timeout can automatically terminate queries running too long."
+          - "For reports/analytics, use a read replica or configure a separate connection pool."
+
+      blocking_queries:
+        title: "Blocking Queries"
+        what: "Queries blocking other queries from executing."
+        how: "Analyzes pg_locks to find lock chains."
+        nuances:
+          - "Locks are a normal part of operation, but long locks are problematic."
+          - "Common causes: long transactions, missing indexes on UPDATE/DELETE with FK."
+          - "pg_cancel_backend(pid) cancels query, pg_terminate_backend(pid) terminates connection."
+          - "Consider optimistic locking at the application level."
+
+      locks:
+        title: "Locks"
+        what: "Current database locks."
+        how: "Data from pg_locks shows all active locks of all types."
+        nuances:
+          - "Types: AccessShare (SELECT), RowShare (SELECT FOR UPDATE), RowExclusive (INSERT/UPDATE/DELETE), AccessExclusive (ALTER TABLE, DROP)."
+          - "granted = false means the query is waiting for a lock."
+          - "deadlock_timeout controls how long before PostgreSQL checks for deadlock."
+
+      idle_connections:
+        title: "Idle Connections"
+        what: "Connections in idle state (not executing queries)."
+        how: "Filters pg_stat_activity by state = 'idle'."
+        nuances:
+          - "A moderate number of idle connections is normal for connection pooling."
+          - "Too many idle = application not closing connections or pool is too large."
+          - "idle_session_timeout (PostgreSQL 14+) can automatically close idle connections."
+
+      # === SYSTEM ===
+      database_sizes:
+        title: "Database Sizes"
+        what: "Sizes of all databases on the server."
+        how: "Uses pg_database_size() for each database."
+        nuances:
+          - "Size includes all tables, indexes, TOAST, and temporary objects."
+          - "Physically deleting data doesn't immediately reduce size — VACUUM FULL is needed."
+          - "Monitor growth for disk space planning."
+
+      settings:
+        title: "PostgreSQL Settings"
+        what: "Current PostgreSQL configuration settings."
+        how: "Reads pg_settings to show runtime configuration."
+        nuances:
+          - "Some parameters require restart (context = 'postmaster')."
+          - "Check source — where the value came from (default, configuration file, override)."
+          - "Use ALTER SYSTEM for permanent changes."
+
+      extensions:
+        title: "Extensions"
+        what: "Installed PostgreSQL extensions."
+        how: "List from pg_extension."
+        nuances:
+          - "pg_stat_statements — must have for performance monitoring."
+          - "pg_trgm — for LIKE '%pattern%' queries."
+          - "btree_gin/btree_gist — for combined GIN/GiST indexes."
+          - "Check version compatibility when upgrading PostgreSQL."
+
+      activity_overview:
+        title: "Activity Overview"
+        what: "Overall summary of current database activity."
+        how: "Aggregation of pg_stat_activity: active/idle/waiting queries, transactions."
+        nuances:
+          - "Useful for quick assessment of database state."
+          - "Compare with baseline to identify anomalies."
+
+      cache_stats:
+        title: "Cache Stats"
+        what: "Database caching statistics."
+        how: "Data from pg_stat_database shows blks_read vs blks_hit."
+        nuances:
+          - "Cache hit ratio = blks_hit / (blks_hit + blks_read)."
+          - "Target value: >99% for OLTP, >95% for mixed workload."
+          - "Low cache hit: increase shared_buffers (up to 25% RAM), or the problem is in queries."
+
+    # Problem explanations for highlighting
+    problems:
+      high_mean_time: "High mean execution time. Consider adding indexes or optimizing the query."
+      high_calls: "Very frequent calls. Consider caching or batch operations."
+      high_total_time: "Query consumes a lot of total time. Priority for optimization."
+      low_cache_hit: "Low cache hit ratio. Query frequently reads from disk instead of cache."
+      high_seq_scan: "Many sequential scans. Possibly missing an index."
+      unused_index: "Index is not used. Candidate for removal."
+      high_bloat: "High bloat. REINDEX or VACUUM required."
+      many_dead_tuples: "Many dead tuples. VACUUM required."
+      long_running: "Long-running query. May block other operations."
+      blocking: "Blocking other queries. Requires attention."
+      idle_in_transaction: "Open transaction without activity. Blocks VACUUM and holds locks."

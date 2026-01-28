@@ -4,6 +4,144 @@ module PgReports
   module Dashboard
     # Registry of all available reports for the dashboard
     module ReportsRegistry
+      # Thresholds and problem field configuration for each report
+      # Text documentation is stored in I18n locale files (config/locales/*.yml)
+      REPORT_CONFIG = {
+        # === QUERIES ===
+        slow_queries: {
+          thresholds: {mean_time_ms: {warning: 100, critical: 500}},
+          problem_fields: ["mean_time_ms"]
+        },
+        heavy_queries: {
+          thresholds: {calls: {warning: 10000, critical: 100000}},
+          problem_fields: ["calls"]
+        },
+        expensive_queries: {
+          thresholds: {total_time_ms: {warning: 60000, critical: 300000}},
+          problem_fields: ["total_time_ms"]
+        },
+        missing_index_queries: {
+          thresholds: {seq_tup_read: {warning: 100000, critical: 1000000}},
+          problem_fields: ["seq_tup_read", "seq_scan"]
+        },
+        low_cache_hit_queries: {
+          thresholds: {cache_hit_ratio: {warning: 0.95, critical: 0.80, inverted: true}},
+          problem_fields: ["cache_hit_ratio"]
+        },
+        all_queries: {
+          thresholds: {},
+          problem_fields: []
+        },
+
+        # === INDEXES ===
+        unused_indexes: {
+          thresholds: {idx_scan: {warning: 10, critical: 0, inverted: true}},
+          problem_fields: ["idx_scan"]
+        },
+        duplicate_indexes: {
+          thresholds: {},
+          problem_fields: []
+        },
+        invalid_indexes: {
+          thresholds: {},
+          problem_fields: []
+        },
+        missing_indexes: {
+          thresholds: {seq_scan_ratio: {warning: 0.5, critical: 0.9}},
+          problem_fields: ["seq_scan", "seq_tup_read"]
+        },
+        index_usage: {
+          thresholds: {},
+          problem_fields: []
+        },
+        bloated_indexes: {
+          thresholds: {bloat_ratio: {warning: 0.3, critical: 0.5}},
+          problem_fields: ["bloat_ratio", "bloat_size"]
+        },
+        index_sizes: {
+          thresholds: {size_bytes: {warning: 1073741824, critical: 10737418240}},
+          problem_fields: ["size_bytes"]
+        },
+
+        # === TABLES ===
+        table_sizes: {
+          thresholds: {total_size_bytes: {warning: 10737418240, critical: 107374182400}},
+          problem_fields: ["total_size_bytes"]
+        },
+        bloated_tables: {
+          thresholds: {dead_tuple_ratio: {warning: 0.1, critical: 0.2}},
+          problem_fields: ["dead_tuple_ratio", "n_dead_tup"]
+        },
+        vacuum_needed: {
+          thresholds: {n_dead_tup: {warning: 10000, critical: 100000}},
+          problem_fields: ["n_dead_tup"]
+        },
+        row_counts: {
+          thresholds: {},
+          problem_fields: []
+        },
+        cache_hit_ratios: {
+          thresholds: {cache_hit_ratio: {warning: 0.95, critical: 0.80, inverted: true}},
+          problem_fields: ["cache_hit_ratio"]
+        },
+        seq_scans: {
+          thresholds: {seq_scan: {warning: 1000, critical: 10000}},
+          problem_fields: ["seq_scan", "seq_tup_read"]
+        },
+        recently_modified: {
+          thresholds: {},
+          problem_fields: []
+        },
+
+        # === CONNECTIONS ===
+        active_connections: {
+          thresholds: {connection_count: {warning: 50, critical: 100}},
+          problem_fields: ["connection_count"]
+        },
+        connection_stats: {
+          thresholds: {idle_in_transaction: {warning: 5, critical: 20}},
+          problem_fields: ["idle_in_transaction"]
+        },
+        long_running_queries: {
+          thresholds: {duration_seconds: {warning: 60, critical: 300}},
+          problem_fields: ["duration_seconds", "duration"]
+        },
+        blocking_queries: {
+          thresholds: {blocked_count: {warning: 1, critical: 5}},
+          problem_fields: ["blocked_count"]
+        },
+        locks: {
+          thresholds: {waiting_locks: {warning: 5, critical: 20}},
+          problem_fields: ["waiting_locks"]
+        },
+        idle_connections: {
+          thresholds: {idle_count: {warning: 30, critical: 80}},
+          problem_fields: ["idle_count"]
+        },
+
+        # === SYSTEM ===
+        database_sizes: {
+          thresholds: {size_bytes: {warning: 10737418240, critical: 107374182400}},
+          problem_fields: ["size_bytes"]
+        },
+        settings: {
+          thresholds: {},
+          problem_fields: []
+        },
+        extensions: {
+          thresholds: {},
+          problem_fields: []
+        },
+        activity_overview: {
+          thresholds: {},
+          problem_fields: []
+        },
+        cache_stats: {
+          thresholds: {cache_hit_ratio: {warning: 0.95, critical: 0.90, inverted: true}},
+          problem_fields: ["cache_hit_ratio"]
+        }
+      }.freeze
+
       REPORTS = {
         queries: {
           name: "Queries",
@@ -83,6 +221,38 @@ module PgReports
 
       def self.category(category)
         REPORTS[category.to_sym]
+      end
+
+      # Returns full documentation for a report including I18n translations
+      def self.documentation(report)
+        report_key = report.to_sym
+        config = REPORT_CONFIG[report_key] || {thresholds: {}, problem_fields: []}
+
+        # Get translations from I18n
+        i18n_key = "pg_reports.documentation.#{report_key}"
+        {
+          title: I18n.t("#{i18n_key}.title", default: report.to_s.titleize),
+          what: I18n.t("#{i18n_key}.what", default: ""),
+          how: I18n.t("#{i18n_key}.how", default: ""),
+          nuances: I18n.t("#{i18n_key}.nuances", default: []),
+          thresholds: config[:thresholds],
+          problem_fields: config[:problem_fields]
+        }
+      end
+
+      # Returns the problem explanation for a given problem type
+      def self.problem_explanation(problem_key)
+        I18n.t("pg_reports.problems.#{problem_key}", default: "")
+      end
+
+      # Returns thresholds for a report
+      def self.thresholds(report)
+        REPORT_CONFIG.dig(report.to_sym, :thresholds) || {}
+      end
+
+      # Returns problem fields for a report
+      def self.problem_fields(report)
+        REPORT_CONFIG.dig(report.to_sym, :problem_fields) || []
       end
     end
   end

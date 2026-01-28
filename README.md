@@ -15,9 +15,13 @@ A comprehensive PostgreSQL monitoring and analysis library for Rails application
 - 📋 **Table Statistics** - Monitor table sizes, bloat, vacuum needs, and cache hit ratios
 - 🔌 **Connection Monitoring** - Track active connections, locks, and blocking queries
 - 🖥️ **System Overview** - Database sizes, PostgreSQL settings, installed extensions
-- 🌐 **Web Dashboard** - Beautiful dark-themed UI with expandable rows
+- 🌐 **Web Dashboard** - Beautiful dark-themed UI with sortable tables and expandable rows
 - 📨 **Telegram Integration** - Send reports directly to Telegram
 - 📥 **Export** - Download reports in TXT, CSV, or JSON format
+- 🔗 **IDE Integration** - Open source locations in VS Code, Cursor, RubyMine, or IntelliJ (with WSL support)
+- 📌 **Comparison Mode** - Save records to compare before/after optimization
+- 📊 **EXPLAIN ANALYZE** - Run query plans directly from the dashboard
+- 🗑️ **Migration Generator** - Generate Rails migrations to drop unused indexes
 
 ## Installation
 
@@ -261,13 +265,61 @@ report.select { |row| row["calls"] > 100 }
 
 The dashboard provides:
 
-- 📊 Overview of all report categories
+- 📊 Overview of all report categories with descriptions
 - ⚡ One-click report execution
 - 🔍 Expandable rows for full query text
 - 📋 Copy query to clipboard
-- 📥 Download in multiple formats
+- 📥 Download in multiple formats (TXT, CSV, JSON)
 - 📨 Send to Telegram
 - 🔧 pg_stat_statements management
+- 🔄 Sortable columns - click headers to sort ascending/descending
+- 📌 Save records for comparison - track before/after optimization results
+- 📊 EXPLAIN ANALYZE - run query plans directly from the dashboard
+- 🗑️ Migration generator - create Rails migrations to drop unused indexes
+- 🔗 IDE integration - click source locations to open in your IDE
+
+### IDE Integration
+
+Click on source locations in reports to open the file directly in your IDE. Supported IDEs:
+
+- **VS Code (WSL)** - for Windows Subsystem for Linux
+- **VS Code** - direct path for native Linux/macOS
+- **RubyMine**
+- **IntelliJ IDEA**
+- **Cursor (WSL)** - for Windows Subsystem for Linux
+- **Cursor**
+
+Use the ⚙️ button to set your default IDE and skip the selection menu.
+
+### Save Records for Comparison
+
+When optimizing queries, you can save records to compare before/after results:
+
+1. Expand a row and click "📌 Save for Comparison"
+2. Saved records appear above the results table
+3. Click saved records to expand and see all details
+4. Clear all or remove individual saved records
+
+Records are stored in browser localStorage per report type.
+
+### EXPLAIN ANALYZE
+
+For query reports, you can run EXPLAIN ANALYZE directly:
+
+1. Expand a row with a query
+2. Click "📊 EXPLAIN ANALYZE"
+3. View the execution plan with timing statistics
+
+> Note: Queries with parameter placeholders ($1, $2) from pg_stat_statements cannot be analyzed directly. Copy the query and replace parameters with actual values.
+
+### Migration Generator
+
+For unused or invalid indexes, generate Rails migrations:
+
+1. Go to Indexes → Unused Indexes
+2. Expand a row and click "🗑️ Generate Migration"
+3. Copy the code or create the file directly
+4. The file opens automatically in your configured IDE
 
 ### Authentication
 

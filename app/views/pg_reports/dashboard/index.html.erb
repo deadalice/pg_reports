@@ -105,12 +105,18 @@ pg_stat_statements.track = all</pre>
         <% category[:reports].each do |report_key, report| %>
           <% if category_key == :queries && !@pg_stat_status[:ready] %>
             <div class="report-link disabled">
-              <span><%= report[:name] %></span>
+              <div class="report-link-info">
+                <span class="report-link-name"><%= report[:name] %></span>
+                <span class="report-link-desc"><%= report[:description] %></span>
+              </div>
               <span class="lock">🔒</span>
             </div>
           <% else %>
             <%= link_to report_path(category: category_key, report: report_key), class: "report-link" do %>
-              <span><%= report[:name] %></span>
+              <div class="report-link-info">
+                <span class="report-link-name"><%= report[:name] %></span>
+                <span class="report-link-desc"><%= report[:description] %></span>
+              </div>
               <span class="arrow">→</span>
             <% end %>
           <% end %>
@@ -214,6 +220,31 @@ pg_stat_statements.track = all</pre>
   .report-link .lock {
     font-size: 0.75rem;
     opacity: 0.5;
+  }
+
+  .report-link-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .report-link-name {
+    font-weight: 500;
+    color: inherit;
+  }
+
+  .report-link-desc {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .report-link:hover .report-link-desc {
+    color: var(--text-secondary);
   }
 
   /* Modal */
