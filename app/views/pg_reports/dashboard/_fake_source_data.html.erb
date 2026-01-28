@@ -1,0 +1,43 @@
+<%# Fake source data for IDE link testing - enable via PG_REPORTS_FAKE_SOURCE_DATA=true %>
+<script>
+  // Known controller methods with line numbers (for IDE link testing)
+  const knownControllerMethods = {
+    'PostsController#show': { file: 'app/controllers/posts_controller.rb', line: 33 },
+    'PostsController#index': { file: 'app/controllers/posts_controller.rb', line: 19 },
+    'PostsController#create': { file: 'app/controllers/posts_controller.rb', line: 43 },
+    'PostsController#update': { file: 'app/controllers/posts_controller.rb', line: 62 },
+    'PostsController#destroy': { file: 'app/controllers/posts_controller.rb', line: 76 }
+  };
+
+  // Fake source values for testing IDE links
+  const fakeSourceValues = [
+    'PostsController#show',
+    'PostsController#index',
+    'PostsController#create',
+    'PostsController#update',
+    'PostsController#destroy',
+    'app/controllers/posts_controller.rb:33',
+    'app/controllers/posts_controller.rb:19',
+    'app/models/post.rb:45:in `find_by_slug`'
+  ];
+
+  // Inject fake source values into data for testing
+  function injectFakeSourceData(data) {
+    if (!data.data || data.data.length === 0) return;
+
+    // Add 'source' column if not present
+    if (!data.columns.includes('source')) {
+      data.columns.push('source');
+    }
+
+    // Inject fake source values
+    data.data.forEach((row, idx) => {
+      if (!row.source || row.source === '' || row.source === null) {
+        row.source = fakeSourceValues[idx % fakeSourceValues.length];
+      }
+    });
+  }
+
+  // Flag to indicate fake source data is enabled
+  window.PG_REPORTS_FAKE_SOURCE_DATA = true;
+</script>
