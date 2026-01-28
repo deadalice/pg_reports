@@ -1,0 +1,310 @@
+ru:
+  pg_reports:
+    documentation:
+      # === QUERIES ===
+      slow_queries:
+        title: "Slow Queries"
+        what: "Запросы с высоким средним временем выполнения (mean_time)."
+        how: "Данные собираются из pg_stat_statements — расширения PostgreSQL, которое отслеживает статистику выполнения всех SQL-запросов. Среднее время рассчитывается как total_time / calls."
+        nuances:
+          - "Планировщик PostgreSQL может НЕ использовать индексы для небольших таблиц (< 10-50 тыс. строк), если sequential scan быстрее — это нормальное поведение."
+          - "Высокое среднее время может быть вызвано: отсутствием индекса, неоптимальным планом, блокировками, нагрузкой на диск."
+          - "Для комплексных индексов важен порядок колонок — индекс (a, b) эффективен для WHERE a = ? и WHERE a = ? AND b = ?, но не для WHERE b = ?."
+          - "Запросы с LIKE '%pattern%' не могут использовать B-tree индексы — рассмотрите pg_trgm или полнотекстовый поиск."
+
+      heavy_queries:
+        title: "Heavy Queries"
+        what: "Наиболее часто вызываемые запросы (по количеству вызовов)."
+        how: "Подсчитывается поле calls из pg_stat_statements. Высокое число вызовов увеличивает общую нагрузку на базу, даже если каждый отдельный запрос быстрый."
+        nuances:
+          - "Частые запросы — первые кандидаты на кэширование на уровне приложения (Redis, Memcached)."
+          - "N+1 проблема: если видите много похожих запросов с разными ID — это признак N+1, нужен eager loading."
+          - "Рассмотрите batch-операции вместо множества одиночных запросов."
+          - "Prepared statements могут снизить накладные расходы на парсинг для частых запросов."
+
+      expensive_queries:
+        title: "Expensive Queries"
+        what: "Запросы, потребляющие наибольшее суммарное время (total_time = mean_time × calls)."
+        how: "Сортировка по total_time показывает запросы с наибольшим влиянием на производительность базы в целом."
+        nuances:
+          - "Запрос может быть быстрым, но вызываться так часто, что суммарно занимает много времени."
+          - "Оптимизация expensive queries даёт наибольший эффект для общей производительности системы."
+          - "Рассмотрите: добавление индексов, переписывание запроса, кэширование результатов, материализованные представления."
+
+      missing_index_queries:
+        title: "Missing Index Queries"
+        what: "Запросы, выполняющие sequential scan на больших таблицах вместо использования индексов."
+        how: "Анализируется количество seq_scan и seq_tup_read для таблиц, затронутых запросами. Большое число прочитанных строк при seq_scan указывает на потенциальную необходимость индекса."
+        nuances:
+          - "Sequential scan НОРМАЛЕН для: маленьких таблиц, запросов возвращающих >5-10% данных, таблиц без подходящих колонок для индексации."
+          - "Комплексный индекс (a, b, c) покрывает: WHERE a, WHERE a AND b, WHERE a AND b AND c, но НЕ покрывает WHERE b или WHERE c."
+          - "EXPLAIN ANALYZE покажет реальный план выполнения запроса."
+          - "Partial indexes (CREATE INDEX ... WHERE condition) экономят место и ускоряют специфичные запросы."
+
+      low_cache_hit_queries:
+        title: "Low Cache Hit Queries"
+        what: "Запросы с низким процентом попадания в кэш (shared_buffers)."
+        how: "Рассчитывается как shared_blks_hit / (shared_blks_hit + shared_blks_read). Низкий cache hit ratio означает частое чтение с диска."
+        nuances:
+          - "Целевой cache hit ratio: >95% для активных данных."
+          - "Низкий cache hit может указывать на: недостаточный shared_buffers, слишком большие таблицы, неэффективные запросы сканирующие много данных."
+          - "Увеличение shared_buffers помогает, но есть предел эффективности (обычно 25% RAM)."
+          - "Covering indexes (INCLUDE) позволяют выполнять index-only scan без обращения к таблице."
+
+      all_queries:
+        title: "All Queries"
+        what: "Полная статистика по всем запросам из pg_stat_statements."
+        how: "Отображает все отслеживаемые запросы с их метриками: calls, total_time, mean_time, rows и т.д."
+        nuances:
+          - "pg_stat_statements нормализует запросы, заменяя литералы на $1, $2 и т.д."
+          - "Статистика сбрасывается при: перезапуске PostgreSQL, вызове pg_stat_statements_reset(), достижении лимита track_activity_query_size."
+          - "Параметр pg_stat_statements.max контролирует максимальное число отслеживаемых запросов (по умолчанию 5000)."
+
+      # === INDEXES ===
+      unused_indexes:
+        title: "Unused Indexes"
+        what: "Индексы, которые редко или никогда не используются для сканирования."
+        how: "Анализируется idx_scan из pg_stat_user_indexes. Индексы с нулевым или очень низким числом сканирований — кандидаты на удаление."
+        nuances:
+          - "Перед удалением убедитесь, что статистика собрана за достаточный период (включая все типы нагрузки: отчёты, batch-операции)."
+          - "Индексы всё равно обновляются при INSERT/UPDATE/DELETE, даже если не используются для чтения — это overhead."
+          - "Уникальные индексы (UNIQUE) могут иметь 0 сканирований, но нужны для constraint."
+          - "Foreign key индексы важны для производительности DELETE/UPDATE родительских таблиц."
+
+      duplicate_indexes:
+        title: "Duplicate Indexes"
+        what: "Индексы, которые дублируют другие индексы (один является префиксом другого)."
+        how: "Сравниваются определения индексов. Индекс (a) избыточен при наличии (a, b). Также выявляются полные дубликаты."
+        nuances:
+          - "Дубликаты тратят дисковое пространство и замедляют INSERT/UPDATE/DELETE."
+          - "Однако иногда 'дубликат' нужен: разные типы индексов (B-tree vs GIN), partial index vs full index."
+          - "Индекс (a, b) НЕ полностью заменяет (b, a) — порядок колонок критичен."
+
+      invalid_indexes:
+        title: "Invalid Indexes"
+        what: "Индексы, создание которых не завершилось успешно (invalid state)."
+        how: "Проверяется флаг indisvalid в pg_index. False означает, что индекс не будет использоваться планировщиком."
+        nuances:
+          - "Обычно появляются после неудачного CREATE INDEX CONCURRENTLY."
+          - "Решение: DROP INDEX и повторное создание."
+          - "REINDEX CONCURRENTLY может помочь для существующих невалидных индексов (PostgreSQL 12+)."
+
+      missing_indexes:
+        title: "Missing Indexes"
+        what: "Таблицы с высоким числом sequential scan, которым, вероятно, не хватает индексов."
+        how: "Анализируется соотношение seq_scan vs idx_scan и количество прочитанных строк (seq_tup_read)."
+        nuances:
+          - "Не все seq_scan плохи — для маленьких таблиц это оптимально."
+          - "Анализируйте конкретные запросы через pg_stat_statements, чтобы понять какие колонки индексировать."
+          - "Используйте EXPLAIN ANALYZE для проверки, будет ли индекс использоваться."
+
+      index_usage:
+        title: "Index Usage"
+        what: "Статистика использования индексов: сколько раз сканировались, сколько строк возвращали."
+        how: "Данные из pg_stat_user_indexes показывают эффективность каждого индекса."
+        nuances:
+          - "idx_scan — количество index scan операций."
+          - "idx_tup_read — строки прочитанные из индекса."
+          - "idx_tup_fetch — строки извлечённые из таблицы после index scan (для non-covering indexes)."
+
+      bloated_indexes:
+        title: "Bloated Indexes"
+        what: "Индексы с высоким уровнем bloat (раздувания) из-за мёртвых кортежей."
+        how: "Оценивается отношение реального размера к ожидаемому. Bloat появляется после UPDATE/DELETE операций."
+        nuances:
+          - "REINDEX или REINDEX CONCURRENTLY пересоздаёт индекс без bloat."
+          - "Регулярный VACUUM поддерживает bloat на приемлемом уровне."
+          - "pg_repack позволяет перестроить индексы без блокировок."
+          - "Bloat >30-50% — повод для действий."
+
+      index_sizes:
+        title: "Index Sizes"
+        what: "Размеры индексов на диске."
+        how: "Показывает pg_relation_size для каждого индекса."
+        nuances:
+          - "Большие индексы требуют больше памяти для эффективного кэширования."
+          - "Partial indexes могут значительно уменьшить размер: CREATE INDEX ... WHERE active = true."
+          - "BRIN индексы намного компактнее B-tree для некоторых паттернов данных (например, timestamp колонки)."
+
+      # === TABLES ===
+      table_sizes:
+        title: "Table Sizes"
+        what: "Размеры таблиц на диске (данные + TOAST + индексы)."
+        how: "Использует pg_total_relation_size для полного размера включая все связанные объекты."
+        nuances:
+          - "TOAST хранит большие значения (>2KB) в отдельной таблице."
+          - "Партиционирование помогает управлять большими таблицами."
+          - "Регулярный VACUUM FULL может уменьшить размер, но блокирует таблицу."
+
+      bloated_tables:
+        title: "Bloated Tables"
+        what: "Таблицы с высоким процентом dead tuples (мёртвых строк)."
+        how: "Анализируется n_dead_tup из pg_stat_user_tables. Dead tuples появляются после UPDATE/DELETE."
+        nuances:
+          - "VACUUM удаляет dead tuples и освобождает место для повторного использования."
+          - "VACUUM FULL физически уменьшает размер файла, но блокирует таблицу."
+          - "autovacuum должен справляться автоматически — проверьте его настройки если видите много bloat."
+          - "Dead tuple ratio >20% — сигнал проблемы с vacuum."
+
+      vacuum_needed:
+        title: "Vacuum Needed"
+        what: "Таблицы, которым требуется VACUUM на основе статистики dead tuples и времени последнего vacuum."
+        how: "Комбинирует данные о dead tuples, последнем vacuum и размере таблицы."
+        nuances:
+          - "last_vacuum и last_autovacuum показывают когда последний раз запускался vacuum."
+          - "Если autovacuum не справляется, можно: снизить autovacuum_vacuum_threshold, увеличить autovacuum_vacuum_scale_factor, добавить workers."
+          - "Для критичных таблиц можно настроить индивидуальные параметры: ALTER TABLE SET (autovacuum_vacuum_threshold = 1000)."
+
+      row_counts:
+        title: "Row Counts"
+        what: "Приблизительное количество строк в таблицах."
+        how: "Использует n_live_tup из pg_stat_user_tables (обновляется ANALYZE) или reltuples из pg_class."
+        nuances:
+          - "Это приблизительная оценка, точный COUNT(*) может отличаться."
+          - "ANALYZE обновляет статистику, autovacuum запускает его автоматически."
+          - "Для точного подсчёта используйте SELECT COUNT(*), но это может быть медленно на больших таблицах."
+
+      cache_hit_ratios:
+        title: "Cache Hit Ratios"
+        what: "Процент попадания в кэш (shared buffers) для каждой таблицы."
+        how: "Рассчитывается как heap_blks_hit / (heap_blks_hit + heap_blks_read)."
+        nuances:
+          - "Целевое значение: >95% для активно используемых таблиц."
+          - "Низкий cache hit: таблица слишком большая для кэша или редко используется."
+          - "Решения: увеличить shared_buffers, оптимизировать запросы, добавить индексы для уменьшения сканируемых данных."
+
+      seq_scans:
+        title: "Sequential Scans"
+        what: "Таблицы с высоким количеством sequential scan операций."
+        how: "Данные из pg_stat_user_tables показывают seq_scan vs idx_scan."
+        nuances:
+          - "seq_scan не всегда плохо — для маленьких таблиц это оптимально."
+          - "seq_tup_read показывает сколько строк прочитано — это важнее чем количество scan."
+          - "Высокий seq_tup_read/seq_scan = много строк за один scan = возможно норма."
+          - "Низкий seq_tup_read/seq_scan = много scan маленьких объёмов = возможно N+1."
+
+      recently_modified:
+        title: "Recently Modified"
+        what: "Таблицы с недавней активностью INSERT/UPDATE/DELETE."
+        how: "Анализируются n_tup_ins, n_tup_upd, n_tup_del из pg_stat_user_tables."
+        nuances:
+          - "Помогает понять паттерны записи в базу."
+          - "Высокая активность UPDATE создаёт dead tuples — следите за vacuum."
+          - "HOT updates (Heap Only Tuple) эффективнее обычных — индексы не обновляются."
+
+      # === CONNECTIONS ===
+      active_connections:
+        title: "Active Connections"
+        what: "Текущие подключения к базе данных."
+        how: "Данные из pg_stat_activity показывают все активные backend процессы."
+        nuances:
+          - "Каждое подключение потребляет память (~10MB per connection)."
+          - "max_connections ограничивает общее число — не устанавливайте слишком высоко."
+          - "Используйте connection pooler (PgBouncer, pgpool-II) для масштабирования."
+          - "state: active = выполняет запрос, idle = ждёт, idle in transaction = опасно."
+
+      connection_stats:
+        title: "Connection Stats"
+        what: "Статистика подключений сгруппированная по состоянию (state)."
+        how: "Агрегация pg_stat_activity по полю state."
+        nuances:
+          - "idle in transaction: транзакция открыта но не активна — блокирует VACUUM, удерживает локи."
+          - "idle in transaction (aborted): ошибка в транзакции, ждёт ROLLBACK."
+          - "Настройте idle_in_transaction_session_timeout для автоматического завершения."
+
+      long_running_queries:
+        title: "Long Running Queries"
+        what: "Запросы, выполняющиеся дольше заданного порога."
+        how: "Фильтрация pg_stat_activity по duration = now() - query_start."
+        nuances:
+          - "Долгие запросы могут держать блокировки и мешать другим процессам."
+          - "statement_timeout может автоматически прерывать слишком долгие запросы."
+          - "Для отчётов/аналитики используйте read replica или настройте отдельный connection pool."
+
+      blocking_queries:
+        title: "Blocking Queries"
+        what: "Запросы, которые блокируют выполнение других запросов."
+        how: "Анализ pg_locks для поиска цепочек блокировок."
+        nuances:
+          - "Блокировки — нормальная часть работы, но долгие блокировки проблематичны."
+          - "Частые причины: длинные транзакции, отсутствующие индексы при UPDATE/DELETE по FK."
+          - "pg_cancel_backend(pid) отменяет запрос, pg_terminate_backend(pid) завершает соединение."
+          - "Рассмотрите оптимистичную блокировку на уровне приложения."
+
+      locks:
+        title: "Locks"
+        what: "Текущие блокировки в базе данных."
+        how: "Данные из pg_locks показывают все активные блокировки всех типов."
+        nuances:
+          - "Типы: AccessShare (SELECT), RowShare (SELECT FOR UPDATE), RowExclusive (INSERT/UPDATE/DELETE), AccessExclusive (ALTER TABLE, DROP)."
+          - "granted = false означает, что запрос ждёт блокировку."
+          - "deadlock_timeout контролирует через сколько PostgreSQL проверит на deadlock."
+
+      idle_connections:
+        title: "Idle Connections"
+        what: "Подключения в состоянии idle (не выполняют запросы)."
+        how: "Фильтрация pg_stat_activity по state = 'idle'."
+        nuances:
+          - "Умеренное количество idle соединений — норма для connection pooling."
+          - "Слишком много idle = приложение не закрывает соединения или пул слишком большой."
+          - "idle_session_timeout (PostgreSQL 14+) может автоматически закрывать idle соединения."
+
+      # === SYSTEM ===
+      database_sizes:
+        title: "Database Sizes"
+        what: "Размеры всех баз данных на сервере."
+        how: "Использует pg_database_size() для каждой базы."
+        nuances:
+          - "Размер включает все таблицы, индексы, TOAST и временные объекты."
+          - "Физическое удаление данных не сразу уменьшает размер — нужен VACUUM FULL."
+          - "Мониторьте рост для планирования дискового пространства."
+
+      settings:
+        title: "PostgreSQL Settings"
+        what: "Текущие настройки конфигурации PostgreSQL."
+        how: "Чтение pg_settings показывает runtime конфигурацию."
+        nuances:
+          - "Некоторые параметры требуют перезапуска (context = 'postmaster')."
+          - "Проверяйте source — откуда взято значение (default, configuration file, override)."
+          - "Используйте ALTER SYSTEM для постоянных изменений."
+
+      extensions:
+        title: "Extensions"
+        what: "Установленные расширения PostgreSQL."
+        how: "Список из pg_extension."
+        nuances:
+          - "pg_stat_statements — must have для мониторинга производительности."
+          - "pg_trgm — для LIKE '%pattern%' запросов."
+          - "btree_gin/btree_gist — для комбинированных GIN/GiST индексов."
+          - "Проверяйте совместимость версий при обновлении PostgreSQL."
+
+      activity_overview:
+        title: "Activity Overview"
+        what: "Общая сводка текущей активности базы данных."
+        how: "Агрегация pg_stat_activity: активные/idle/waiting запросы, транзакции."
+        nuances:
+          - "Полезно для быстрой оценки состояния базы."
+          - "Сравнивайте с baseline для выявления аномалий."
+
+      cache_stats:
+        title: "Cache Stats"
+        what: "Статистика кэширования базы данных."
+        how: "Данные из pg_stat_database показывают blks_read vs blks_hit."
+        nuances:
+          - "Cache hit ratio = blks_hit / (blks_hit + blks_read)."
+          - "Целевое значение: >99% для OLTP, >95% для mixed workload."
+          - "Низкий cache hit: увеличьте shared_buffers (до 25% RAM), или проблема в запросах."
+
+    # Problem explanations for highlighting
+    problems:
+      high_mean_time: "Высокое среднее время выполнения. Рассмотрите добавление индексов или оптимизацию запроса."
+      high_calls: "Очень частые вызовы. Рассмотрите кэширование или batch-операции."
+      high_total_time: "Запрос потребляет много общего времени. Приоритет для оптимизации."
+      low_cache_hit: "Низкий cache hit ratio. Запрос часто читает с диска вместо кэша."
+      high_seq_scan: "Много sequential scan. Возможно не хватает индекса."
+      unused_index: "Индекс не используется. Кандидат на удаление."
+      high_bloat: "Высокий bloat. Требуется REINDEX или VACUUM."
+      many_dead_tuples: "Много мёртвых строк. Требуется VACUUM."
+      long_running: "Долго выполняющийся запрос. Может блокировать другие операции."
+      blocking: "Блокирует другие запросы. Требует внимания."
+      idle_in_transaction: "Открытая транзакция без активности. Блокирует VACUUM и удерживает локи."

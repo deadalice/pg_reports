@@ -37,7 +37,53 @@
           📨 Telegram
         </button>
       <% end %>
+      <button class="btn btn-icon" onclick="showIdeSettingsModal()" title="IDE Settings">
+        ⚙️
+      </button>
       <%= link_to "← Back", root_path, class: "btn btn-secondary" %>
+    </div>
+  </div>
+
+  <!-- IDE Settings Modal -->
+  <div id="ide-settings-modal" class="modal" style="display: none;">
+    <div class="modal-content modal-small">
+      <div class="modal-header">
+        <h3>⚙️ IDE Settings</h3>
+        <button class="modal-close" onclick="closeIdeSettingsModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="settings-label">Default IDE for source links:</p>
+        <div class="ide-options">
+          <label class="ide-option">
+            <input type="radio" name="default-ide" value="" onchange="setDefaultIde('')">
+            <span>Show menu (default)</span>
+          </label>
+          <label class="ide-option">
+            <input type="radio" name="default-ide" value="vscode-wsl" onchange="setDefaultIde('vscode-wsl')">
+            <span>VS Code (WSL)</span>
+          </label>
+          <label class="ide-option">
+            <input type="radio" name="default-ide" value="vscode" onchange="setDefaultIde('vscode')">
+            <span>VS Code</span>
+          </label>
+          <label class="ide-option">
+            <input type="radio" name="default-ide" value="rubymine" onchange="setDefaultIde('rubymine')">
+            <span>RubyMine</span>
+          </label>
+          <label class="ide-option">
+            <input type="radio" name="default-ide" value="intellij" onchange="setDefaultIde('intellij')">
+            <span>IntelliJ IDEA</span>
+          </label>
+          <label class="ide-option">
+            <input type="radio" name="default-ide" value="cursor-wsl" onchange="setDefaultIde('cursor-wsl')">
+            <span>Cursor (WSL)</span>
+          </label>
+          <label class="ide-option">
+            <input type="radio" name="default-ide" value="cursor" onchange="setDefaultIde('cursor')">
+            <span>Cursor</span>
+          </label>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -46,6 +92,67 @@
       <strong>Error:</strong> <%= @error %>
     </div>
   <% end %>
+
+  <!-- Collapsible Documentation Section -->
+  <% if @documentation && @documentation[:what].present? %>
+    <details class="documentation-section">
+      <summary class="documentation-toggle">
+        <span class="toggle-icon">▶</span>
+        <span class="toggle-text">ℹ️ About this report</span>
+      </summary>
+      <div class="documentation-content">
+        <div class="doc-block">
+          <h4>What is this?</h4>
+          <p><%= @documentation[:what] %></p>
+        </div>
+
+        <% if @documentation[:how].present? %>
+          <div class="doc-block">
+            <h4>How it works</h4>
+            <p><%= @documentation[:how] %></p>
+          </div>
+        <% end %>
+
+        <% if @documentation[:nuances].present? && @documentation[:nuances].any? %>
+          <div class="doc-block">
+            <h4>Important nuances</h4>
+            <ul class="nuances-list">
+              <% @documentation[:nuances].each do |nuance| %>
+                <li><%= nuance %></li>
+              <% end %>
+            </ul>
+          </div>
+        <% end %>
+
+        <% if @thresholds.present? && @thresholds.any? %>
+          <div class="doc-block thresholds-block">
+            <h4>Thresholds</h4>
+            <div class="thresholds-grid">
+              <% @thresholds.each do |field, levels| %>
+                <div class="threshold-item">
+                  <span class="threshold-field"><%= field %></span>
+                  <span class="threshold-warning">⚠️ Warning: <%= levels[:warning] %></span>
+                  <span class="threshold-critical">🔴 Critical: <%= levels[:critical] %></span>
+                  <% if levels[:inverted] %>
+                    <span class="threshold-note">(inverted: lower is worse)</span>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </details>
+  <% end %>
+
+  <!-- Saved Records Section -->
+  <div class="saved-records-section" id="saved-records-section" style="display: none;">
+    <div class="saved-records-header">
+      <span class="saved-records-title">📌 Saved for Comparison</span>
+      <button class="btn btn-small btn-muted" onclick="clearAllSavedRecords()">Clear All</button>
+    </div>
+    <div class="saved-records-list" id="saved-records-list"></div>
+  </div>
 
   <div class="results-container" id="results-container">
     <div class="results-header">
@@ -64,16 +171,193 @@
       <p>No issues found. Everything looks good!</p>
     </div>
 
-    <div class="results-table-wrapper">
+    <div class="top-scroll-wrapper" id="top-scroll-wrapper" style="display: none;">
+      <div class="top-scroll-content" id="top-scroll-content"></div>
+    </div>
+    <div class="results-table-wrapper" id="results-table-wrapper">
       <table class="results-table" id="results-table">
         <thead id="results-head"></thead>
         <tbody id="results-body"></tbody>
       </table>
     </div>
   </div>
+
+  <!-- Problem Explanation Modal -->
+  <div id="problem-modal" class="problem-modal" style="display: none;">
+    <div class="problem-modal-content">
+      <div class="problem-modal-header">
+        <h3>⚠️ Problem Detected</h3>
+        <button class="modal-close" onclick="closeProblemModal()">&times;</button>
+      </div>
+      <div class="problem-modal-body" id="problem-modal-body">
+        <!-- Content will be filled dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPLAIN ANALYZE Modal -->
+  <div id="explain-modal" class="modal" style="display: none;">
+    <div class="modal-content modal-wide">
+      <div class="modal-header">
+        <h3>📊 EXPLAIN ANALYZE</h3>
+        <button class="modal-close" onclick="closeExplainModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="explain-modal-body">
+        <div id="explain-loading" class="loading" style="display: none;">
+          <div class="spinner"></div>
+        </div>
+        <div id="explain-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Migration Modal -->
+  <div id="migration-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>🗑️ Drop Index Migration</h3>
+        <button class="modal-close" onclick="closeMigrationModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="migration-modal-body">
+        <p class="settings-label">Generated migration to remove the index:</p>
+        <div id="migration-code" class="migration-code"></div>
+        <div class="migration-actions">
+          <button class="btn btn-secondary" onclick="copyMigrationCode()">📋 Copy Code</button>
+          <button class="btn btn-primary" onclick="createMigrationFile()">📁 Create File & Open in IDE</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <style>
+  /* Documentation Section */
+  .documentation-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+
+  .documentation-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    user-select: none;
+    color: var(--text-secondary);
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+
+  .documentation-toggle:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  .documentation-section[open] .documentation-toggle {
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+  }
+
+  .toggle-icon {
+    font-size: 0.75rem;
+    transition: transform 0.2s;
+  }
+
+  .documentation-section[open] .toggle-icon {
+    transform: rotate(90deg);
+  }
+
+  .documentation-content {
+    padding: 1.25rem;
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .doc-block h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--accent-purple);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .doc-block p {
+    color: var(--text-secondary);
+    line-height: 1.7;
+    font-size: 0.9rem;
+  }
+
+  .nuances-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .nuances-list li {
+    position: relative;
+    padding-left: 1.5rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+
+  .nuances-list li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--accent-amber);
+  }
+
+  .thresholds-block {
+    background: var(--bg-tertiary);
+    padding: 1rem;
+    border-radius: 8px;
+  }
+
+  .thresholds-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .threshold-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .threshold-field {
+    color: var(--text-primary);
+    font-weight: 500;
+    min-width: 120px;
+  }
+
+  .threshold-warning {
+    color: var(--accent-amber);
+  }
+
+  .threshold-critical {
+    color: var(--accent-rose);
+  }
+
+  .threshold-note {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-style: italic;
+  }
+
+  /* Dropdown */
   .dropdown {
     position: relative;
     display: inline-block;
@@ -141,6 +425,149 @@
   .results-table tbody tr.data-row.expanded td:first-child::before {
     content: '▾';
     color: var(--accent-purple);
+  }
+
+  /* Problem row highlighting */
+  .results-table tbody tr.data-row.warning-row {
+    background: rgba(245, 158, 11, 0.08);
+    border-left: 3px solid var(--accent-amber);
+  }
+
+  .results-table tbody tr.data-row.warning-row:hover {
+    background: rgba(245, 158, 11, 0.12);
+  }
+
+  .results-table tbody tr.data-row.critical-row {
+    background: rgba(244, 63, 94, 0.08);
+    border-left: 3px solid var(--accent-rose);
+  }
+
+  .results-table tbody tr.data-row.critical-row:hover {
+    background: rgba(244, 63, 94, 0.12);
+  }
+
+  /* Problem indicator in row */
+  .problem-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: 0.5rem;
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .problem-indicator.warning {
+    background: rgba(245, 158, 11, 0.2);
+    color: var(--accent-amber);
+  }
+
+  .problem-indicator.warning:hover {
+    background: rgba(245, 158, 11, 0.35);
+  }
+
+  .problem-indicator.critical {
+    background: rgba(244, 63, 94, 0.2);
+    color: var(--accent-rose);
+  }
+
+  .problem-indicator.critical:hover {
+    background: rgba(244, 63, 94, 0.35);
+  }
+
+  /* Problem Modal */
+  .problem-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+  }
+
+  .problem-modal-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: auto;
+  }
+
+  .problem-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(244, 63, 94, 0.1);
+  }
+
+  .problem-modal-header h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--accent-rose);
+  }
+
+  .problem-modal-body {
+    padding: 1.5rem;
+  }
+
+  .problem-details {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .problem-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  .problem-field-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  .problem-field-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    padding: 0.75rem;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+  }
+
+  .problem-field-value.critical {
+    color: var(--accent-rose);
+    border-left: 3px solid var(--accent-rose);
+  }
+
+  .problem-field-value.warning {
+    color: var(--accent-amber);
+    border-left: 3px solid var(--accent-amber);
+  }
+
+  .problem-explanation {
+    padding: 1rem;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .problem-explanation h4 {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
   }
 
   /* Expanded row detail */
@@ -211,6 +638,16 @@
     font-size: 0.75rem;
   }
 
+  .row-detail-value.problem-warning {
+    border-color: var(--accent-amber);
+    background: rgba(245, 158, 11, 0.1);
+  }
+
+  .row-detail-value.problem-critical {
+    border-color: var(--accent-rose);
+    background: rgba(244, 63, 94, 0.1);
+  }
+
   /* Source location badge in table */
   .source-badge {
     display: inline-block;
@@ -225,6 +662,22 @@
     max-width: 200px;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+
+  .source-badge:hover {
+    background: rgba(245, 158, 11, 0.25);
+    border-color: rgba(245, 158, 11, 0.5);
+  }
+
+  .source-badge.clickable {
+    cursor: pointer;
+  }
+
+  .source-badge.clickable::after {
+    content: ' ↗';
+    opacity: 0.7;
   }
 
   .source-badge.empty {
@@ -264,12 +717,666 @@
     font-size: 0.7rem;
     color: var(--text-muted);
   }
+
+  /* IDE Link dropdown */
+  .ide-dropdown {
+    display: inline-block;
+  }
+
+  .ide-dropdown-menu {
+    display: none;
+    position: fixed;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    min-width: 140px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+    z-index: 10000;
+  }
+
+  .ide-dropdown-menu.show {
+    display: block;
+  }
+
+  .ide-dropdown-menu a {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.75rem;
+    transition: all 0.15s;
+  }
+
+  .ide-dropdown-menu a:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  /* Top scrollbar */
+  .top-scroll-wrapper {
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: 12px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .top-scroll-content {
+    height: 1px;
+  }
+
+  /* Sortable column headers */
+  .results-table th.sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+
+  .results-table th.sortable:hover {
+    background: var(--bg-secondary);
+  }
+
+  .results-table th .sort-indicator {
+    display: inline-block;
+    margin-left: 0.375rem;
+    opacity: 0.3;
+    font-size: 0.65rem;
+    transition: opacity 0.15s;
+  }
+
+  .results-table th.sortable:hover .sort-indicator {
+    opacity: 0.6;
+  }
+
+  .results-table th.sorted .sort-indicator {
+    opacity: 1;
+    color: var(--accent-purple);
+  }
+
+  .results-table th.sorted {
+    background: var(--bg-secondary);
+  }
+
+  /* IDE Settings */
+  .btn-icon {
+    width: 40px;
+    padding: 0;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+  }
+
+  .btn-icon:hover {
+    background: var(--bg-secondary);
+  }
+
+  .settings-label {
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+  }
+
+  .ide-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .ide-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .ide-option:hover {
+    background: var(--bg-secondary);
+    border-color: var(--accent-purple);
+  }
+
+  .ide-option:has(input:checked) {
+    background: rgba(157, 140, 214, 0.15);
+    border-color: var(--accent-purple);
+  }
+
+  .ide-option input[type="radio"] {
+    accent-color: var(--accent-purple);
+  }
+
+  .ide-option span {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+  }
+
+  .ide-option:has(input:checked) span {
+    color: var(--text-primary);
+  }
+
+  .modal-small {
+    max-width: 360px;
+  }
+
+  /* Button variants */
+  .btn.btn-small {
+    padding: 0.5rem 1rem;
+    height: auto;
+    font-size: 0.8rem;
+  }
+
+  .btn.btn-muted {
+    background: var(--bg-tertiary);
+    border-color: var(--accent-rose);
+    color: var(--text-secondary);
+  }
+
+  .btn.btn-muted:hover {
+    background: var(--bg-card);
+    color: var(--text-primary);
+  }
+
+  /* Saved Records Section */
+  .saved-records-section {
+    background: var(--bg-card);
+    border: 1px solid var(--accent-purple);
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+  }
+
+  .saved-records-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: rgba(157, 140, 214, 0.1);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .saved-records-title {
+    font-weight: 600;
+    color: var(--accent-purple);
+    font-size: 0.9rem;
+  }
+
+  .saved-records-list {
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .saved-record-card {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.75rem;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .saved-record-card:hover {
+    border-color: var(--accent-purple);
+    background: var(--bg-secondary);
+  }
+
+  .saved-record-card.expanded {
+    background: var(--bg-card);
+    border-color: var(--accent-purple);
+  }
+
+  .saved-record-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .saved-record-time {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .saved-record-remove {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--text-muted);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .saved-record-remove:hover {
+    background: var(--accent-rose);
+    border-color: var(--accent-rose);
+    color: white;
+  }
+
+  .saved-record-data {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .saved-record-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  .saved-record-field-name {
+    color: var(--text-muted);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+  }
+
+  .saved-record-field-value {
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .saved-record-field-value.highlight {
+    color: var(--accent-green);
+    font-weight: 600;
+  }
+
+  .saved-record-query {
+    grid-column: 1 / -1;
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent-green);
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 150px;
+    overflow-y: auto;
+  }
+
+  .saved-record-expand-hint {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    margin-left: auto;
+  }
+
+  .saved-record-card.expanded .saved-record-expand-hint {
+    display: none;
+  }
+
+  .saved-record-detail {
+    display: none;
+    grid-column: 1 / -1;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .saved-record-card.expanded .saved-record-detail {
+    display: block;
+  }
+
+  .saved-record-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .saved-record-detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .saved-record-detail-item.full-width {
+    grid-column: 1 / -1;
+  }
+
+  .saved-record-detail-label {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  .saved-record-detail-value {
+    padding: 0.5rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-primary);
+  }
+
+  .saved-record-detail-value.query {
+    color: var(--accent-green);
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .saved-record-detail-value.number {
+    color: var(--accent-blue);
+  }
+
+  /* Save button in detail row */
+  .detail-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 0.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color);
+    margin-top: 0.5rem;
+  }
+
+  .btn-save {
+    padding: 0.375rem 0.75rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--accent-purple);
+    border-radius: 6px;
+    color: var(--accent-purple);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-save:hover {
+    background: var(--accent-purple);
+    color: white;
+  }
+
+  .btn-save.saved {
+    background: var(--accent-purple);
+    color: white;
+  }
+
+  .btn-save.saved:hover {
+    background: var(--accent-rose);
+    border-color: var(--accent-rose);
+  }
+
+  .btn-explain {
+    padding: 0.375rem 0.75rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--accent-blue);
+    border-radius: 6px;
+    color: var(--accent-blue);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-explain:hover {
+    background: var(--accent-blue);
+    color: white;
+  }
+
+  .btn-migration {
+    padding: 0.375rem 0.75rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--accent-amber);
+    border-radius: 6px;
+    color: var(--accent-amber);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-migration:hover {
+    background: var(--accent-amber);
+    color: var(--bg-primary);
+  }
+
+  /* EXPLAIN Modal */
+  .modal-wide {
+    max-width: 900px;
+  }
+
+  .explain-result {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+    white-space: pre-wrap;
+    overflow-x: auto;
+    max-height: 500px;
+    overflow-y: auto;
+    color: var(--accent-green);
+    line-height: 1.5;
+  }
+
+  .explain-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+  }
+
+  .explain-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .explain-stat-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  .explain-stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    color: var(--accent-blue);
+    font-weight: 600;
+  }
+
+  /* Migration Modal */
+  .migration-code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+    white-space: pre;
+    overflow-x: auto;
+    color: var(--accent-green);
+    line-height: 1.5;
+    margin-bottom: 1rem;
+  }
+
+  .migration-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+  }
 </style>
 
 <script>
   let currentReportData = null;
   const category = '<%= @category %>';
   const reportKey = '<%= @report_key %>';
+  let syncingScroll = false;
+  let currentSort = { column: null, direction: 'asc' };
+
+  // Top scrollbar sync functionality
+  function setupTopScrollbar() {
+    const topScrollWrapper = document.getElementById('top-scroll-wrapper');
+    const topScrollContent = document.getElementById('top-scroll-content');
+    const tableWrapper = document.getElementById('results-table-wrapper');
+    const table = document.getElementById('results-table');
+
+    if (!topScrollWrapper || !topScrollContent || !tableWrapper || !table) return;
+
+    // Check if table overflows
+    if (table.scrollWidth > tableWrapper.clientWidth) {
+      topScrollWrapper.style.display = 'block';
+      topScrollContent.style.width = table.scrollWidth + 'px';
+
+      // Sync scrolls
+      topScrollWrapper.addEventListener('scroll', function() {
+        if (syncingScroll) return;
+        syncingScroll = true;
+        tableWrapper.scrollLeft = topScrollWrapper.scrollLeft;
+        syncingScroll = false;
+      });
+
+      tableWrapper.addEventListener('scroll', function() {
+        if (syncingScroll) return;
+        syncingScroll = true;
+        topScrollWrapper.scrollLeft = tableWrapper.scrollLeft;
+        syncingScroll = false;
+      });
+    } else {
+      topScrollWrapper.style.display = 'none';
+    }
+  }
+
+  // Sort data by column
+  function sortData(data, column, direction) {
+    return [...data].sort((a, b) => {
+      let aVal = a[column];
+      let bVal = b[column];
+
+      // Handle null/undefined
+      if (aVal == null) aVal = '';
+      if (bVal == null) bVal = '';
+
+      // Try numeric comparison
+      const aNum = parseFloat(aVal);
+      const bNum = parseFloat(bVal);
+      if (!isNaN(aNum) && !isNaN(bNum)) {
+        return direction === 'asc' ? aNum - bNum : bNum - aNum;
+      }
+
+      // String comparison
+      const aStr = String(aVal).toLowerCase();
+      const bStr = String(bVal).toLowerCase();
+      if (direction === 'asc') {
+        return aStr.localeCompare(bStr);
+      } else {
+        return bStr.localeCompare(aStr);
+      }
+    });
+  }
+
+  // Handle column header click for sorting
+  function handleSortClick(column) {
+    if (!currentReportData || !currentReportData.data) return;
+
+    // Toggle direction if same column, otherwise start with asc
+    if (currentSort.column === column) {
+      currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+      currentSort.column = column;
+      currentSort.direction = 'asc';
+    }
+
+    // Sort and re-render
+    const sortedData = sortData(currentReportData.data, column, currentSort.direction);
+    renderTableBody(sortedData, currentReportData.columns, currentReportData.thresholds, currentReportData.problem_fields);
+    updateSortIndicators();
+  }
+
+  // Update sort indicators in headers
+  function updateSortIndicators() {
+    document.querySelectorAll('.results-table th').forEach(th => {
+      th.classList.remove('sorted');
+      const indicator = th.querySelector('.sort-indicator');
+      if (indicator) {
+        indicator.textContent = '↕';
+      }
+    });
+
+    if (currentSort.column) {
+      const sortedTh = document.querySelector(`.results-table th[data-column="${currentSort.column}"]`);
+      if (sortedTh) {
+        sortedTh.classList.add('sorted');
+        const indicator = sortedTh.querySelector('.sort-indicator');
+        if (indicator) {
+          indicator.textContent = currentSort.direction === 'asc' ? '↑' : '↓';
+        }
+      }
+    }
+  }
+
+  // Render table body (extracted for reuse after sorting)
+  function renderTableBody(data, columns, thresholds, problemFields) {
+    const tableBody = document.getElementById('results-body');
+    if (!tableBody) return;
+
+    let rowsHtml = '';
+
+    data.forEach((row, idx) => {
+      // Check for problems
+      const problemInfo = getRowProblemLevel(row, thresholds, problemFields);
+      let rowClass = 'data-row';
+      let problemIndicator = '';
+
+      if (problemInfo && problemInfo.level) {
+        rowClass += problemInfo.level === 'critical' ? ' critical-row' : ' warning-row';
+        const indicatorClass = problemInfo.level === 'critical' ? 'critical' : 'warning';
+        const indicatorIcon = problemInfo.level === 'critical' ? '🔴' : '⚠️';
+        problemIndicator = `<span class="problem-indicator ${indicatorClass}" onclick="event.stopPropagation(); showProblemModal(${JSON.stringify(problemInfo.problems).replace(/"/g, '&quot;')}, ${JSON.stringify(row).replace(/"/g, '&quot;')})">${indicatorIcon}</span>`;
+      }
+
+      // Data row
+      rowsHtml += `<tr id="data-row-${idx}" class="${rowClass}" onclick="toggleRow(${idx})">`;
+      rowsHtml += columns.map((col, colIdx) => {
+        const value = row[col] ?? '';
+        const strValue = String(value);
+        const isQuery = col === 'query';
+        const isSource = col === 'source';
+
+        if (isSource) {
+          return `<td>${buildSourceBadge(strValue)}</td>`;
+        }
+
+        const displayValue = strValue.length > 80 ? strValue.substring(0, 80) + '...' : strValue;
+        // Add problem indicator to first column
+        const indicator = colIdx === 0 ? problemIndicator : '';
+        return `<td class="${isQuery ? 'query-cell' : ''}">${escapeHtml(displayValue)}${indicator}</td>`;
+      }).join('');
+      rowsHtml += '</tr>';
+
+      // Detail row (hidden by default)
+      rowsHtml += `<tr id="detail-row-${idx}" class="detail-row">`;
+      rowsHtml += `<td colspan="${columns.length}">${buildDetailRow(row, columns, idx, thresholds, problemFields)}</td>`;
+      rowsHtml += '</tr>';
+    });
+
+    tableBody.innerHTML = rowsHtml;
+
+    // Re-setup top scrollbar
+    setTimeout(setupTopScrollbar, 0);
+  }
+
+  // Problem explanations from I18n (passed from server)
+  const problemExplanations = <%= raw(I18n.t('pg_reports.problems').to_json) %>;
 
   function toggleDropdown() {
     document.getElementById('dropdown-menu').classList.toggle('show');
@@ -281,6 +1388,12 @@
     if (dropdown && !dropdown.contains(e.target)) {
       document.getElementById('dropdown-menu')?.classList.remove('show');
     }
+    // Close IDE dropdowns
+    document.querySelectorAll('.ide-dropdown-menu.show').forEach(menu => {
+      if (!menu.parentElement.contains(e.target)) {
+        menu.classList.remove('show');
+      }
+    });
   });
 
   function downloadReport(format) {
@@ -317,6 +1430,20 @@
     return div.innerHTML;
   }
 
+  function escapeHtmlAttr(text) {
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function copyQueryFromButton(btn) {
+    const query = btn.dataset.query;
+    copyToClipboard(query, btn);
+  }
+
   function copyToClipboard(text, btn) {
     navigator.clipboard.writeText(text).then(() => {
       const originalText = btn.textContent;
@@ -335,8 +1462,275 @@
     });
   }
 
-  function buildDetailRow(row, columns, rowIndex) {
+  // Check if a value exceeds threshold
+  function checkThreshold(value, threshold, inverted = false) {
+    if (!threshold || value === null || value === undefined) return null;
+
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) return null;
+
+    if (inverted) {
+      // For inverted thresholds (lower is worse), like cache_hit_ratio
+      if (numValue <= threshold.critical) return 'critical';
+      if (numValue <= threshold.warning) return 'warning';
+    } else {
+      // Normal thresholds (higher is worse)
+      if (numValue >= threshold.critical) return 'critical';
+      if (numValue >= threshold.warning) return 'warning';
+    }
+    return null;
+  }
+
+  // Get row problem level
+  function getRowProblemLevel(row, thresholds, problemFields) {
+    if (!thresholds || !problemFields || problemFields.length === 0) return null;
+
+    let maxLevel = null;
+    const problems = [];
+
+    for (const field of problemFields) {
+      const value = row[field];
+      const threshold = thresholds[field];
+      if (!threshold) continue;
+
+      const level = checkThreshold(value, threshold, threshold.inverted);
+      if (level) {
+        problems.push({ field, value, level, threshold });
+        if (level === 'critical') maxLevel = 'critical';
+        else if (level === 'warning' && maxLevel !== 'critical') maxLevel = 'warning';
+      }
+    }
+
+    return { level: maxLevel, problems };
+  }
+
+  // Show problem modal
+  function showProblemModal(problems, row) {
+    const modal = document.getElementById('problem-modal');
+    const body = document.getElementById('problem-modal-body');
+
+    let html = '<div class="problem-details">';
+
+    for (const problem of problems) {
+      const levelClass = problem.level === 'critical' ? 'critical' : 'warning';
+      const levelText = problem.level === 'critical' ? '🔴 Critical' : '⚠️ Warning';
+
+      html += `
+        <div class="problem-field">
+          <span class="problem-field-label">${escapeHtml(problem.field)} (${levelText})</span>
+          <div class="problem-field-value ${levelClass}">
+            Current: ${escapeHtml(String(problem.value))}
+            <br>Threshold: warning=${problem.threshold.warning}, critical=${problem.threshold.critical}
+            ${problem.threshold.inverted ? '<br><em>(inverted: lower values are worse)</em>' : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    // Add explanation based on problem types
+    const explanationKey = getExplanationKey(problems);
+    const explanation = problemExplanations[explanationKey] || '';
+
+    if (explanation) {
+      html += `
+        <div class="problem-explanation">
+          <h4>💡 Recommendation</h4>
+          <p>${escapeHtml(explanation)}</p>
+        </div>
+      `;
+    }
+
+    html += '</div>';
+    body.innerHTML = html;
+    modal.style.display = 'flex';
+  }
+
+  function closeProblemModal() {
+    document.getElementById('problem-modal').style.display = 'none';
+  }
+
+  // Map problem fields to explanation keys
+  function getExplanationKey(problems) {
+    const fields = problems.map(p => p.field);
+
+    if (fields.includes('mean_time_ms')) return 'high_mean_time';
+    if (fields.includes('calls')) return 'high_calls';
+    if (fields.includes('total_time_ms')) return 'high_total_time';
+    if (fields.includes('cache_hit_ratio')) return 'low_cache_hit';
+    if (fields.includes('seq_scan') || fields.includes('seq_tup_read')) return 'high_seq_scan';
+    if (fields.includes('idx_scan')) return 'unused_index';
+    if (fields.includes('bloat_ratio') || fields.includes('bloat_size')) return 'high_bloat';
+    if (fields.includes('dead_tuple_ratio') || fields.includes('n_dead_tup')) return 'many_dead_tuples';
+    if (fields.includes('duration_seconds') || fields.includes('duration')) return 'long_running';
+    if (fields.includes('blocked_count')) return 'blocking';
+    if (fields.includes('idle_in_transaction')) return 'idle_in_transaction';
+
+    return '';
+  }
+
+  // Parse source location and generate IDE link
+  function parseSourceLocation(source) {
+    if (!source || source === 'null' || source === '') return null;
+
+    // Common patterns:
+    // app/controllers/users_controller.rb:42
+    // app/models/user.rb:123:in `find'
+    // UsersController#index
+    // app/controllers/users_controller.rb:42:in `index'
+
+    let filePath = null;
+    let lineNumber = null;
+    let methodName = null;
+
+    // Try to match file:line pattern
+    const fileLineMatch = source.match(/^([^:]+\.(rb|erb|js|ts|py|go|java)):(\d+)/);
+    if (fileLineMatch) {
+      filePath = fileLineMatch[1];
+      lineNumber = parseInt(fileLineMatch[3], 10);
+    }
+
+    // Try to match Controller#action pattern
+    const controllerMatch = source.match(/^(\w+Controller)#(\w+)/);
+    if (controllerMatch) {
+      methodName = `${controllerMatch[1]}#${controllerMatch[2]}`;
+      // Derive file path from controller name
+      const controllerName = controllerMatch[1].replace(/Controller$/, '').toLowerCase();
+      filePath = `app/controllers/${controllerName}_controller.rb`;
+    }
+
+    return { filePath, lineNumber, methodName, original: source };
+  }
+
+  // Rails.root path for IDE links
+  const railsRootPath = '<%= Rails.root.to_s %>';
+  const wslDistro = 'Ubuntu';
+
+  // Generate IDE URLs
+  function generateIdeUrls(filePath, lineNumber) {
+    if (!filePath) return [];
+
+    // Convert relative paths to absolute paths using Rails.root
+    let absolutePath = filePath;
+    if (!filePath.startsWith('/')) {
+      absolutePath = `${railsRootPath}/${filePath}`;
+    }
+
+    const line = lineNumber || 1;
+    const urls = [];
+
+    // VSCode (WSL Remote format)
+    urls.push({
+      name: 'VS Code (WSL)',
+      url: `vscode://vscode-remote/wsl+${wslDistro}${absolutePath}:${line}`
+    });
+
+    // VSCode (direct path - for native Linux or Windows)
+    urls.push({
+      name: 'VS Code',
+      url: `vscode://file${absolutePath}:${line}`
+    });
+
+    // JetBrains (RubyMine, IntelliJ, etc.)
+    urls.push({
+      name: 'RubyMine',
+      url: `x-mine://open?file=${absolutePath}&line=${line}`
+    });
+
+    urls.push({
+      name: 'IntelliJ',
+      url: `idea://open?file=${absolutePath}&line=${line}`
+    });
+
+    // Cursor (WSL Remote format)
+    urls.push({
+      name: 'Cursor (WSL)',
+      url: `cursor://vscode-remote/wsl+${wslDistro}${absolutePath}:${line}`
+    });
+
+    // Cursor (direct path)
+    urls.push({
+      name: 'Cursor',
+      url: `cursor://file${absolutePath}:${line}`
+    });
+
+    return urls;
+  }
+
+  // Map IDE key to URL index
+  const ideKeyMap = {
+    'vscode-wsl': 0,
+    'vscode': 1,
+    'rubymine': 2,
+    'intellij': 3,
+    'cursor-wsl': 4,
+    'cursor': 5
+  };
+
+  // Build source badge HTML with IDE links
+  function buildSourceBadge(source) {
+    const parsed = parseSourceLocation(source);
+
+    if (!parsed) {
+      return `<span class="source-badge empty">—</span>`;
+    }
+
+    const ideUrls = generateIdeUrls(parsed.filePath, parsed.lineNumber);
+
+    if (ideUrls.length === 0) {
+      return `<span class="source-badge" title="${escapeHtml(parsed.original)}">${escapeHtml(parsed.original)}</span>`;
+    }
+
+    // Check if user has a default IDE set
+    const defaultIde = getDefaultIde();
+    if (defaultIde && ideKeyMap[defaultIde] !== undefined) {
+      const ideUrl = ideUrls[ideKeyMap[defaultIde]];
+      if (ideUrl) {
+        return `<a class="source-badge clickable" href="${ideUrl.url}" onclick="event.stopPropagation();" title="${escapeHtml(parsed.original)}">${escapeHtml(parsed.original)}</a>`;
+      }
+    }
+
+    // No default IDE - show dropdown menu
+    const dropdownId = `ide-dropdown-${Math.random().toString(36).substr(2, 9)}`;
+
+    let dropdownHtml = `
+      <div class="ide-dropdown">
+        <span class="source-badge clickable" onclick="event.stopPropagation(); toggleIdeDropdown('${dropdownId}', this)" title="${escapeHtml(parsed.original)}">${escapeHtml(parsed.original)}</span>
+        <div class="ide-dropdown-menu" id="${dropdownId}">
+    `;
+
+    for (const ide of ideUrls) {
+      dropdownHtml += `<a href="${ide.url}" onclick="event.stopPropagation();">${ide.name}</a>`;
+    }
+
+    dropdownHtml += '</div></div>';
+    return dropdownHtml;
+  }
+
+  function toggleIdeDropdown(dropdownId, badgeElement) {
+    const menu = document.getElementById(dropdownId);
+    if (!menu) return;
+
+    // Close other dropdowns
+    document.querySelectorAll('.ide-dropdown-menu.show').forEach(m => {
+      if (m.id !== dropdownId) m.classList.remove('show');
+    });
+
+    // Toggle current menu
+    const isShowing = menu.classList.toggle('show');
+
+    // Position the menu using fixed positioning
+    if (isShowing && badgeElement) {
+      const rect = badgeElement.getBoundingClientRect();
+      menu.style.top = (rect.bottom + 4) + 'px';
+      menu.style.left = rect.left + 'px';
+    }
+  }
+
+  function buildDetailRow(row, columns, rowIndex, thresholds, problemFields) {
     let html = '<div class="row-detail">';
+    const hasQuery = columns.includes('query') && row.query;
+    const hasIndexName = columns.includes('index_name') && row.index_name;
+    const rowId = generateRowId(row);
 
     columns.forEach(col => {
       const value = row[col] ?? '';
@@ -345,10 +1739,19 @@
       const isSource = col === 'source';
       const isNumber = typeof value === 'number' || (!isNaN(parseFloat(value)) && isFinite(value));
 
+      // Check if this field has a problem
+      let problemClass = '';
+      if (problemFields && problemFields.includes(col) && thresholds && thresholds[col]) {
+        const level = checkThreshold(value, thresholds[col], thresholds[col].inverted);
+        if (level === 'critical') problemClass = 'problem-critical';
+        else if (level === 'warning') problemClass = 'problem-warning';
+      }
+
       let valueClass = '';
       if (isQuery) valueClass = 'query';
       else if (isSource) valueClass = 'source';
       else if (isNumber) valueClass = 'number';
+      if (problemClass) valueClass += ' ' + problemClass;
 
       const isLongText = strValue.length > 100 || isQuery;
 
@@ -361,10 +1764,32 @@
         <div class="row-detail-item${isLongText ? ' full-width' : ''}">
           <span class="row-detail-label">${escapeHtml(col)}</span>
           <div class="row-detail-value ${valueClass}">${escapeHtml(strValue)}</div>
-          ${isQuery ? `<button class="copy-btn" onclick="event.stopPropagation(); copyToClipboard(\`${strValue.replace(/`/g, '\\`').replace(/\\/g, '\\\\')}\`, this)">📋 Copy Query</button>` : ''}
+          ${isQuery ? `<button class="copy-btn" data-query="${escapeHtmlAttr(strValue)}" onclick="event.stopPropagation(); copyQueryFromButton(this)">📋 Copy Query</button>` : ''}
         </div>
       `;
     });
+
+    // Action buttons
+    const isSaved = isRecordSaved(rowId);
+    const rowJson = JSON.stringify(row).replace(/"/g, '&quot;');
+
+    html += `<div class="detail-actions">`;
+    html += `<button class="btn-save ${isSaved ? 'saved' : ''}" onclick="event.stopPropagation(); toggleSaveRecord('${rowId}', ${rowJson}, this)">${isSaved ? '📌 Saved' : '📌 Save for Comparison'}</button>`;
+
+    if (hasQuery) {
+      const queryEscaped = row.query.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      html += `<button class="btn-explain" onclick="event.stopPropagation(); runExplainAnalyze('${queryEscaped}')">📊 EXPLAIN ANALYZE</button>`;
+    }
+
+    // Show migration button for index reports
+    if (hasIndexName && (category === 'indexes')) {
+      const indexName = row.index_name;
+      const tableName = row.table_name || row.tablename || '';
+      const schemaName = row.schema_name || row.schemaname || 'public';
+      html += `<button class="btn-migration" onclick="event.stopPropagation(); showMigrationModal('${escapeHtml(indexName)}', '${escapeHtml(tableName)}', '${escapeHtml(schemaName)}')">🗑️ Generate Migration</button>`;
+    }
+
+    html += `</div>`;
 
     html += '</div>';
     return html;
@@ -405,6 +1830,8 @@
 
       if (data.success) {
         currentReportData = data;
+        const thresholds = data.thresholds || {};
+        const problemFields = data.problem_fields || [];
 
         if (metaEl) {
           metaEl.innerHTML = `
@@ -421,47 +1848,18 @@
         if (data.data.length === 0) {
           if (emptyEl) emptyEl.style.display = 'block';
         } else {
-          // Build table header
+          // Reset sort state for new data
+          currentSort = { column: null, direction: 'asc' };
+
+          // Build table header with sortable columns
           if (tableHead) {
             tableHead.innerHTML = '<tr>' + data.columns.map(col =>
-              `<th>${escapeHtml(col)}</th>`
+              `<th class="sortable" data-column="${escapeHtml(col)}" onclick="handleSortClick('${escapeHtml(col)}')">${escapeHtml(col)}<span class="sort-indicator">↕</span></th>`
             ).join('') + '</tr>';
           }
 
           // Build table body with expandable rows
-          if (tableBody) {
-            let rowsHtml = '';
-
-            data.data.forEach((row, idx) => {
-              // Data row
-              rowsHtml += `<tr id="data-row-${idx}" class="data-row" onclick="toggleRow(${idx})">`;
-              rowsHtml += data.columns.map(col => {
-                const value = row[col] ?? '';
-                const strValue = String(value);
-                const isQuery = col === 'query';
-                const isSource = col === 'source';
-
-                if (isSource) {
-                  if (strValue && strValue !== 'null' && strValue !== '') {
-                    return `<td><span class="source-badge" title="${escapeHtml(strValue)}">${escapeHtml(strValue)}</span></td>`;
-                  } else {
-                    return `<td><span class="source-badge empty">—</span></td>`;
-                  }
-                }
-
-                const displayValue = strValue.length > 80 ? strValue.substring(0, 80) + '...' : strValue;
-                return `<td class="${isQuery ? 'query-cell' : ''}">${escapeHtml(displayValue)}</td>`;
-              }).join('');
-              rowsHtml += '</tr>';
-
-              // Detail row (hidden by default)
-              rowsHtml += `<tr id="detail-row-${idx}" class="detail-row">`;
-              rowsHtml += `<td colspan="${data.columns.length}">${buildDetailRow(row, data.columns, idx)}</td>`;
-              rowsHtml += '</tr>';
-            });
-
-            tableBody.innerHTML = rowsHtml;
-          }
+          renderTableBody(data.data, data.columns, thresholds, problemFields);
         }
 
         showToast('Report generated successfully');
@@ -476,6 +1874,454 @@
     if (button) {
       button.disabled = false;
       button.innerHTML = '▶ Run Report';
+    }
+  }
+
+  // Close modal on Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeProblemModal();
+    }
+  });
+
+  // Close modal on backdrop click
+  document.getElementById('problem-modal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+      closeProblemModal();
+    }
+  });
+
+  // IDE Settings functions
+  function showIdeSettingsModal() {
+    const modal = document.getElementById('ide-settings-modal');
+    modal.style.display = 'flex';
+    loadIdeSettingsState();
+  }
+
+  function closeIdeSettingsModal() {
+    document.getElementById('ide-settings-modal').style.display = 'none';
+  }
+
+  function setDefaultIde(ideKey) {
+    if (ideKey) {
+      localStorage.setItem('pgReportsDefaultIde', ideKey);
+    } else {
+      localStorage.removeItem('pgReportsDefaultIde');
+    }
+  }
+
+  function getDefaultIde() {
+    return localStorage.getItem('pgReportsDefaultIde') || '';
+  }
+
+  function loadIdeSettingsState() {
+    const currentIde = getDefaultIde();
+    const radios = document.querySelectorAll('input[name="default-ide"]');
+    radios.forEach(radio => {
+      radio.checked = (radio.value === currentIde);
+    });
+  }
+
+  // Close IDE settings modal on backdrop click
+  document.getElementById('ide-settings-modal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+      closeIdeSettingsModal();
+    }
+  });
+
+  // Close IDE settings modal on Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeIdeSettingsModal();
+      closeExplainModal();
+      closeMigrationModal();
+    }
+  });
+
+  // ==========================================
+  // SAVED RECORDS FUNCTIONALITY
+  // ==========================================
+
+  function getSavedRecordsKey() {
+    return `pgReports_saved_${category}_${reportKey}`;
+  }
+
+  function getSavedRecords() {
+    try {
+      const data = localStorage.getItem(getSavedRecordsKey());
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveSavedRecords(records) {
+    localStorage.setItem(getSavedRecordsKey(), JSON.stringify(records));
+  }
+
+  function generateRowId(row) {
+    // Generate a unique ID based on key fields
+    const keyFields = ['query', 'queryid', 'index_name', 'table_name', 'pid', 'datname'];
+    const parts = [];
+    for (const field of keyFields) {
+      if (row[field]) {
+        parts.push(String(row[field]).substring(0, 50));
+      }
+    }
+    // Simple hash
+    const str = parts.join('|');
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    return 'r' + Math.abs(hash).toString(36);
+  }
+
+  function isRecordSaved(rowId) {
+    const saved = getSavedRecords();
+    return saved.some(r => r.id === rowId);
+  }
+
+  function toggleSaveRecord(rowId, row, btn) {
+    const saved = getSavedRecords();
+    const existingIdx = saved.findIndex(r => r.id === rowId);
+
+    if (existingIdx >= 0) {
+      // Remove
+      saved.splice(existingIdx, 1);
+      btn.classList.remove('saved');
+      btn.textContent = '📌 Save for Comparison';
+      showToast('Record removed from saved');
+    } else {
+      // Add
+      saved.unshift({
+        id: rowId,
+        savedAt: new Date().toISOString(),
+        data: row
+      });
+      btn.classList.add('saved');
+      btn.textContent = '📌 Saved';
+      showToast('Record saved for comparison');
+    }
+
+    saveSavedRecords(saved);
+    renderSavedRecords();
+  }
+
+  function removeSavedRecord(rowId) {
+    const saved = getSavedRecords();
+    const filtered = saved.filter(r => r.id !== rowId);
+    saveSavedRecords(filtered);
+    renderSavedRecords();
+
+    // Update button in table if visible
+    const btn = document.querySelector(`.btn-save[onclick*="'${rowId}'"]`);
+    if (btn) {
+      btn.classList.remove('saved');
+      btn.textContent = '📌 Save for Comparison';
+    }
+
+    showToast('Record removed');
+  }
+
+  function clearAllSavedRecords() {
+    if (!confirm('Remove all saved records for this report?')) return;
+    saveSavedRecords([]);
+    renderSavedRecords();
+
+    // Update all buttons in table
+    document.querySelectorAll('.btn-save.saved').forEach(btn => {
+      btn.classList.remove('saved');
+      btn.textContent = '📌 Save for Comparison';
+    });
+
+    showToast('All saved records cleared');
+  }
+
+  function renderSavedRecords() {
+    const section = document.getElementById('saved-records-section');
+    const list = document.getElementById('saved-records-list');
+    const saved = getSavedRecords();
+
+    if (saved.length === 0) {
+      section.style.display = 'none';
+      return;
+    }
+
+    section.style.display = 'block';
+
+    // Fields to highlight for comparison
+    const highlightFields = ['mean_time_ms', 'total_time_ms', 'calls', 'rows', 'shared_blks_hit', 'shared_blks_read'];
+    // Key metrics to show in summary
+    const summaryFields = ['mean_time_ms', 'total_time_ms', 'calls', 'rows'];
+
+    let html = '';
+    saved.forEach((record, idx) => {
+      const savedTime = new Date(record.savedAt).toLocaleString();
+      const data = record.data;
+      const hasQuery = data.query;
+
+      html += `
+        <div class="saved-record-card" id="saved-card-${idx}" onclick="toggleSavedRecordDetail(${idx}, event)">
+          <div class="saved-record-header">
+            <span class="saved-record-time">▸ Saved: ${savedTime}</span>
+            <span class="saved-record-expand-hint">Click to expand</span>
+            <button class="saved-record-remove" onclick="event.stopPropagation(); removeSavedRecord('${record.id}')" title="Remove">×</button>
+          </div>
+          <div class="saved-record-data">
+      `;
+
+      // Show key metrics in summary
+      summaryFields.forEach(field => {
+        const value = data[field];
+        if (value === null || value === undefined) return;
+        const strValue = String(value);
+        html += `
+          <div class="saved-record-field">
+            <span class="saved-record-field-name">${escapeHtml(field)}</span>
+            <span class="saved-record-field-value highlight">${escapeHtml(strValue)}</span>
+          </div>
+        `;
+      });
+
+      // Show truncated query preview
+      if (hasQuery) {
+        const queryPreview = data.query.length > 100 ? data.query.substring(0, 100) + '...' : data.query;
+        html += `
+          <div class="saved-record-field" style="grid-column: 1 / -1;">
+            <span class="saved-record-field-name">query</span>
+            <span class="saved-record-field-value" style="color: var(--accent-green); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(queryPreview)}</span>
+          </div>
+        `;
+      }
+
+      // Expandable detail section
+      html += `
+          </div>
+          <div class="saved-record-detail">
+            <div class="saved-record-detail-grid">
+      `;
+
+      // Show all fields in detail
+      Object.keys(data).forEach(field => {
+        if (field === 'source') return;
+        const value = data[field];
+        if (value === null || value === undefined) return;
+        const strValue = String(value);
+        const isQuery = field === 'query';
+        const isNumber = typeof value === 'number' || (!isNaN(parseFloat(value)) && isFinite(value));
+
+        let valueClass = '';
+        if (isQuery) valueClass = 'query';
+        else if (isNumber) valueClass = 'number';
+
+        html += `
+          <div class="saved-record-detail-item ${isQuery ? 'full-width' : ''}">
+            <span class="saved-record-detail-label">${escapeHtml(field)}</span>
+            <div class="saved-record-detail-value ${valueClass}">${escapeHtml(strValue)}</div>
+          </div>
+        `;
+      });
+
+      html += `
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    list.innerHTML = html;
+  }
+
+  function toggleSavedRecordDetail(idx, event) {
+    // Don't toggle if clicking on remove button
+    if (event.target.classList.contains('saved-record-remove')) return;
+
+    const card = document.getElementById(`saved-card-${idx}`);
+    if (!card) return;
+
+    const wasExpanded = card.classList.contains('expanded');
+
+    // Collapse all cards
+    document.querySelectorAll('.saved-record-card.expanded').forEach(c => {
+      c.classList.remove('expanded');
+      const hint = c.querySelector('.saved-record-time');
+      if (hint) hint.textContent = hint.textContent.replace('▾', '▸');
+    });
+
+    // Toggle current card
+    if (!wasExpanded) {
+      card.classList.add('expanded');
+      const hint = card.querySelector('.saved-record-time');
+      if (hint) hint.textContent = hint.textContent.replace('▸', '▾');
+    }
+  }
+
+  // Render saved records on page load
+  document.addEventListener('DOMContentLoaded', renderSavedRecords);
+
+  // ==========================================
+  // EXPLAIN ANALYZE FUNCTIONALITY
+  // ==========================================
+
+  let currentExplainQuery = '';
+
+  async function runExplainAnalyze(query) {
+    currentExplainQuery = query;
+    const modal = document.getElementById('explain-modal');
+    const loading = document.getElementById('explain-loading');
+    const content = document.getElementById('explain-content');
+
+    modal.style.display = 'flex';
+    loading.style.display = 'flex';
+    content.innerHTML = '';
+
+    try {
+      const response = await fetch(`${pgReportsRoot}/explain_analyze`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        },
+        body: JSON.stringify({ query: query })
+      });
+
+      const data = await response.json();
+      loading.style.display = 'none';
+
+      if (data.success) {
+        let html = '';
+
+        // Show stats if available
+        if (data.stats) {
+          html += '<div class="explain-stats">';
+          if (data.stats.planning_time) {
+            html += `<div class="explain-stat"><span class="explain-stat-label">Planning Time</span><span class="explain-stat-value">${data.stats.planning_time} ms</span></div>`;
+          }
+          if (data.stats.execution_time) {
+            html += `<div class="explain-stat"><span class="explain-stat-label">Execution Time</span><span class="explain-stat-value">${data.stats.execution_time} ms</span></div>`;
+          }
+          if (data.stats.total_cost) {
+            html += `<div class="explain-stat"><span class="explain-stat-label">Total Cost</span><span class="explain-stat-value">${data.stats.total_cost}</span></div>`;
+          }
+          if (data.stats.rows) {
+            html += `<div class="explain-stat"><span class="explain-stat-label">Rows</span><span class="explain-stat-value">${data.stats.rows}</span></div>`;
+          }
+          html += '</div>';
+        }
+
+        html += `<div class="explain-result">${escapeHtml(data.explain)}</div>`;
+        content.innerHTML = html;
+      } else {
+        content.innerHTML = `<div class="error-message">${escapeHtml(data.error || 'Failed to run EXPLAIN ANALYZE')}</div>`;
+      }
+    } catch (error) {
+      loading.style.display = 'none';
+      content.innerHTML = `<div class="error-message">Network error: ${escapeHtml(error.message)}</div>`;
+    }
+  }
+
+  function closeExplainModal() {
+    document.getElementById('explain-modal').style.display = 'none';
+  }
+
+  document.getElementById('explain-modal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeExplainModal();
+  });
+
+  // ==========================================
+  // MIGRATION GENERATION FUNCTIONALITY
+  // ==========================================
+
+  let currentMigrationData = null;
+
+  function showMigrationModal(indexName, tableName, schemaName) {
+    const migrationName = `remove_${indexName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+    const timestamp = new Date().toISOString().replace(/[-:T]/g, '').substring(0, 14);
+    const className = migrationName.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+
+    const fullIndexName = schemaName && schemaName !== 'public'
+      ? `${schemaName}.${indexName}`
+      : indexName;
+
+    const migrationCode = `# frozen_string_literal: true
+
+class ${className} < ActiveRecord::Migration[7.0]
+  def change
+    remove_index :${tableName}, name: :${indexName}, if_exists: true
+  end
+end
+`;
+
+    currentMigrationData = {
+      fileName: `${timestamp}_${migrationName}.rb`,
+      code: migrationCode,
+      indexName,
+      tableName,
+      schemaName
+    };
+
+    document.getElementById('migration-code').textContent = migrationCode;
+    document.getElementById('migration-modal').style.display = 'flex';
+  }
+
+  function closeMigrationModal() {
+    document.getElementById('migration-modal').style.display = 'none';
+  }
+
+  document.getElementById('migration-modal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeMigrationModal();
+  });
+
+  function copyMigrationCode() {
+    if (!currentMigrationData) return;
+    navigator.clipboard.writeText(currentMigrationData.code).then(() => {
+      showToast('Migration code copied to clipboard');
+    }).catch(() => {
+      showToast('Failed to copy', 'error');
+    });
+  }
+
+  async function createMigrationFile() {
+    if (!currentMigrationData) return;
+
+    try {
+      const response = await fetch(`${pgReportsRoot}/create_migration`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        },
+        body: JSON.stringify({
+          file_name: currentMigrationData.fileName,
+          code: currentMigrationData.code
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        showToast('Migration file created');
+        closeMigrationModal();
+
+        // Open in IDE if path provided
+        if (data.file_path) {
+          const ideUrls = generateIdeUrls(data.file_path, 1);
+          const defaultIde = getDefaultIde();
+
+          if (defaultIde && ideKeyMap[defaultIde] !== undefined) {
+            window.location.href = ideUrls[ideKeyMap[defaultIde]].url;
+          } else if (ideUrls.length > 0) {
+            window.location.href = ideUrls[0].url;
+          }
+        }
+      } else {
+        showToast(data.error || 'Failed to create migration', 'error');
+      }
+    } catch (error) {
+      showToast('Network error: ' + error.message, 'error');
     }
   }
 </script>
