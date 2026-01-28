@@ -38,7 +38,7 @@
     }
 
     body {
-      font-family: <%= PgReports.config.load_external_fonts ? "'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Arial, \"Noto Sans\", \"Liberation Sans\", sans-serif" : "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Arial, \"Noto Sans\", \"Liberation Sans\", sans-serif" %>;
+      font-family: <%= PgReports.config.load_external_fonts ? "'Plus Jakarta Sans', " : "" %>-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
       background: var(--bg-primary);
       color: var(--text-primary);
       min-height: 100vh;
@@ -346,7 +346,7 @@
     .results-table {
       width: 100%;
       border-collapse: collapse;
-      font-family: <%= PgReports.config.load_external_fonts ? "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace" : "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace" %>;
+      font-family: <%= PgReports.config.load_external_fonts ? "'JetBrains Mono', " : "" %>SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       font-size: 0.8rem;
     }
 
