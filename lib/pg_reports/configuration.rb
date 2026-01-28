@@ -30,6 +30,9 @@ module PgReports
     # Assets / privacy settings
     attr_accessor :load_external_fonts          # When true, loads Google Fonts in the dashboard layout
 
+    # Development/testing settings
+    attr_accessor :fake_source_data             # Inject fake source data for IDE link testing
+
     def initialize
       # Telegram
       @telegram_bot_token = ENV.fetch("PG_REPORTS_TELEGRAM_TOKEN", nil)
@@ -58,6 +61,9 @@ module PgReports
 
       # Assets / privacy
       @load_external_fonts = ActiveModel::Type::Boolean.new.cast(ENV.fetch("PG_REPORTS_LOAD_EXTERNAL_FONTS", false))
+
+      # Development/testing
+      @fake_source_data = ENV.fetch("PG_REPORTS_FAKE_SOURCE_DATA", "false") == "true"
     end
 
     def connection
