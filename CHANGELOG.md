@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-01-28
+
+### Added
+
+- `fake_source_data` configuration option - enable via `PG_REPORTS_FAKE_SOURCE_DATA=true` env variable or in initializer
+- Support for short controller#action format in source links (e.g., `posts#index` → `app/controllers/posts_controller.rb`)
+
+### Changed
+
+- Fake source data moved to separate partial file for cleaner code organization
+- IDE link click handling improved with event delegation in capture phase
+
+### Fixed
+
+- Source badge clicks now work correctly without triggering row expansion
+- Fallback fonts now use proper sans-serif system font stack when `load_external_fonts` is disabled
+
 ## [0.2.1] - 2026-01-28
 
 ### Added
