@@ -18,7 +18,7 @@ A comprehensive PostgreSQL monitoring and analysis library for Rails application
 - 🌐 **Web Dashboard** - Beautiful dark-themed UI with sortable tables and expandable rows
 - 📨 **Telegram Integration** - Send reports directly to Telegram
 - 📥 **Export** - Download reports in TXT, CSV, or JSON format
-- 🔗 **IDE Integration** - Open source locations in VS Code, RubyMine, IntelliJ, or Cursor
+- 🔗 **IDE Integration** - Open source locations in VS Code, Cursor, RubyMine, or IntelliJ (with WSL support)
 - 📌 **Comparison Mode** - Save records to compare before/after optimization
 - 📊 **EXPLAIN ANALYZE** - Run query plans directly from the dashboard
 - 🗑️ **Migration Generator** - Generate Rails migrations to drop unused indexes
@@ -280,6 +280,7 @@ Click on source locations in reports to open the file directly in your IDE. Supp
 - **VS Code** - direct path for native Linux/macOS
 - **RubyMine**
 - **IntelliJ IDEA**
+- **Cursor (WSL)** - for Windows Subsystem for Linux
 - **Cursor**
 
 Use the ⚙️ button to set your default IDE and skip the selection menu.
