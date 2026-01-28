@@ -85,6 +85,123 @@ pg_stat_statements.track = all</pre>
   </div>
 </div>
 
+<!-- Live Monitoring Panel -->
+<div id="live-monitoring" class="live-monitoring-panel" style="display: none;">
+  <div class="live-monitoring-header">
+    <div class="live-monitoring-title">
+      <span class="live-indicator"></span>
+      <span>Live Monitoring</span>
+    </div>
+    <div class="live-monitoring-controls">
+      <span class="live-monitoring-interval">Updates every 5s</span>
+      <button class="btn-toggle-live" onclick="toggleLiveMonitoring()" title="Toggle live monitoring">
+        <span id="toggle-icon">⏸</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="live-metrics-grid">
+    <!-- Connections -->
+    <div class="live-metric-card" data-metric="connections">
+      <div class="metric-header">
+        <span class="metric-icon" style="background: rgba(107, 159, 232, 0.12); color: var(--accent-blue);">🔗</span>
+        <span class="metric-name">Connections</span>
+      </div>
+      <div class="metric-body">
+        <div class="metric-value">
+          <span id="metric-connections-value">-</span>
+          <span class="metric-unit">/ <span id="metric-connections-max">-</span></span>
+        </div>
+        <div class="metric-detail">
+          <span id="metric-connections-pct">-</span>% used
+        </div>
+        <div class="metric-sparkline">
+          <svg id="sparkline-connections" viewBox="0 0 100 30" preserveAspectRatio="none"></svg>
+        </div>
+      </div>
+      <div class="metric-status" id="status-connections"></div>
+    </div>
+
+    <!-- TPS -->
+    <div class="live-metric-card" data-metric="tps">
+      <div class="metric-header">
+        <span class="metric-icon" style="background: rgba(95, 184, 154, 0.12); color: var(--accent-green);">⚡</span>
+        <span class="metric-name">TPS</span>
+      </div>
+      <div class="metric-body">
+        <div class="metric-value">
+          <span id="metric-tps-value">-</span>
+          <span class="metric-unit">tx/s</span>
+        </div>
+        <div class="metric-detail">
+          commit: <span id="metric-tps-commit">-</span> / rollback: <span id="metric-tps-rollback">-</span>
+        </div>
+        <div class="metric-sparkline">
+          <svg id="sparkline-tps" viewBox="0 0 100 30" preserveAspectRatio="none"></svg>
+        </div>
+      </div>
+      <div class="metric-status" id="status-tps"></div>
+    </div>
+
+    <!-- Cache Hit Ratio -->
+    <div class="live-metric-card" data-metric="cache">
+      <div class="metric-header">
+        <span class="metric-icon" style="background: rgba(157, 140, 214, 0.12); color: var(--accent-purple);">💾</span>
+        <span class="metric-name">Cache Hit</span>
+      </div>
+      <div class="metric-body">
+        <div class="metric-value">
+          <span id="metric-cache-value">-</span>
+          <span class="metric-unit">%</span>
+        </div>
+        <div class="metric-detail">heap blocks from cache</div>
+        <div class="metric-sparkline">
+          <svg id="sparkline-cache" viewBox="0 0 100 30" preserveAspectRatio="none"></svg>
+        </div>
+      </div>
+      <div class="metric-status" id="status-cache"></div>
+    </div>
+
+    <!-- Long Running Queries -->
+    <div class="live-metric-card" data-metric="longrunning">
+      <div class="metric-header">
+        <span class="metric-icon" style="background: rgba(212, 160, 86, 0.12); color: var(--accent-amber);">🐢</span>
+        <span class="metric-name">Long Queries</span>
+      </div>
+      <div class="metric-body">
+        <div class="metric-value">
+          <span id="metric-longrunning-value">-</span>
+          <span class="metric-unit">queries</span>
+        </div>
+        <div class="metric-detail">&gt; 60s runtime</div>
+        <div class="metric-sparkline">
+          <svg id="sparkline-longrunning" viewBox="0 0 100 30" preserveAspectRatio="none"></svg>
+        </div>
+      </div>
+      <div class="metric-status" id="status-longrunning"></div>
+    </div>
+
+    <!-- Blocked Queries -->
+    <div class="live-metric-card" data-metric="blocked">
+      <div class="metric-header">
+        <span class="metric-icon" style="background: rgba(217, 112, 132, 0.12); color: var(--accent-rose);">🔒</span>
+        <span class="metric-name">Blocked</span>
+      </div>
+      <div class="metric-body">
+        <div class="metric-value">
+          <span id="metric-blocked-value">-</span>
+          <span class="metric-unit">processes</span>
+        </div>
+        <div class="metric-detail">waiting for locks</div>
+        <div class="metric-sparkline">
+          <svg id="sparkline-blocked" viewBox="0 0 100 30" preserveAspectRatio="none"></svg>
+        </div>
+      </div>
+      <div class="metric-status" id="status-blocked"></div>
+    </div>
+  </div>
+</div>
+
 <div class="categories-grid">
   <% @categories.each do |category_key, category| %>
     <div class="category-card<%= ' disabled' if category_key == :queries && !@pg_stat_status[:ready] %>">
@@ -370,6 +487,202 @@ pg_stat_statements.track = all</pre>
     padding: 0.625rem 1.25rem;
     font-size: 0.875rem;
   }
+
+  /* Live Monitoring Panel */
+  .live-monitoring-panel {
+    margin-bottom: 2rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+  }
+
+  .live-monitoring-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .live-monitoring-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  .live-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    animation: pulse 2s infinite;
+  }
+
+  .live-indicator.paused {
+    background: var(--text-muted);
+    animation: none;
+  }
+
+  .live-monitoring-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .live-monitoring-interval {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .btn-toggle-live {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-toggle-live:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+  }
+
+  /* Metrics Grid */
+  .live-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+  }
+
+  @media (max-width: 1200px) {
+    .live-metrics-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .live-metrics-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 500px) {
+    .live-metrics-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Metric Card */
+  .live-metric-card {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1rem;
+    position: relative;
+    transition: all 0.2s;
+  }
+
+  .live-metric-card:hover {
+    border-color: var(--accent-purple);
+  }
+
+  .live-metric-card.status-ok {
+    border-left: 3px solid var(--accent-green);
+  }
+
+  .live-metric-card.status-warning {
+    border-left: 3px solid var(--accent-amber);
+  }
+
+  .live-metric-card.status-critical {
+    border-left: 3px solid var(--accent-rose);
+  }
+
+  .metric-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .metric-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+  }
+
+  .metric-name {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .metric-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .metric-value {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+  }
+
+  .metric-value span:first-child {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+  }
+
+  .metric-unit {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .metric-detail {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+  }
+
+  /* Sparkline */
+  .metric-sparkline {
+    height: 30px;
+    margin-top: 0.5rem;
+  }
+
+  .metric-sparkline svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Status indicator */
+  .metric-status {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  .metric-status.ok { background: var(--accent-green); }
+  .metric-status.warning { background: var(--accent-amber); }
+  .metric-status.critical { background: var(--accent-rose); }
 </style>
 
 <script>
@@ -463,4 +776,229 @@ pg_stat_statements.track = all</pre>
       button.innerHTML = '⚡ Create Extension';
     }
   }
+
+  // ============================================
+  // Live Monitoring
+  // ============================================
+
+  const LIVE_CONFIG = {
+    pollInterval: 5000,
+    historyLength: 30,
+    thresholds: {
+      connections: { warning: 70, critical: 90 },
+      tps: { warning: null, critical: null },
+      cache: { warning: 95, critical: 90 },
+      longrunning: { warning: 1, critical: 5 },
+      blocked: { warning: 1, critical: 3 }
+    }
+  };
+
+  let liveMonitoringEnabled = true;
+  let pollTimer = null;
+  let previousMetrics = null;
+  const metricsHistory = {
+    connections: [],
+    tps: [],
+    cache: [],
+    longrunning: [],
+    blocked: []
+  };
+
+  function initLiveMonitoring() {
+    const panel = document.getElementById('live-monitoring');
+    if (!panel) return;
+
+    panel.style.display = 'block';
+
+    const savedState = localStorage.getItem('pgReportsLiveMonitoring');
+    if (savedState === 'disabled') {
+      liveMonitoringEnabled = false;
+      updateToggleUI();
+    }
+
+    if (liveMonitoringEnabled) {
+      fetchLiveMetrics();
+      startPolling();
+    }
+  }
+
+  function startPolling() {
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(fetchLiveMetrics, LIVE_CONFIG.pollInterval);
+  }
+
+  function stopPolling() {
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  }
+
+  function toggleLiveMonitoring() {
+    liveMonitoringEnabled = !liveMonitoringEnabled;
+    localStorage.setItem('pgReportsLiveMonitoring', liveMonitoringEnabled ? 'enabled' : 'disabled');
+    updateToggleUI();
+
+    if (liveMonitoringEnabled) {
+      fetchLiveMetrics();
+      startPolling();
+    } else {
+      stopPolling();
+    }
+  }
+
+  function updateToggleUI() {
+    const icon = document.getElementById('toggle-icon');
+    const indicator = document.querySelector('.live-indicator');
+
+    if (liveMonitoringEnabled) {
+      icon.textContent = '⏸';
+      indicator.classList.remove('paused');
+    } else {
+      icon.textContent = '▶';
+      indicator.classList.add('paused');
+    }
+  }
+
+  async function fetchLiveMetrics() {
+    try {
+      const response = await fetch(`${pgReportsRoot}/live_metrics`);
+      const data = await response.json();
+
+      if (data.success) {
+        updateMetricsDisplay(data.metrics);
+      }
+    } catch (error) {
+      console.error('Failed to fetch live metrics:', error);
+    }
+  }
+
+  function updateMetricsDisplay(metrics) {
+    let tps = 0;
+    if (previousMetrics) {
+      const timeDelta = metrics.timestamp - previousMetrics.timestamp;
+      if (timeDelta > 0) {
+        const txDelta = metrics.transactions.total - previousMetrics.transactions.total;
+        tps = Math.max(0, Math.round(txDelta / timeDelta));
+      }
+    }
+
+    document.getElementById('metric-connections-value').textContent = metrics.connections.total;
+    document.getElementById('metric-connections-max').textContent = metrics.connections.max;
+    document.getElementById('metric-connections-pct').textContent = metrics.connections.percent.toFixed(1);
+
+    document.getElementById('metric-tps-value').textContent = tps;
+    document.getElementById('metric-tps-commit').textContent = formatNumber(metrics.transactions.commit);
+    document.getElementById('metric-tps-rollback').textContent = formatNumber(metrics.transactions.rollback);
+
+    document.getElementById('metric-cache-value').textContent = metrics.cache_hit_ratio.toFixed(2);
+
+    document.getElementById('metric-longrunning-value').textContent = metrics.long_running_count;
+
+    document.getElementById('metric-blocked-value').textContent = metrics.blocked_count;
+
+    addToHistory('connections', metrics.connections.percent);
+    addToHistory('tps', tps);
+    addToHistory('cache', metrics.cache_hit_ratio);
+    addToHistory('longrunning', metrics.long_running_count);
+    addToHistory('blocked', metrics.blocked_count);
+
+    renderSparkline('connections', metricsHistory.connections, 'var(--accent-blue)');
+    renderSparkline('tps', metricsHistory.tps, 'var(--accent-green)');
+    renderSparkline('cache', metricsHistory.cache, 'var(--accent-purple)');
+    renderSparkline('longrunning', metricsHistory.longrunning, 'var(--accent-amber)');
+    renderSparkline('blocked', metricsHistory.blocked, 'var(--accent-rose)');
+
+    updateStatus('connections', metrics.connections.percent, 'higher');
+    updateStatus('tps', tps, null);
+    updateStatus('cache', metrics.cache_hit_ratio, 'lower');
+    updateStatus('longrunning', metrics.long_running_count, 'higher');
+    updateStatus('blocked', metrics.blocked_count, 'higher');
+
+    previousMetrics = metrics;
+  }
+
+  function addToHistory(metric, value) {
+    metricsHistory[metric].push(value);
+    if (metricsHistory[metric].length > LIVE_CONFIG.historyLength) {
+      metricsHistory[metric].shift();
+    }
+  }
+
+  function formatNumber(num) {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
+  }
+
+  function renderSparkline(metric, data, color) {
+    const svg = document.getElementById(`sparkline-${metric}`);
+    if (!svg || data.length < 2) return;
+
+    svg.innerHTML = '';
+
+    const width = 100;
+    const height = 30;
+    const padding = 2;
+
+    const min = Math.min(...data);
+    const max = Math.max(...data);
+    const range = max - min || 1;
+
+    const points = data.map((value, index) => {
+      const x = padding + (index / (data.length - 1)) * (width - 2 * padding);
+      const y = height - padding - ((value - min) / range) * (height - 2 * padding);
+      return { x, y };
+    });
+
+    const pathD = points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`)).join(' ');
+
+    const areaD = pathD +
+      ` L ${points[points.length - 1].x} ${height - padding}` +
+      ` L ${points[0].x} ${height - padding} Z`;
+
+    const area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    area.setAttribute('d', areaD);
+    area.setAttribute('fill', color);
+    area.setAttribute('opacity', '0.15');
+    svg.appendChild(area);
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', pathD);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', color);
+    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(path);
+  }
+
+  function updateStatus(metric, value, badDirection) {
+    const card = document.querySelector(`[data-metric="${metric}"]`);
+    const statusDot = document.getElementById(`status-${metric}`);
+    if (!card || !statusDot) return;
+
+    const thresholds = LIVE_CONFIG.thresholds[metric];
+    if (!thresholds.warning && !thresholds.critical) {
+      card.className = 'live-metric-card status-ok';
+      statusDot.className = 'metric-status ok';
+      return;
+    }
+
+    let status = 'ok';
+
+    if (badDirection === 'higher') {
+      if (value >= thresholds.critical) status = 'critical';
+      else if (value >= thresholds.warning) status = 'warning';
+    } else if (badDirection === 'lower') {
+      if (value <= thresholds.critical) status = 'critical';
+      else if (value <= thresholds.warning) status = 'warning';
+    }
+
+    card.className = `live-metric-card status-${status}`;
+    statusDot.className = `metric-status ${status}`;
+  }
+
+  document.addEventListener('DOMContentLoaded', initLiveMonitoring);
+  window.addEventListener('beforeunload', stopPolling);
 </script>

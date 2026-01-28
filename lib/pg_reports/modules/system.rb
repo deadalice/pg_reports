@@ -97,6 +97,36 @@ module PgReports
         }
       end
 
+      # Live metrics for dashboard monitoring
+      # @param long_query_threshold [Integer] Threshold in seconds for long queries
+      # @return [Hash] Metrics data
+      def live_metrics(long_query_threshold: 60)
+        data = executor.execute_from_file(:system, :live_metrics,
+          long_query_threshold: long_query_threshold
+        )
+
+        row = data.first || {}
+
+        {
+          connections: {
+            active: row["active_connections"].to_i,
+            idle: row["idle_connections"].to_i,
+            total: row["total_connections"].to_i,
+            max: row["max_connections"].to_i,
+            percent: row["connections_pct"].to_f
+          },
+          transactions: {
+            total: row["total_transactions"].to_i,
+            commit: row["xact_commit"].to_i,
+            rollback: row["xact_rollback"].to_i
+          },
+          cache_hit_ratio: row["heap_hit_ratio"].to_f,
+          long_running_count: row["long_running_count"].to_i,
+          blocked_count: row["blocked_count"].to_i,
+          timestamp: row["timestamp_epoch"].to_f
+        }
+      end
+
       # Enable pg_stat_statements extension
       # Tries to create extension, returns helpful error if it fails
       # @return [Hash] Result with success status and message
