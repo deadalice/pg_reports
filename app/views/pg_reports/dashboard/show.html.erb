@@ -1216,6 +1216,10 @@
   }
 </style>
 
+<% if PgReports.config.fake_source_data %>
+  <%= render 'pg_reports/dashboard/fake_source_data' %>
+<% end %>
+
 <script>
   let currentReportData = null;
   const category = '<%= @category %>';
@@ -1589,13 +1593,30 @@
       lineNumber = parseInt(fileLineMatch[3], 10);
     }
 
-    // Try to match Controller#action pattern
+    // Try to match Controller#action pattern (e.g., PostsController#index)
     const controllerMatch = source.match(/^(\w+Controller)#(\w+)/);
     if (controllerMatch) {
       methodName = `${controllerMatch[1]}#${controllerMatch[2]}`;
-      // Derive file path from controller name
-      const controllerName = controllerMatch[1].replace(/Controller$/, '').toLowerCase();
-      filePath = `app/controllers/${controllerName}_controller.rb`;
+
+      // Check known methods first for testing (if fake data is enabled)
+      if (typeof knownControllerMethods !== 'undefined' && knownControllerMethods[methodName]) {
+        filePath = knownControllerMethods[methodName].file;
+        lineNumber = knownControllerMethods[methodName].line;
+      } else {
+        // Derive file path from controller name
+        const controllerName = controllerMatch[1].replace(/Controller$/, '').toLowerCase();
+        filePath = `app/controllers/${controllerName}_controller.rb`;
+      }
+    }
+
+    // Try to match short controller#action pattern (e.g., posts#index, dashboard#show)
+    if (!filePath) {
+      const shortMatch = source.match(/^(\w+)#(\w+)$/);
+      if (shortMatch) {
+        const controllerName = shortMatch[1].toLowerCase();
+        methodName = `${shortMatch[1]}#${shortMatch[2]}`;
+        filePath = `app/controllers/${controllerName}_controller.rb`;
+      }
     }
 
     return { filePath, lineNumber, methodName, original: source };
@@ -1694,12 +1715,12 @@
 
     let dropdownHtml = `
       <div class="ide-dropdown">
-        <span class="source-badge clickable" onclick="event.stopPropagation(); toggleIdeDropdown('${dropdownId}', this)" title="${escapeHtml(parsed.original)}">${escapeHtml(parsed.original)}</span>
+        <span class="source-badge clickable" data-dropdown-id="${dropdownId}" title="${escapeHtml(parsed.original)}">${escapeHtml(parsed.original)}</span>
         <div class="ide-dropdown-menu" id="${dropdownId}">
     `;
 
     for (const ide of ideUrls) {
-      dropdownHtml += `<a href="${ide.url}" onclick="event.stopPropagation();">${ide.name}</a>`;
+      dropdownHtml += `<a href="${ide.url}">${ide.name}</a>`;
     }
 
     dropdownHtml += '</div></div>';
@@ -1725,6 +1746,26 @@
       menu.style.left = rect.left + 'px';
     }
   }
+
+  // Event delegation for source badge clicks
+  document.addEventListener('click', function(e) {
+    const badge = e.target.closest('.source-badge.clickable[data-dropdown-id]');
+    if (badge) {
+      e.stopPropagation();
+      e.preventDefault();
+      const dropdownId = badge.dataset.dropdownId;
+      toggleIdeDropdown(dropdownId, badge);
+      return;
+    }
+
+    // Allow clicks on IDE dropdown menu links
+    const ideLink = e.target.closest('.ide-dropdown-menu a');
+    if (ideLink) {
+      e.stopPropagation();
+      // Let the link navigate normally
+      return;
+    }
+  }, true); // Use capture phase to intercept before row click
 
   function buildDetailRow(row, columns, rowIndex, thresholds, problemFields) {
     let html = '<div class="row-detail">';
@@ -1829,6 +1870,11 @@
       if (loadingEl) loadingEl.style.display = 'none';
 
       if (data.success) {
+        // Inject fake source data for IDE link testing (if enabled)
+        if (typeof injectFakeSourceData === 'function') {
+          injectFakeSourceData(data);
+        }
+
         currentReportData = data;
         const thresholds = data.thresholds || {};
         const problemFields = data.problem_fields || [];
