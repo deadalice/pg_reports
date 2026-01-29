@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    pg_reports (0.3.0)
+    pg_reports (0.4.0)
       csv
       pg (>= 1.0)
       rails (>= 5.0)

@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-01-29
+
+### Added
+
+- **YAML-based Report Configuration System** - declarative report definitions:
+  - Each report now defined in a single YAML file (1 file = 1 report approach)
+  - Migrated all 31 reports from Ruby methods to YAML format
+  - New classes: `ReportDefinition`, `Filter`, `ReportLoader`, `ModuleGenerator`
+  - Support for post-SQL filtering with operators (eq, ne, lt, lte, gt, gte)
+  - Title interpolation with variable substitution using `${variable}` syntax
+  - Enrichment hooks pattern for data transformation
+  - Problem explanations configuration in YAML (field → explanation key mapping)
+- **Filter UI** on report pages for manual parameter input:
+  - Collapsible filter section with form inputs for each parameter
+  - Support for threshold overrides (limit, min_duration_seconds, etc.)
+  - Real-time report refresh with custom filter values
+  - Horizontal layout with descriptions and inputs side-by-side
+  - Dark theme styling for filter inputs and labels
+
+### Changed
+
+- Report definitions now use declarative YAML files instead of repetitive Ruby methods (~800 lines of code eliminated)
+- Modules now use metaprogramming to dynamically generate methods from YAML at load time
+- Dashboard category cards width increased from 280px to 350px for better readability
+- Documentation and filter sections positioned side-by-side in responsive grid layout
+- Filter parameters section positioned below documentation and collapsed by default
+- Reduced vertical spacing between sections for more compact layout
+- Problem field to explanation key mapping moved from hardcoded JavaScript to server-driven YAML configuration
+
+### Fixed
+
+- CSS Grid `align-items: stretch` causing synchronized expansion of documentation and filter blocks
+- Visual "chin" appearing on closed filter details block due to default margins
+- TypeError when report has no limit parameter default value
+- Excessive margins between report sections
+
 ## [0.3.0] - 2026-01-28
 
 ### Added
