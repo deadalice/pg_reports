@@ -139,6 +139,12 @@ module PgReports
         cache_stats: {
           thresholds: {cache_hit_ratio: {warning: 0.95, critical: 0.90, inverted: true}},
           problem_fields: ["cache_hit_ratio"]
+        },
+
+        # === SCHEMA ANALYSIS ===
+        missing_validations: {
+          thresholds: {},
+          problem_fields: []
         }
       }.freeze
 
@@ -207,6 +213,14 @@ module PgReports
             extensions: {name: "Extensions", description: "Installed extensions"},
             activity_overview: {name: "Activity Overview", description: "Current activity summary"},
             cache_stats: {name: "Cache Stats", description: "Database cache statistics"}
+          }
+        },
+        schema_analysis: {
+          name: "Schema Analysis",
+          icon: "🔍",
+          color: "#06b6d4",
+          reports: {
+            missing_validations: {name: "Missing Validations", description: "Unique indexes without model validations"}
           }
         }
       }.freeze

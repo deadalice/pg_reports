@@ -295,6 +295,19 @@ en:
           - "Target value: >99% for OLTP, >95% for mixed workload."
           - "Low cache hit: increase shared_buffers (up to 25% RAM), or the problem is in queries."
 
+      # === SCHEMA ANALYSIS ===
+      missing_validations:
+        title: "Missing Validations"
+        what: "Unique indexes in the database without corresponding uniqueness validations in Rails models."
+        how: "Analyzes all unique indexes (including composite ones) and checks if the corresponding Rails model has validates :column, uniqueness: true validation."
+        nuances:
+          - "Database constraints (indexes) and model validations serve different purposes — both should be present."
+          - "Unique index prevents duplicates at database level, validation provides user-friendly error messages."
+          - "For composite indexes (a, b), need validation with scope: validates :a, uniqueness: { scope: :b }"
+          - "Some tables may not have models — this is normal for join tables or legacy tables."
+          - "Validations in concerns and parent models are also detected."
+          - "Primary keys don't need validations — they are automatically unique."
+
     # Problem explanations for highlighting
     problems:
       high_mean_time: "High mean execution time. Consider adding indexes or optimizing the query."

@@ -19,6 +19,7 @@ require_relative "pg_reports/modules/indexes"
 require_relative "pg_reports/modules/tables"
 require_relative "pg_reports/modules/connections"
 require_relative "pg_reports/modules/system"
+require_relative "pg_reports/modules/schema_analysis"
 
 # Dashboard
 require_relative "pg_reports/dashboard/reports_registry"
@@ -55,6 +56,10 @@ module PgReports
       :pg_stat_statements_preloaded?, :pg_stat_statements_status,
       :enable_pg_stat_statements!,
       to: Modules::System
+
+    # Schema analysis methods
+    delegate :missing_validations,
+      to: Modules::SchemaAnalysis
 
     # Generate a comprehensive database health report
     # @return [Report] Combined health report
@@ -109,6 +114,10 @@ module PgReports
 
     def system
       Modules::System
+    end
+
+    def schema_analysis
+      Modules::SchemaAnalysis
     end
   end
 end
