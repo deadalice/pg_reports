@@ -37,3 +37,7 @@ report:
         source: config
         key: bloat_threshold_percent
       cast: float
+
+  problem_explanations:
+    dead_tuple_ratio: many_dead_tuples
+    n_dead_tup: many_dead_tuples

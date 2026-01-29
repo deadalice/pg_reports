@@ -37,3 +37,7 @@ report:
         source: param
         key: min_duration_seconds
       cast: float
+
+  problem_explanations:
+    duration_seconds: long_running
+    duration: long_running

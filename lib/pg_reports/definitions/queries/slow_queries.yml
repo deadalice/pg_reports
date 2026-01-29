@@ -41,3 +41,8 @@ report:
   enrichment:
     hook: enrich_with_annotations
     module: queries
+
+  problem_explanations:
+    mean_time_ms: high_mean_time
+    calls: high_calls
+    total_time_ms: high_total_time

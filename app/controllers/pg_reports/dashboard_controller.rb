@@ -70,6 +70,7 @@ module PgReports
       report = execute_report(category, report_key, **filter_params)
       thresholds = Dashboard::ReportsRegistry.thresholds(report_key)
       problem_fields = Dashboard::ReportsRegistry.problem_fields(report_key)
+      problem_explanations = load_problem_explanations(category, report_key)
 
       render json: {
         success: true,
@@ -79,7 +80,8 @@ module PgReports
         total: report.size,
         generated_at: report.generated_at.strftime("%Y-%m-%d %H:%M:%S"),
         thresholds: thresholds,
-        problem_fields: problem_fields
+        problem_fields: problem_fields,
+        problem_explanations: problem_explanations
       }
     rescue => e
       render json: {success: false, error: e.message}, status: :unprocessable_entity
@@ -300,6 +302,13 @@ module PgReports
       return {} unless definition
 
       definition.filter_parameters
+    end
+
+    def load_problem_explanations(category, report_key)
+      definition = ReportLoader.get(category.to_s, report_key.to_s)
+      return {} unless definition
+
+      definition.problem_explanations
     end
 
     def extract_filter_params

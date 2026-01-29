@@ -36,3 +36,6 @@ report:
         source: config
         key: unused_index_threshold_scans
       cast: integer
+
+  problem_explanations:
+    idx_scan: unused_index

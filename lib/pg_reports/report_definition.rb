@@ -152,5 +152,10 @@ module PgReports
 
       params
     end
+
+    # Extract problem explanations mapping from YAML
+    def problem_explanations
+      config["problem_explanations"] || {}
+    end
   end
 end

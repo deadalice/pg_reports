@@ -37,3 +37,7 @@ report:
         source: config
         key: bloat_threshold_percent
       cast: float
+
+  problem_explanations:
+    bloat_ratio: high_bloat
+    bloat_size: high_bloat

@@ -1,5 +1,6 @@
 <script>
   let currentReportData = null;
+  let currentProblemExplanations = {};
   const category = '<%= @category %>';
   const reportKey = '<%= @report_key %>';
   const railsEnv = '<%= Rails.env %>';
@@ -333,21 +334,16 @@
     document.getElementById('problem-modal').style.display = 'none';
   }
 
-  // Map problem fields to explanation keys
+  // Map problem fields to explanation keys using server-provided mapping
   function getExplanationKey(problems) {
     const fields = problems.map(p => p.field);
 
-    if (fields.includes('mean_time_ms')) return 'high_mean_time';
-    if (fields.includes('calls')) return 'high_calls';
-    if (fields.includes('total_time_ms')) return 'high_total_time';
-    if (fields.includes('cache_hit_ratio')) return 'low_cache_hit';
-    if (fields.includes('seq_scan') || fields.includes('seq_tup_read')) return 'high_seq_scan';
-    if (fields.includes('idx_scan')) return 'unused_index';
-    if (fields.includes('bloat_ratio') || fields.includes('bloat_size')) return 'high_bloat';
-    if (fields.includes('dead_tuple_ratio') || fields.includes('n_dead_tup')) return 'many_dead_tuples';
-    if (fields.includes('duration_seconds') || fields.includes('duration')) return 'long_running';
-    if (fields.includes('blocked_count')) return 'blocking';
-    if (fields.includes('idle_in_transaction')) return 'idle_in_transaction';
+    // Use server-provided problem explanations mapping
+    for (const field of fields) {
+      if (currentProblemExplanations[field]) {
+        return currentProblemExplanations[field];
+      }
+    }
 
     return '';
   }
@@ -678,6 +674,7 @@
         }
 
         currentReportData = data;
+        currentProblemExplanations = data.problem_explanations || {};
         const thresholds = data.thresholds || {};
         const problemFields = data.problem_fields || [];
 
