@@ -1,5 +1,6 @@
 # PgReports
 
+[![Gem Version](https://badge.fury.io/rb/pg_reports.svg)](https://badge.fury.io/rb/pg_reports)
 [![Ruby](https://img.shields.io/badge/Ruby-2.7%2B-red.svg)](https://www.ruby-lang.org/)
 [![Rails](https://img.shields.io/badge/Rails-5.0%2B-red.svg)](https://rubyonrails.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -267,6 +268,7 @@ The dashboard provides:
 
 - 📊 Overview of all report categories with descriptions
 - ⚡ One-click report execution
+- 🔍 Filter parameters - adjust thresholds and limits on the fly
 - 🔍 Expandable rows for full query text
 - 📋 Copy query to clipboard
 - 📥 Download in multiple formats (TXT, CSV, JSON)
@@ -290,6 +292,16 @@ Click on source locations in reports to open the file directly in your IDE. Supp
 - **Cursor**
 
 Use the ⚙️ button to set your default IDE and skip the selection menu.
+
+### Filter Parameters
+
+Each report page includes a collapsible "Параметры фильтрации" (Filter Parameters) section where you can:
+
+1. **Adjust thresholds** - Override default thresholds (e.g., slow query threshold, unused index scans)
+2. **Change limits** - Set the maximum number of results to display
+3. **Real-time refresh** - Reports automatically refresh when you change parameters
+
+Parameters show their current configured values and allow you to experiment with different thresholds without changing your configuration file.
 
 ### Save Records for Comparison
 
