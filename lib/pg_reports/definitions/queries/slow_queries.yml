@@ -1,0 +1,43 @@
+# Slow queries - queries with high mean execution time
+# Report with threshold filtering, enrichment, and title interpolation
+
+report:
+  name: slow_queries
+  module: queries
+  description: "Queries with high mean execution time"
+
+  sql:
+    category: queries
+    file: slow_queries
+
+  title: "Slow Queries (mean time >= ${threshold}ms)"
+  title_vars:
+    threshold:
+      source: config
+      key: slow_query_threshold_ms
+
+  columns:
+    - query
+    - source
+    - calls
+    - mean_time_ms
+    - total_time_ms
+    - rows_per_call
+
+  parameters:
+    limit:
+      type: integer
+      default: 20
+      description: "Maximum number of results"
+
+  filters:
+    - field: mean_time_ms
+      operator: gte
+      value:
+        source: config
+        key: slow_query_threshold_ms
+      cast: float
+
+  enrichment:
+    hook: enrich_with_annotations
+    module: queries

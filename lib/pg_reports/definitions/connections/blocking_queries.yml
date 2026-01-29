@@ -1,0 +1,20 @@
+# Blocking queries - queries that are blocking others
+# Simple report showing lock conflicts
+
+report:
+  name: blocking_queries
+  module: connections
+  description: "Queries that are blocking other queries"
+
+  sql:
+    category: connections
+    file: blocking_queries
+
+  title: "Blocking Queries"
+
+  columns:
+    - blocked_pid
+    - blocking_pid
+    - blocked_query
+    - blocking_query
+    - blocked_duration

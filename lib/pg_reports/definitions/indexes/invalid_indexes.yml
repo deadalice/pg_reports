@@ -1,0 +1,19 @@
+# Invalid indexes - indexes that are not valid (e.g., failed to build)
+# Simple report with no filtering or parameters
+
+report:
+  name: invalid_indexes
+  module: indexes
+  description: "Indexes that are not valid (e.g., failed to build)"
+
+  sql:
+    category: indexes
+    file: invalid_indexes
+
+  title: "Invalid Indexes"
+
+  columns:
+    - schema
+    - table_name
+    - index_name
+    - index_definition

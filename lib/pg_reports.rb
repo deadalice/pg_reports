@@ -13,6 +13,12 @@ require_relative "pg_reports/report"
 require_relative "pg_reports/telegram_sender"
 require_relative "pg_reports/annotation_parser"
 
+# YAML-based report system
+require_relative "pg_reports/filter"
+require_relative "pg_reports/report_definition"
+require_relative "pg_reports/report_loader"
+require_relative "pg_reports/module_generator"
+
 # Modules
 require_relative "pg_reports/modules/queries"
 require_relative "pg_reports/modules/indexes"
@@ -119,5 +125,14 @@ module PgReports
     def schema_analysis
       Modules::SchemaAnalysis
     end
+
+    # Reload YAML report definitions and regenerate module methods
+    def reload_definitions!
+      ReportLoader.reload!
+      ModuleGenerator.generate!
+    end
   end
 end
+
+# Generate YAML-based methods on load
+PgReports::ModuleGenerator.generate!

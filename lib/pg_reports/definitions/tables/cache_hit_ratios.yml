@@ -1,0 +1,26 @@
+# Table cache hit ratios
+# Simple report with limit parameter
+
+report:
+  name: cache_hit_ratios
+  module: tables
+  description: "Table cache hit ratios showing buffer hits vs reads"
+
+  sql:
+    category: tables
+    file: cache_hit_ratios
+
+  title: "Table Cache Hit Ratios"
+
+  columns:
+    - schema
+    - table_name
+    - heap_blks_read
+    - heap_blks_hit
+    - cache_hit_ratio
+
+  parameters:
+    limit:
+      type: integer
+      default: 50
+      description: "Maximum number of results"

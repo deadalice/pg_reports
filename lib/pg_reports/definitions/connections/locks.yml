@@ -1,0 +1,22 @@
+# Lock statistics
+# Simple report showing current database locks
+
+report:
+  name: locks
+  module: connections
+  description: "Current database locks"
+
+  sql:
+    category: connections
+    file: locks
+
+  title: "Current Locks"
+
+  columns:
+    - pid
+    - database
+    - relation
+    - locktype
+    - mode
+    - granted
+    - waiting

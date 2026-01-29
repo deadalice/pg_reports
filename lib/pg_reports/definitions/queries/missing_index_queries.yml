@@ -1,0 +1,31 @@
+# Queries missing indexes - sequential scans on large tables
+# Simple report with enrichment
+
+report:
+  name: missing_index_queries
+  module: queries
+  description: "Queries with sequential scans that may benefit from indexes"
+
+  sql:
+    category: queries
+    file: missing_index_queries
+
+  title: "Queries Potentially Missing Indexes"
+
+  columns:
+    - query
+    - source
+    - calls
+    - seq_scan_count
+    - rows_examined
+    - table_name
+
+  parameters:
+    limit:
+      type: integer
+      default: 20
+      description: "Maximum number of results"
+
+  enrichment:
+    hook: enrich_with_annotations
+    module: queries

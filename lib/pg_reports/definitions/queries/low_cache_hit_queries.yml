@@ -1,0 +1,47 @@
+# Queries with low cache hit ratio
+# Report with parameter filtering, enrichment, and title interpolation
+
+report:
+  name: low_cache_hit_queries
+  module: queries
+  description: "Queries with poor cache utilization"
+
+  sql:
+    category: queries
+    file: low_cache_hit_queries
+
+  title: "Queries with Low Cache Hit Ratio (min ${min_calls} calls)"
+  title_vars:
+    min_calls:
+      source: param
+      key: min_calls
+
+  columns:
+    - query
+    - source
+    - calls
+    - cache_hit_ratio
+    - shared_blks_hit
+    - shared_blks_read
+
+  parameters:
+    limit:
+      type: integer
+      default: 20
+      description: "Maximum number of results"
+    min_calls:
+      type: integer
+      default: 100
+      description: "Minimum number of calls to include"
+
+  filters:
+    - field: calls
+      operator: gte
+      value:
+        source: param
+        key: min_calls
+      cast: integer
+
+  enrichment:
+    hook: enrich_with_annotations
+    module: queries

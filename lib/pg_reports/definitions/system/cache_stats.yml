@@ -1,0 +1,18 @@
+# Cache hit ratio for the entire database
+# Simple report showing cache statistics
+
+report:
+  name: cache_stats
+  module: system
+  description: "Database-wide cache hit statistics"
+
+  sql:
+    category: system
+    file: cache_stats
+
+  title: "Database Cache Statistics"
+
+  columns:
+    - database
+    - heap_hit_ratio
+    - index_hit_ratio

@@ -1,0 +1,18 @@
+# Connection statistics by state
+# Simple report showing connection counts grouped by state
+
+report:
+  name: connection_stats
+  module: connections
+  description: "Connection counts by database and state"
+
+  sql:
+    category: connections
+    file: connection_stats
+
+  title: "Connection Statistics"
+
+  columns:
+    - database
+    - state
+    - count

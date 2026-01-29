@@ -1,0 +1,27 @@
+# Index usage statistics
+# Simple report with limit parameter
+
+report:
+  name: index_usage
+  module: indexes
+  description: "Index usage statistics showing scan counts and tuples read"
+
+  sql:
+    category: indexes
+    file: index_usage
+
+  title: "Index Usage Statistics"
+
+  columns:
+    - schema
+    - table_name
+    - index_name
+    - idx_scan
+    - idx_tup_read
+    - index_size_mb
+
+  parameters:
+    limit:
+      type: integer
+      default: 50
+      description: "Maximum number of results"

@@ -1,0 +1,39 @@
+# Tables needing vacuum - high dead rows count
+# Report with threshold filtering and title interpolation
+
+report:
+  name: vacuum_needed
+  module: tables
+  description: "Tables with high dead rows count needing vacuum"
+
+  sql:
+    category: tables
+    file: vacuum_needed
+
+  title: "Tables Needing Vacuum (dead rows >= ${threshold})"
+  title_vars:
+    threshold:
+      source: config
+      key: dead_rows_threshold
+
+  columns:
+    - schema
+    - table_name
+    - n_live_tup
+    - n_dead_tup
+    - last_vacuum
+    - last_autovacuum
+
+  parameters:
+    limit:
+      type: integer
+      default: 20
+      description: "Maximum number of results"
+
+  filters:
+    - field: n_dead_tup
+      operator: gte
+      value:
+        source: config
+        key: dead_rows_threshold
+      cast: integer

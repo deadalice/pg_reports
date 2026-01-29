@@ -1,0 +1,29 @@
+# Index sizes - largest indexes by size
+# Report with title interpolation using limit parameter
+
+report:
+  name: index_sizes
+  module: indexes
+  description: "Largest indexes by size"
+
+  sql:
+    category: indexes
+    file: index_sizes
+
+  title: "Index Sizes (top ${limit})"
+  title_vars:
+    limit:
+      source: param
+      key: limit
+
+  columns:
+    - schema
+    - table_name
+    - index_name
+    - index_size_mb
+
+  parameters:
+    limit:
+      type: integer
+      default: 50
+      description: "Maximum number of results"

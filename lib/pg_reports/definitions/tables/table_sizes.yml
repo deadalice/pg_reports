@@ -1,0 +1,31 @@
+# Table sizes including indexes
+# Report with title interpolation using limit parameter
+
+report:
+  name: table_sizes
+  module: tables
+  description: "Table sizes including indexes"
+
+  sql:
+    category: tables
+    file: table_sizes
+
+  title: "Table Sizes (top ${limit})"
+  title_vars:
+    limit:
+      source: param
+      key: limit
+
+  columns:
+    - schema
+    - table_name
+    - table_size_mb
+    - index_size_mb
+    - total_size_mb
+    - row_count
+
+  parameters:
+    limit:
+      type: integer
+      default: 50
+      description: "Maximum number of results"

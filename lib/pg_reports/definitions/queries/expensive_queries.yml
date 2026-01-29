@@ -1,0 +1,43 @@
+# Expensive queries - queries consuming most total time
+# Report with threshold filtering, enrichment, and title interpolation
+
+report:
+  name: expensive_queries
+  module: queries
+  description: "Queries consuming most total execution time"
+
+  sql:
+    category: queries
+    file: expensive_queries
+
+  title: "Expensive Queries (total time >= ${threshold}ms)"
+  title_vars:
+    threshold:
+      source: config
+      key: expensive_query_threshold_ms
+
+  columns:
+    - query
+    - source
+    - calls
+    - total_time_ms
+    - percent_of_total
+    - mean_time_ms
+
+  parameters:
+    limit:
+      type: integer
+      default: 20
+      description: "Maximum number of results"
+
+  filters:
+    - field: total_time_ms
+      operator: gte
+      value:
+        source: config
+        key: expensive_query_threshold_ms
+      cast: float
+
+  enrichment:
+    hook: enrich_with_annotations
+    module: queries

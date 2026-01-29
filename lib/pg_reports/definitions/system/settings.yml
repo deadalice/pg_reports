@@ -1,0 +1,20 @@
+# PostgreSQL settings
+# Simple report showing important configuration settings
+
+report:
+  name: settings
+  module: system
+  description: "Important PostgreSQL configuration settings"
+
+  sql:
+    category: system
+    file: settings
+
+  title: "PostgreSQL Settings"
+
+  columns:
+    - name
+    - setting
+    - unit
+    - category
+    - description

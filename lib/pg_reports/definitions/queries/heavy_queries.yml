@@ -1,0 +1,43 @@
+# Heavy queries - queries called most frequently
+# Report with threshold filtering, enrichment, and title interpolation
+
+report:
+  name: heavy_queries
+  module: queries
+  description: "Queries called most frequently"
+
+  sql:
+    category: queries
+    file: heavy_queries
+
+  title: "Heavy Queries (calls >= ${threshold})"
+  title_vars:
+    threshold:
+      source: config
+      key: heavy_query_threshold_calls
+
+  columns:
+    - query
+    - source
+    - calls
+    - total_time_ms
+    - mean_time_ms
+    - cache_hit_ratio
+
+  parameters:
+    limit:
+      type: integer
+      default: 20
+      description: "Maximum number of results"
+
+  filters:
+    - field: calls
+      operator: gte
+      value:
+        source: config
+        key: heavy_query_threshold_calls
+      cast: integer
+
+  enrichment:
+    hook: enrich_with_annotations
+    module: queries

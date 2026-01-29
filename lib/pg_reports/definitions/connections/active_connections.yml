@@ -1,0 +1,23 @@
+# Active connections
+# Simple report showing all active database connections
+
+report:
+  name: active_connections
+  module: connections
+  description: "All active database connections"
+
+  sql:
+    category: connections
+    file: active_connections
+
+  title: "Active Connections"
+
+  columns:
+    - pid
+    - database
+    - username
+    - application
+    - state
+    - query_start
+    - state_change
+    - query

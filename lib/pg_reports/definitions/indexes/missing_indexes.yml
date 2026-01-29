@@ -1,0 +1,27 @@
+# Missing indexes - tables with high sequential scans
+# Simple report with limit parameter
+
+report:
+  name: missing_indexes
+  module: indexes
+  description: "Tables with high sequential scans that may benefit from indexes"
+
+  sql:
+    category: indexes
+    file: missing_indexes
+
+  title: "Tables Potentially Missing Indexes"
+
+  columns:
+    - schema
+    - table_name
+    - seq_scan
+    - seq_tup_read
+    - idx_scan
+    - table_size_mb
+
+  parameters:
+    limit:
+      type: integer
+      default: 20
+      description: "Maximum number of results"

@@ -1,0 +1,35 @@
+# All query statistics ordered by total time
+# Simple report with enrichment and title interpolation
+
+report:
+  name: all_queries
+  module: queries
+  description: "All query statistics ordered by total time"
+
+  sql:
+    category: queries
+    file: all_queries
+
+  title: "All Query Statistics (top ${limit})"
+  title_vars:
+    limit:
+      source: param
+      key: limit
+
+  columns:
+    - query
+    - source
+    - calls
+    - total_time_ms
+    - mean_time_ms
+    - rows
+
+  parameters:
+    limit:
+      type: integer
+      default: 50
+      description: "Maximum number of results"
+
+  enrichment:
+    hook: enrich_with_annotations
+    module: queries

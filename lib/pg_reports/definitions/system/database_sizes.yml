@@ -1,0 +1,18 @@
+# Database sizes
+# Simple report showing all database sizes
+
+report:
+  name: database_sizes
+  module: system
+  description: "Sizes of all databases"
+
+  sql:
+    category: system
+    file: database_sizes
+
+  title: "Database Sizes"
+
+  columns:
+    - database
+    - size_mb
+    - size_pretty

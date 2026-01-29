@@ -1,0 +1,31 @@
+# Sequential scan statistics
+# Report with title interpolation using limit parameter
+
+report:
+  name: seq_scans
+  module: tables
+  description: "Sequential scan statistics for tables"
+
+  sql:
+    category: tables
+    file: seq_scans
+
+  title: "Sequential Scans (top ${limit})"
+  title_vars:
+    limit:
+      source: param
+      key: limit
+
+  columns:
+    - schema
+    - table_name
+    - seq_scan
+    - seq_tup_read
+    - idx_scan
+    - rows_per_seq_scan
+
+  parameters:
+    limit:
+      type: integer
+      default: 20
+      description: "Maximum number of results"

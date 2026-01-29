@@ -1,0 +1,39 @@
+# Long running queries
+# Report with parameter filtering and title interpolation
+
+report:
+  name: long_running_queries
+  module: connections
+  description: "Queries running for extended duration"
+
+  sql:
+    category: connections
+    file: long_running_queries
+
+  title: "Long Running Queries (>= ${min_duration_seconds}s)"
+  title_vars:
+    min_duration_seconds:
+      source: param
+      key: min_duration_seconds
+
+  columns:
+    - pid
+    - database
+    - username
+    - duration_seconds
+    - state
+    - query
+
+  parameters:
+    min_duration_seconds:
+      type: integer
+      default: 60
+      description: "Minimum query duration in seconds"
+
+  filters:
+    - field: duration_seconds
+      operator: gte
+      value:
+        source: param
+        key: min_duration_seconds
+      cast: float

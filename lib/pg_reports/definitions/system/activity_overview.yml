@@ -1,0 +1,17 @@
+# Database activity overview
+# Simple report showing current database activity metrics
+
+report:
+  name: activity_overview
+  module: system
+  description: "Current database activity overview"
+
+  sql:
+    category: system
+    file: activity_overview
+
+  title: "Database Activity Overview"
+
+  columns:
+    - metric
+    - value

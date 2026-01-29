@@ -1,0 +1,27 @@
+# Recently modified tables
+# Simple report with limit parameter
+
+report:
+  name: recently_modified
+  module: tables
+  description: "Tables with recent modifications (inserts, updates, deletes)"
+
+  sql:
+    category: tables
+    file: recently_modified
+
+  title: "Recently Modified Tables"
+
+  columns:
+    - schema
+    - table_name
+    - n_tup_ins
+    - n_tup_upd
+    - n_tup_del
+    - last_analyze
+
+  parameters:
+    limit:
+      type: integer
+      default: 20
+      description: "Maximum number of results"

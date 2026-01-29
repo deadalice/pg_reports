@@ -3,68 +3,16 @@
 module PgReports
   module Modules
     # System-level database statistics
+    # Most report methods are generated from YAML definitions in lib/pg_reports/definitions/system/
     module System
       extend self
 
-      # Database sizes
-      # @return [Report] Report with database sizes
-      def database_sizes
-        data = executor.execute_from_file(:system, :database_sizes)
-
-        Report.new(
-          title: "Database Sizes",
-          data: data,
-          columns: %w[database size_mb size_pretty]
-        )
-      end
-
-      # PostgreSQL settings
-      # @return [Report] Report with important PostgreSQL settings
-      def settings
-        data = executor.execute_from_file(:system, :settings)
-
-        Report.new(
-          title: "PostgreSQL Settings",
-          data: data,
-          columns: %w[name setting unit category description]
-        )
-      end
-
-      # Extension information
-      # @return [Report] Report with installed extensions
-      def extensions
-        data = executor.execute_from_file(:system, :extensions)
-
-        Report.new(
-          title: "Installed Extensions",
-          data: data,
-          columns: %w[name version schema description]
-        )
-      end
-
-      # Database activity overview
-      # @return [Report] Report with current activity
-      def activity_overview
-        data = executor.execute_from_file(:system, :activity_overview)
-
-        Report.new(
-          title: "Database Activity Overview",
-          data: data,
-          columns: %w[metric value]
-        )
-      end
-
-      # Cache hit ratio for the entire database
-      # @return [Report] Report with cache statistics
-      def cache_stats
-        data = executor.execute_from_file(:system, :cache_stats)
-
-        Report.new(
-          title: "Database Cache Statistics",
-          data: data,
-          columns: %w[database heap_hit_ratio index_hit_ratio]
-        )
-      end
+      # The following methods are auto-generated from YAML:
+      # - database_sizes
+      # - settings
+      # - extensions
+      # - activity_overview
+      # - cache_stats
 
       # pg_stat_statements availability check
       # @return [Boolean] Whether pg_stat_statements is available

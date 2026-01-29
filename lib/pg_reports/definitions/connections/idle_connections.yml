@@ -1,0 +1,21 @@
+# Idle connections
+# Simple report showing connections in idle state
+
+report:
+  name: idle_connections
+  module: connections
+  description: "Connections currently idle"
+
+  sql:
+    category: connections
+    file: idle_connections
+
+  title: "Idle Connections"
+
+  columns:
+    - pid
+    - database
+    - username
+    - application
+    - idle_duration
+    - state_change

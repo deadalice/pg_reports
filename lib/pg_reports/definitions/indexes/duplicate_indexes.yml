@@ -1,0 +1,19 @@
+# Duplicate indexes - indexes that may be redundant
+# Simple report with no filtering or parameters
+
+report:
+  name: duplicate_indexes
+  module: indexes
+  description: "Indexes that may be redundant"
+
+  sql:
+    category: indexes
+    file: duplicate_indexes
+
+  title: "Duplicate Indexes"
+
+  columns:
+    - table_name
+    - index_name
+    - duplicate_of
+    - index_size_mb

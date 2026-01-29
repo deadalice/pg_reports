@@ -1,0 +1,39 @@
+# Bloated indexes - indexes with high bloat
+# Report with threshold filtering and title interpolation
+
+report:
+  name: bloated_indexes
+  module: indexes
+  description: "Indexes with high bloat percentage"
+
+  sql:
+    category: indexes
+    file: bloated_indexes
+
+  title: "Bloated Indexes (bloat >= ${threshold}%)"
+  title_vars:
+    threshold:
+      source: config
+      key: bloat_threshold_percent
+
+  columns:
+    - schema
+    - table_name
+    - index_name
+    - index_size_mb
+    - bloat_size_mb
+    - bloat_percent
+
+  parameters:
+    limit:
+      type: integer
+      default: 20
+      description: "Maximum number of results"
+
+  filters:
+    - field: bloat_percent
+      operator: gte
+      value:
+        source: config
+        key: bloat_threshold_percent
+      cast: float

@@ -1,0 +1,29 @@
+# Table row counts
+# Report with title interpolation using limit parameter
+
+report:
+  name: row_counts
+  module: tables
+  description: "Table row counts sorted by count"
+
+  sql:
+    category: tables
+    file: row_counts
+
+  title: "Table Row Counts (top ${limit})"
+  title_vars:
+    limit:
+      source: param
+      key: limit
+
+  columns:
+    - schema
+    - table_name
+    - row_count
+    - table_size_mb
+
+  parameters:
+    limit:
+      type: integer
+      default: 50
+      description: "Maximum number of results"

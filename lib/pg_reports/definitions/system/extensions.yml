@@ -1,0 +1,19 @@
+# Extension information
+# Simple report showing installed PostgreSQL extensions
+
+report:
+  name: extensions
+  module: system
+  description: "Installed PostgreSQL extensions"
+
+  sql:
+    category: system
+    file: extensions
+
+  title: "Installed Extensions"
+
+  columns:
+    - name
+    - version
+    - schema
+    - description

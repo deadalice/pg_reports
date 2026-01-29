@@ -1,0 +1,38 @@
+# Unused indexes - indexes that are rarely or never scanned
+# These indexes waste disk space and slow down writes
+
+report:
+  name: unused_indexes
+  module: indexes
+  description: "Indexes that are rarely or never scanned"
+
+  sql:
+    category: indexes
+    file: unused_indexes
+
+  title: "Unused Indexes (scans <= ${threshold})"
+  title_vars:
+    threshold:
+      source: config
+      key: unused_index_threshold_scans
+
+  columns:
+    - schema
+    - table_name
+    - index_name
+    - idx_scan
+    - index_size_mb
+
+  parameters:
+    limit:
+      type: integer
+      default: 50
+      description: "Maximum number of results"
+
+  filters:
+    - field: idx_scan
+      operator: lte
+      value:
+        source: config
+        key: unused_index_threshold_scans
+      cast: integer
