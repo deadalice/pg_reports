@@ -50,59 +50,101 @@
     </div>
   <% end %>
 
-  <!-- Collapsible Documentation Section -->
-  <% if @documentation && @documentation[:what].present? %>
-    <details class="documentation-section">
-      <summary class="documentation-toggle">
-        <span class="toggle-icon">▶</span>
-        <span>📖 What does this report show?</span>
-      </summary>
-      <div class="documentation-content">
-        <% if @documentation[:what].present? %>
-          <div class="doc-block">
-            <h4>📋 What</h4>
-            <p><%= @documentation[:what] %></p>
-          </div>
-        <% end %>
+  <div class="report-details-grid">
+    <!-- Collapsible Documentation Section -->
+    <% if @documentation && @documentation[:what].present? %>
+      <details class="documentation-section">
+        <summary class="documentation-toggle">
+          <span class="toggle-icon">▶</span>
+          <span>📖 What does this report show?</span>
+        </summary>
+        <div class="documentation-content">
+          <% if @documentation[:what].present? %>
+            <div class="doc-block">
+              <h4>📋 What</h4>
+              <p><%= @documentation[:what] %></p>
+            </div>
+          <% end %>
 
-        <% if @documentation[:why].present? %>
-          <div class="doc-block">
-            <h4>❓ Why It Matters</h4>
-            <p><%= @documentation[:why] %></p>
-          </div>
-        <% end %>
+          <% if @documentation[:why].present? %>
+            <div class="doc-block">
+              <h4>❓ Why It Matters</h4>
+              <p><%= @documentation[:why] %></p>
+            </div>
+          <% end %>
 
-        <% if @documentation[:nuances].present? %>
-          <div class="doc-block">
-            <h4>⚠️ Nuances</h4>
-            <ul class="nuances-list">
-              <% @documentation[:nuances].each do |nuance| %>
-                <li><%= nuance %></li>
-              <% end %>
-            </ul>
-          </div>
-        <% end %>
+          <% if @documentation[:nuances].present? %>
+            <div class="doc-block">
+              <h4>⚠️ Nuances</h4>
+              <ul class="nuances-list">
+                <% @documentation[:nuances].each do |nuance| %>
+                  <li><%= nuance %></li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
 
-        <% if @thresholds.present? %>
-          <div class="thresholds-block">
-            <h4>📊 Thresholds</h4>
-            <div class="thresholds-grid">
-              <% @thresholds.each do |field, values| %>
-                <div class="threshold-item">
-                  <span class="threshold-field"><%= field %></span>
-                  <span class="threshold-warning">⚠️ Warning: <%= values[:warning] %></span>
-                  <span class="threshold-critical">🔴 Critical: <%= values[:critical] %></span>
-                  <% if values[:inverted] %>
-                    <span class="threshold-note">(lower is worse)</span>
-                  <% end %>
+          <% if @thresholds.present? %>
+            <div class="thresholds-block">
+              <h4>📊 Thresholds</h4>
+              <div class="thresholds-grid">
+                <% @thresholds.each do |field, values| %>
+                  <div class="threshold-item">
+                    <span class="threshold-field"><%= field %></span>
+                    <span class="threshold-warning">⚠️ Warning: <%= values[:warning] %></span>
+                    <span class="threshold-critical">🔴 Critical: <%= values[:critical] %></span>
+                    <% if values[:inverted] %>
+                      <span class="threshold-note">(lower is worse)</span>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </details>
+    <% end %>
+
+    <!-- Filter Parameters Section -->
+    <% if @report_filters.present? %>
+      <div class="filter-section">
+        <details class="filter-details">
+          <summary class="filter-toggle">
+            <span class="toggle-icon">▶</span>
+            <span>🔍 Параметры фильтрации</span>
+          </summary>
+          <div class="filter-content">
+            <div class="filter-grid">
+              <% @report_filters.each do |name, config| %>
+                <div class="filter-item">
+                  <label class="filter-label">
+                    <%= config[:label] %>
+                    <% if config[:description] %>
+                      <span class="filter-description"><%= config[:description] %></span>
+                    <% end %>
+                    <% if config[:is_threshold] && config[:current_config] %>
+                      <span class="filter-current-value">(current: <%= config[:current_config] %>)</span>
+                    <% end %>
+                  </label>
+                  <input
+                    type="<%= config[:type] == 'integer' ? 'number' : 'text' %>"
+                    class="filter-input"
+                    data-param="<%= name %>"
+                    value="<%= config[:default] %>"
+                    <% if config[:type] == 'integer' %>
+                      min="0"
+                      step="1"
+                    <% end %>
+                    placeholder="<%= config[:default] %>"
+                  >
                 </div>
               <% end %>
             </div>
           </div>
-        <% end %>
+        </details>
       </div>
-    </details>
-  <% end %>
+    <% end %>
+  </div>
 
   <!-- Saved Records Section -->
   <div class="saved-records-section" id="saved-records-section" style="display: none;">

@@ -4,7 +4,6 @@
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    margin-bottom: 0.75rem;
     overflow: hidden;
   }
 
@@ -1142,5 +1141,127 @@
     display: flex;
     gap: 0.75rem;
     justify-content: flex-end;
+  }
+
+  /* Report details grid (documentation + filters side by side) */
+  .report-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    align-items: start;
+  }
+
+  @media (max-width: 1200px) {
+    .report-details-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Filter Section */
+  .filter-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .filter-details {
+    margin: 0;
+    display: block;
+  }
+
+  .filter-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    margin: 0;
+    cursor: pointer;
+    user-select: none;
+    color: var(--text-secondary);
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+
+  .filter-toggle:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  .filter-details[open] .filter-toggle {
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+  }
+
+  .filter-details[open] .toggle-icon {
+    transform: rotate(90deg);
+  }
+
+  .filter-details:not([open]) .filter-toggle {
+    background: transparent;
+  }
+
+  .filter-details:not([open]) .filter-toggle:hover {
+    background: var(--bg-tertiary);
+  }
+
+  .filter-content {
+    padding: 1rem 1.25rem;
+    background: var(--bg-card);
+  }
+
+  .filter-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .filter-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  .filter-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  .filter-description {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+    opacity: 0.8;
+  }
+
+  .filter-current-value {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--accent-blue);
+    opacity: 0.9;
+  }
+
+  .filter-input {
+    padding: 0.625rem 0.875rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition: all 0.15s;
+    min-width: 120px;
+    max-width: 200px;
+  }
+
+  .filter-input:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
 </style>

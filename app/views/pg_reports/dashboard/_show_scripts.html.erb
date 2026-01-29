@@ -644,12 +644,27 @@
     if (telegramBtn) telegramBtn.style.display = 'none';
 
     try {
+      // Collect filter parameters from form
+      const filterParams = {};
+      document.querySelectorAll('[data-param]').forEach(input => {
+        const paramName = input.dataset.param;
+        const value = input.value;
+        if (value && value.trim() !== '') {
+          filterParams[paramName] = value;
+        }
+      });
+
       const response = await fetch(`${pgReportsRoot}/${cat}/${report}/run`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
-        }
+        },
+        body: JSON.stringify({
+          category: cat,
+          report: report,
+          ...filterParams
+        })
       });
 
       const data = await response.json();

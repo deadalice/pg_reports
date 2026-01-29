@@ -112,5 +112,45 @@ module PgReports
 
       config["parameters"]["limit"]["default"]
     end
+
+    public
+
+    # Extract filter parameters for UI
+    def filter_parameters
+      params = {}
+
+      # Parameters from parameters section
+      if config["parameters"]
+        config["parameters"].each do |name, param_config|
+          params[name] = {
+            type: param_config["type"],
+            default: param_config["default"],
+            description: param_config["description"],
+            label: name.to_s.titleize
+          }
+        end
+      end
+
+      # Add threshold parameters from filters (config-based)
+      if config["filters"]
+        config["filters"].each do |filter|
+          if filter["value"]["source"] == "config"
+            config_key = filter["value"]["key"]
+            field_name = filter["field"]
+
+            params["#{field_name}_threshold"] = {
+              type: filter["cast"] || "integer",
+              default: PgReports.config.public_send(config_key),
+              description: "Override threshold for #{field_name}",
+              label: "#{field_name.titleize} Threshold",
+              current_config: PgReports.config.public_send(config_key),
+              is_threshold: true
+            }
+          end
+        end
+      end
+
+      params
+    end
   end
 end

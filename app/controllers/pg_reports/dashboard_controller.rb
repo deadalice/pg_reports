@@ -51,6 +51,9 @@ module PgReports
       @thresholds = Dashboard::ReportsRegistry.thresholds(@report_key)
       @problem_fields = Dashboard::ReportsRegistry.problem_fields(@report_key)
 
+      # Load filter parameters from YAML
+      @report_filters = load_report_filters(@category, @report_key)
+
       @report = execute_report(@category, @report_key)
     rescue => e
       @error = e.message
@@ -61,7 +64,10 @@ module PgReports
       category = params[:category].to_sym
       report_key = params[:report].to_sym
 
-      report = execute_report(category, report_key)
+      # Extract filter parameters from request
+      filter_params = extract_filter_params
+
+      report = execute_report(category, report_key, **filter_params)
       thresholds = Dashboard::ReportsRegistry.thresholds(report_key)
       problem_fields = Dashboard::ReportsRegistry.problem_fields(report_key)
 
@@ -289,7 +295,37 @@ module PgReports
       @categories = Dashboard::ReportsRegistry.all
     end
 
-    def execute_report(category, report_key)
+    def load_report_filters(category, report_key)
+      definition = ReportLoader.get(category.to_s, report_key.to_s)
+      return {} unless definition
+
+      definition.filter_parameters
+    end
+
+    def extract_filter_params
+      # Allow common filter parameters
+      allowed = [:limit, :min_duration_seconds, :min_calls]
+      result = {}
+
+      allowed.each do |key|
+        if params[key].present?
+          value = params[key].to_s
+          # Convert to appropriate type
+          result[key] = value.match?(/^\d+$/) ? value.to_i : value
+        end
+      end
+
+      # Also allow threshold overrides (calls_threshold, etc.)
+      params.each do |key, value|
+        if key.to_s.end_with?('_threshold') && value.present?
+          result[key.to_sym] = value.to_i
+        end
+      end
+
+      result
+    end
+
+    def execute_report(category, report_key, **filter_params)
       mod = case category
       when :queries then Modules::Queries
       when :indexes then Modules::Indexes
@@ -304,7 +340,7 @@ module PgReports
         raise ArgumentError, "Unknown report: #{report_key}"
       end
 
-      mod.public_send(report_key)
+      mod.public_send(report_key, **filter_params)
     end
 
     def substitute_params(query, params_hash)
