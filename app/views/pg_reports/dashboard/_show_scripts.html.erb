@@ -2,6 +2,8 @@
   let currentReportData = null;
   const category = '<%= @category %>';
   const reportKey = '<%= @report_key %>';
+  const railsEnv = '<%= Rails.env %>';
+  const isDevelopment = railsEnv === 'development';
   let syncingScroll = false;
   let currentSort = { column: null, direction: 'asc' };
 
@@ -541,11 +543,15 @@
 
   function buildDetailRow(row, columns, rowIndex, thresholds, problemFields) {
     let html = '<div class="row-detail">';
-    const hasQuery = columns.includes('query') && row.query;
-    const hasIndexName = columns.includes('index_name') && row.index_name;
+    const hasQuery = columns.includes('query') || row.query;
+    const hasIndexName = columns.includes('index_name') || row.index_name;
     const rowId = generateRowId(row);
 
-    columns.forEach(col => {
+    // Show all fields from row, not just columns
+    // First show fields from columns array in order, then remaining fields
+    const allKeys = [...new Set([...columns, ...Object.keys(row)])];
+
+    allKeys.forEach(col => {
       const value = row[col] ?? '';
       const strValue = String(value);
       const isQuery = col === 'query';
@@ -599,12 +605,16 @@
       }
     }
 
-    // Show migration button for index reports
+    // Show migration button for index reports (only in development)
     if (hasIndexName && (category === 'indexes')) {
       const indexName = row.index_name;
       const tableName = row.table_name || row.tablename || '';
       const schemaName = row.schema_name || row.schemaname || 'public';
-      html += `<button class="btn-migration" onclick="event.stopPropagation(); showMigrationModal('${escapeHtml(indexName)}', '${escapeHtml(tableName)}', '${escapeHtml(schemaName)}')">🗑️ Generate Migration</button>`;
+      if (isDevelopment) {
+        html += `<button class="btn-migration" onclick="event.stopPropagation(); showMigrationModal('${escapeHtml(indexName)}', '${escapeHtml(tableName)}', '${escapeHtml(schemaName)}')">🗑️ Generate Migration</button>`;
+      } else {
+        html += `<button class="btn-migration" disabled title="Migration generation is only available in development environment" style="opacity: 0.5; cursor: not-allowed;">🗑️ Generate Migration (Development Only)</button>`;
+      }
     }
 
     html += `</div>`;
@@ -1239,6 +1249,22 @@ end
 
     document.getElementById('migration-code').textContent = migrationCode;
     document.getElementById('migration-modal').style.display = 'flex';
+
+    // Disable "Create File" button in non-development environments
+    const createBtn = document.getElementById('create-migration-btn');
+    if (createBtn) {
+      if (!isDevelopment) {
+        createBtn.disabled = true;
+        createBtn.style.opacity = '0.5';
+        createBtn.style.cursor = 'not-allowed';
+        createBtn.title = 'Migration file creation is only available in development environment';
+      } else {
+        createBtn.disabled = false;
+        createBtn.style.opacity = '1';
+        createBtn.style.cursor = 'pointer';
+        createBtn.title = '';
+      }
+    }
   }
 
   function closeMigrationModal() {

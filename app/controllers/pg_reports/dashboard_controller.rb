@@ -240,6 +240,15 @@ module PgReports
     end
 
     def create_migration
+      # Only allow migration creation in development environment
+      unless Rails.env.development?
+        render json: {
+          success: false,
+          error: "Migration creation is only allowed in development environment"
+        }, status: :forbidden
+        return
+      end
+
       file_name = params[:file_name]
       code = params[:code]
 
@@ -287,6 +296,7 @@ module PgReports
       when :tables then Modules::Tables
       when :connections then Modules::Connections
       when :system then Modules::System
+      when :schema_analysis then Modules::SchemaAnalysis
       else raise ArgumentError, "Unknown category: #{category}"
       end
 
