@@ -485,17 +485,15 @@ module PgReports
     def quote_param_value(value)
       str = value.to_s
 
-      # Check if it looks like a number
-      if str.match?(/\A-?\d+(\.\d+)?\z/)
-        str
+      # Check if it looks like NULL
+      if str.downcase == "null"
+        "NULL"
       # Check if it looks like a boolean
       elsif str.downcase.in?(["true", "false"])
         str.downcase
-      # Check if it looks like NULL
-      elsif str.downcase == "null"
-        "NULL"
       else
-        # Quote as string, escape single quotes
+        # Quote as string by default - PostgreSQL will handle type casting
+        # This ensures compatibility with both text and numeric columns
         "'#{str.gsub("'", "''")}'"
       end
     end

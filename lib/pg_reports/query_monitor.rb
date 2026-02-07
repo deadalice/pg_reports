@@ -165,9 +165,9 @@ module PgReports
       return true if name&.start_with?("PgReports")
 
       # Skip if query is from pg_reports gem (check backtrace)
-      # if query_from_pg_reports?
-      #  return true
-      # end
+      if query_from_pg_reports?
+        return true
+      end
 
       # Skip SCHEMA queries
       return true if name&.start_with?("SCHEMA")
