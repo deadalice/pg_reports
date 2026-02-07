@@ -1264,4 +1264,377 @@
     border-color: var(--accent-blue);
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
+
+  /* ==========================================
+     EXPLAIN ANALYZE STYLES
+     ========================================== */
+
+  /* Summary card at top */
+  .explain-summary {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid var(--accent-blue);
+  }
+
+  .explain-summary-good {
+    border-left-color: var(--accent-green);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, var(--bg-card) 100%);
+  }
+
+  .explain-summary-warning {
+    border-left-color: var(--accent-amber);
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, var(--bg-card) 100%);
+  }
+
+  .explain-summary-critical {
+    border-left-color: #ef4444;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, var(--bg-card) 100%);
+  }
+
+  .explain-summary-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .explain-summary-icon {
+    font-size: 1.5rem;
+  }
+
+  .explain-summary-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .explain-summary-stats {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .explain-summary-stat {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-weight: 500;
+  }
+
+  .explain-summary-stat.critical {
+    background: rgba(239, 68, 68, 0.1);
+    color: #f87171;
+  }
+
+  .explain-summary-stat.warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--accent-amber);
+  }
+
+  /* Stats grid */
+  .explain-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .explain-stat {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    transition: all 0.15s;
+  }
+
+  .explain-stat:hover {
+    border-color: var(--accent-blue);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .explain-stat.stat-warning {
+    border-color: var(--accent-amber);
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.03) 0%, var(--bg-card) 100%);
+  }
+
+  .explain-stat.stat-critical {
+    border-color: #ef4444;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.03) 0%, var(--bg-card) 100%);
+  }
+
+  .explain-stat-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+  }
+
+  .explain-stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+  }
+
+  /* Problems list */
+  .explain-problems {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .explain-problems-header {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .explain-problems-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .explain-problem {
+    background: var(--bg-tertiary);
+    border-left: 3px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+    transition: all 0.15s;
+  }
+
+  .explain-problem:hover {
+    transform: translateX(4px);
+  }
+
+  .explain-problem.problem-critical {
+    border-left-color: #ef4444;
+    background: linear-gradient(90deg, rgba(239, 68, 68, 0.05) 0%, var(--bg-tertiary) 15%);
+  }
+
+  .explain-problem.problem-warning {
+    border-left-color: var(--accent-amber);
+    background: linear-gradient(90deg, rgba(245, 158, 11, 0.05) 0%, var(--bg-tertiary) 15%);
+  }
+
+  .explain-problem.problem-info {
+    border-left-color: var(--accent-blue);
+    background: linear-gradient(90deg, rgba(59, 130, 246, 0.05) 0%, var(--bg-tertiary) 15%);
+  }
+
+  .explain-problem-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .explain-problem-icon {
+    font-size: 1.125rem;
+  }
+
+  .explain-problem-message {
+    font-weight: 600;
+    color: var(--text-primary);
+    flex: 1;
+  }
+
+  .explain-problem-line {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background: var(--bg-primary);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+  }
+
+  .explain-problem-details {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    margin-left: 2rem;
+  }
+
+  .explain-problem-recommendation {
+    font-size: 0.875rem;
+    color: var(--accent-blue);
+    background: rgba(59, 130, 246, 0.05);
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    margin-top: 0.5rem;
+  }
+
+  /* EXPLAIN output display */
+  .explain-output {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .explain-output-header {
+    background: var(--bg-tertiary);
+    padding: 0.875rem 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .btn-copy-small {
+    font-size: 0.8rem;
+    padding: 0.375rem 0.625rem;
+    border: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-copy-small:hover {
+    background: var(--bg-secondary);
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
+  }
+
+  .explain-lines {
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    overflow-x: auto;
+  }
+
+  .explain-line {
+    display: flex;
+    align-items: stretch;
+    border-bottom: 1px solid transparent;
+    transition: all 0.1s;
+    min-height: 1.6rem;
+  }
+
+  .explain-line:hover {
+    background: var(--bg-tertiary);
+  }
+
+  .explain-line-problem {
+    background: rgba(245, 158, 11, 0.03);
+  }
+
+  .explain-line-problem.problem-critical {
+    background: rgba(239, 68, 68, 0.03);
+    border-left: 3px solid #ef4444;
+  }
+
+  .explain-line-problem.problem-warning {
+    background: rgba(245, 158, 11, 0.03);
+    border-left: 3px solid var(--accent-amber);
+  }
+
+  .explain-line-timing {
+    background: var(--bg-tertiary);
+    font-weight: 600;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .explain-line-number {
+    display: inline-block;
+    min-width: 3rem;
+    padding: 0.25rem 0.75rem;
+    text-align: right;
+    color: var(--text-tertiary);
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
+    user-select: none;
+    font-size: 0.75rem;
+  }
+
+  .explain-line-content {
+    flex: 1;
+    padding: 0.25rem 1rem;
+    color: var(--text-secondary);
+    white-space: pre;
+  }
+
+  .explain-line-problem-indicator {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+    cursor: help;
+  }
+
+  /* Node type highlighting */
+  .explain-node-type {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  /* Node color coding */
+  .node-good {
+    color: var(--accent-green);
+  }
+
+  .node-good .explain-node-type {
+    color: var(--accent-green);
+  }
+
+  .node-ok {
+    color: var(--accent-blue);
+  }
+
+  .node-ok .explain-node-type {
+    color: var(--accent-blue);
+  }
+
+  .node-warning {
+    color: var(--accent-amber);
+  }
+
+  .node-warning .explain-node-type {
+    color: var(--accent-amber);
+    font-weight: 700;
+  }
+
+  .node-neutral {
+    color: var(--text-secondary);
+  }
+
+  /* Metric highlighting */
+  .explain-metric {
+    color: var(--text-tertiary);
+  }
+
+  .metric-value {
+    color: var(--accent-purple);
+    font-weight: 600;
+  }
+
+  /* Fallback for raw explain output */
+  .explain-result {
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    white-space: pre;
+    overflow-x: auto;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.25rem;
+    color: var(--text-secondary);
+  }
 </style>

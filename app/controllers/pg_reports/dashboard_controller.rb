@@ -165,22 +165,18 @@ module PgReports
       result = ActiveRecord::Base.connection.execute("EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) #{final_query}")
       explain_output = result.map { |r| r["QUERY PLAN"] }.join("\n")
 
-      # Extract stats from the output
-      stats = {}
-      if (match = explain_output.match(/Planning Time: ([\d.]+) ms/))
-        stats[:planning_time] = match[1].to_f
-      end
-      if (match = explain_output.match(/Execution Time: ([\d.]+) ms/))
-        stats[:execution_time] = match[1].to_f
-      end
-      if (match = explain_output.match(/cost=[\d.]+\.\.([\d.]+)/))
-        stats[:total_cost] = match[1].to_f
-      end
-      if (match = explain_output.match(/rows=(\d+)/))
-        stats[:rows] = match[1].to_i
-      end
+      # Analyze the EXPLAIN output
+      analyzer = ExplainAnalyzer.new(explain_output)
+      analysis = analyzer.to_h
 
-      render json: {success: true, explain: explain_output, stats: stats}
+      render json: {
+        success: true,
+        explain: explain_output,
+        stats: analysis[:stats],
+        annotated_lines: analysis[:annotated_lines],
+        problems: analysis[:problems],
+        summary: analysis[:summary]
+      }
     rescue => e
       render json: {success: false, error: e.message}, status: :unprocessable_entity
     end

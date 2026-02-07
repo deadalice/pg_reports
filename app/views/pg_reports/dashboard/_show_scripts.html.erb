@@ -1092,6 +1092,186 @@
     return params;
   }
 
+  // Render EXPLAIN ANALYZE with colored nodes and problem detection
+  function renderExplainAnalysis(data) {
+    let html = '';
+
+    // Show summary if there are problems
+    if (data.summary && data.summary.total_problems > 0) {
+      html += '<div class="explain-summary explain-summary-' + data.summary.status + '">';
+      html += '<div class="explain-summary-header">';
+      html += '<span class="explain-summary-icon">' + data.summary.status_icon + '</span>';
+      html += '<span class="explain-summary-title">' + escapeHtml(data.summary.status_text) + '</span>';
+      html += '</div>';
+      html += '<div class="explain-summary-stats">';
+      if (data.summary.critical_problems > 0) {
+        html += '<span class="explain-summary-stat critical">🔴 ' + data.summary.critical_problems + ' critical</span>';
+      }
+      if (data.summary.warnings > 0) {
+        html += '<span class="explain-summary-stat warning">⚠️ ' + data.summary.warnings + ' warnings</span>';
+      }
+      html += '</div>';
+      html += '</div>';
+    }
+
+    // Show stats
+    if (data.stats) {
+      html += '<div class="explain-stats">';
+      if (data.stats.planning_time !== undefined) {
+        const planningClass = data.stats.planning_time > 100 ? 'stat-warning' : '';
+        html += '<div class="explain-stat ' + planningClass + '">';
+        html += '<span class="explain-stat-label">Planning Time</span>';
+        html += '<span class="explain-stat-value">' + data.stats.planning_time.toFixed(2) + ' ms</span>';
+        html += '</div>';
+      }
+      if (data.stats.execution_time !== undefined) {
+        const execClass = data.stats.execution_time > 1000 ? 'stat-critical' : (data.stats.execution_time > 100 ? 'stat-warning' : '');
+        html += '<div class="explain-stat ' + execClass + '">';
+        html += '<span class="explain-stat-label">Execution Time</span>';
+        html += '<span class="explain-stat-value">' + data.stats.execution_time.toFixed(2) + ' ms</span>';
+        html += '</div>';
+      }
+      if (data.stats.total_cost !== undefined) {
+        html += '<div class="explain-stat">';
+        html += '<span class="explain-stat-label">Total Cost</span>';
+        html += '<span class="explain-stat-value">' + data.stats.total_cost.toFixed(2) + '</span>';
+        html += '</div>';
+      }
+      if (data.stats.rows_estimated !== undefined) {
+        html += '<div class="explain-stat">';
+        html += '<span class="explain-stat-label">Estimated Rows</span>';
+        html += '<span class="explain-stat-value">' + data.stats.rows_estimated + '</span>';
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+
+    // Show problems list
+    if (data.problems && data.problems.length > 0) {
+      html += '<div class="explain-problems">';
+      html += '<div class="explain-problems-header">⚠️ Detected Issues</div>';
+      html += '<div class="explain-problems-list">';
+
+      data.problems.forEach(problem => {
+        const severityClass = 'problem-' + problem.severity;
+        const severityIcon = problem.severity === 'critical' ? '🔴' : (problem.severity === 'warning' ? '⚠️' : 'ℹ️');
+
+        html += '<div class="explain-problem ' + severityClass + '">';
+        html += '<div class="explain-problem-header">';
+        html += '<span class="explain-problem-icon">' + severityIcon + '</span>';
+        html += '<span class="explain-problem-message">' + escapeHtml(problem.message) + '</span>';
+        if (problem.line_number) {
+          html += '<span class="explain-problem-line">Line ' + problem.line_number + '</span>';
+        }
+        html += '</div>';
+        if (problem.details) {
+          html += '<div class="explain-problem-details">' + escapeHtml(problem.details) + '</div>';
+        }
+        if (problem.recommendation) {
+          html += '<div class="explain-problem-recommendation">💡 ' + escapeHtml(problem.recommendation) + '</div>';
+        }
+        html += '</div>';
+      });
+
+      html += '</div>';
+      html += '</div>';
+    }
+
+    // Show annotated EXPLAIN output
+    if (data.annotated_lines && data.annotated_lines.length > 0) {
+      html += '<div class="explain-output">';
+      html += '<div class="explain-output-header">';
+      html += '📊 Execution Plan';
+      html += '<button class="btn-copy-small" onclick="copyExplainOutput()" title="Copy to clipboard">📋 Copy</button>';
+      html += '</div>';
+      html += '<div class="explain-lines">';
+
+      data.annotated_lines.forEach(line => {
+        let lineClass = 'explain-line';
+        let nodeColorClass = '';
+        let tooltip = '';
+
+        // Add color class based on node type
+        if (line.node_info) {
+          nodeColorClass = 'node-' + line.node_info.color;
+          tooltip = line.node_info.description;
+        }
+
+        // Highlight timing lines
+        if (line.is_timing) {
+          lineClass += ' explain-line-timing';
+        }
+
+        // Check if this line has a problem
+        const lineProblem = data.problems?.find(p => p.line_number === line.line_number);
+        if (lineProblem) {
+          lineClass += ' explain-line-problem';
+          lineClass += ' problem-' + lineProblem.severity;
+        }
+
+        html += '<div class="' + lineClass + '" data-line="' + line.line_number + '">';
+
+        // Line number
+        html += '<span class="explain-line-number">' + line.line_number + '</span>';
+
+        // Content with indentation
+        const indentPx = line.indent_level * 20;
+        html += '<span class="explain-line-content ' + nodeColorClass + '" style="padding-left: ' + indentPx + 'px"';
+        if (tooltip) {
+          html += ' title="' + escapeHtml(tooltip) + '"';
+        }
+        html += '>';
+
+        // Highlight node type if present
+        let lineText = escapeHtml(line.text.trim());
+        if (line.node_type) {
+          lineText = lineText.replace(
+            escapeHtml(line.node_type),
+            '<span class="explain-node-type">' + escapeHtml(line.node_type) + '</span>'
+          );
+        }
+
+        // Highlight metrics
+        lineText = lineText
+          .replace(/\bcost=([\d.]+)\.\.([\d.]+)/g, '<span class="explain-metric">cost=<span class="metric-value">$1..$2</span></span>')
+          .replace(/\brows=(\d+)/g, '<span class="explain-metric">rows=<span class="metric-value">$1</span></span>')
+          .replace(/\bactual time=([\d.]+)\.\.([\d.]+)/g, '<span class="explain-metric">actual time=<span class="metric-value">$1..$2</span></span>')
+          .replace(/\bloops=(\d+)/g, '<span class="explain-metric">loops=<span class="metric-value">$1</span></span>');
+
+        html += lineText;
+        html += '</span>';
+
+        // Problem indicator
+        if (lineProblem) {
+          const problemIcon = lineProblem.severity === 'critical' ? '🔴' : '⚠️';
+          html += '<span class="explain-line-problem-indicator" title="' + escapeHtml(lineProblem.message) + '">' + problemIcon + '</span>';
+        }
+
+        html += '</div>';
+      });
+
+      html += '</div>';
+      html += '</div>';
+    } else {
+      // Fallback to raw output
+      html += '<div class="explain-result">' + escapeHtml(data.explain) + '</div>';
+    }
+
+    return html;
+  }
+
+  // Copy EXPLAIN output to clipboard
+  function copyExplainOutput() {
+    const lines = document.querySelectorAll('.explain-line-content');
+    const text = Array.from(lines).map(line => line.textContent).join('\n');
+
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('EXPLAIN output copied to clipboard');
+    }).catch(() => {
+      showToast('Failed to copy', 'error');
+    });
+  }
+
   // Execute EXPLAIN ANALYZE with parameters
   async function executeExplainAnalyze() {
     const loading = document.getElementById('explain-loading');
@@ -1115,28 +1295,7 @@
       loading.style.display = 'none';
 
       if (data.success) {
-        let html = '';
-
-        // Show stats if available
-        if (data.stats) {
-          html += '<div class="explain-stats">';
-          if (data.stats.planning_time) {
-            html += `<div class="explain-stat"><span class="explain-stat-label">Planning Time</span><span class="explain-stat-value">${data.stats.planning_time} ms</span></div>`;
-          }
-          if (data.stats.execution_time) {
-            html += `<div class="explain-stat"><span class="explain-stat-label">Execution Time</span><span class="explain-stat-value">${data.stats.execution_time} ms</span></div>`;
-          }
-          if (data.stats.total_cost) {
-            html += `<div class="explain-stat"><span class="explain-stat-label">Total Cost</span><span class="explain-stat-value">${data.stats.total_cost}</span></div>`;
-          }
-          if (data.stats.rows) {
-            html += `<div class="explain-stat"><span class="explain-stat-label">Rows</span><span class="explain-stat-value">${data.stats.rows}</span></div>`;
-          }
-          html += '</div>';
-        }
-
-        html += `<div class="explain-result">${escapeHtml(data.explain)}</div>`;
-        content.innerHTML = html;
+        content.innerHTML = renderExplainAnalysis(data);
       } else {
         content.innerHTML = `<div class="error-message">${escapeHtml(data.error || 'Failed to run EXPLAIN ANALYZE')}</div>`;
       }
