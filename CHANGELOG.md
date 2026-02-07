@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Optimized gem dependencies** - replaced full Rails framework dependency with specific components:
+  - Now using `activesupport`, `activerecord`, `actionpack`, `railties` instead of `rails`
+  - Removed unnecessary components: actioncable, actionmailer, actiontext, activejob, activestorage
+  - Reduced total dependencies from 97 to 80 gems (-17.5%)
+  - Faster installation and smaller footprint
+
 ## [0.4.0] - 2026-01-29
 
 ### Added
