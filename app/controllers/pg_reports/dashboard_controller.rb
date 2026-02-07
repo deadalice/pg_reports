@@ -284,6 +284,123 @@ module PgReports
       render json: {success: false, error: e.message}, status: :unprocessable_entity
     end
 
+    def start_query_monitoring
+      monitor = QueryMonitor.instance
+
+      result = monitor.start
+
+      if result[:success]
+        render json: result
+      else
+        render json: result, status: :unprocessable_entity
+      end
+    rescue => e
+      render json: {success: false, error: e.message}, status: :unprocessable_entity
+    end
+
+    def stop_query_monitoring
+      monitor = QueryMonitor.instance
+
+      result = monitor.stop
+
+      if result[:success]
+        render json: result
+      else
+        render json: result, status: :unprocessable_entity
+      end
+    rescue => e
+      render json: {success: false, error: e.message}, status: :unprocessable_entity
+    end
+
+    def query_monitor_status
+      monitor = QueryMonitor.instance
+      status = monitor.status
+
+      render json: {
+        success: true,
+        enabled: status[:enabled],
+        session_id: status[:session_id],
+        query_count: status[:query_count]
+      }
+    rescue => e
+      render json: {success: false, error: e.message}, status: :unprocessable_entity
+    end
+
+    def query_monitor_feed
+      monitor = QueryMonitor.instance
+
+      unless monitor.enabled
+        render json: {success: false, message: "Monitoring not active"}
+        return
+      end
+
+      limit = params[:limit]&.to_i || 50
+      session_id = params[:session_id]
+
+      queries = monitor.queries(limit: limit, session_id: session_id)
+
+      render json: {
+        success: true,
+        queries: queries,
+        timestamp: Time.current.to_i
+      }
+    rescue => e
+      render json: {success: false, error: e.message}, status: :unprocessable_entity
+    end
+
+    def load_query_history
+      monitor = QueryMonitor.instance
+
+      limit = params[:limit]&.to_i || 100
+      session_id = params[:session_id]
+
+      queries = monitor.load_from_log(limit: limit, session_id: session_id)
+
+      render json: {
+        success: true,
+        queries: queries,
+        timestamp: Time.current.to_i
+      }
+    rescue => e
+      render json: {success: false, error: e.message}, status: :unprocessable_entity
+    end
+
+    def download_query_monitor
+      monitor = QueryMonitor.instance
+
+      # Allow download even when monitoring is stopped, as long as there are queries
+      queries = monitor.queries
+      if queries.empty?
+        render json: {success: false, error: "No queries to download"}, status: :unprocessable_entity
+        return
+      end
+
+      format_type = params[:format] || "txt"
+      filename = "query-monitor-#{Time.current.strftime("%Y%m%d-%H%M%S")}"
+
+      case format_type
+      when "csv"
+        csv_data = generate_query_monitor_csv(queries)
+        send_data csv_data,
+          filename: "#{filename}.csv",
+          type: "text/csv; charset=utf-8",
+          disposition: "attachment"
+      when "json"
+        send_data queries.to_json,
+          filename: "#{filename}.json",
+          type: "application/json; charset=utf-8",
+          disposition: "attachment"
+      else
+        text_data = generate_query_monitor_text(queries)
+        send_data text_data,
+          filename: "#{filename}.txt",
+          type: "text/plain; charset=utf-8",
+          disposition: "attachment"
+      end
+    rescue => e
+      render json: {success: false, error: e.message}, status: :unprocessable_entity
+    end
+
     private
 
     def authenticate_dashboard!
@@ -393,6 +510,57 @@ module PgReports
       else
         "#{query} LIMIT #{limit}"
       end
+    end
+
+    def generate_query_monitor_csv(queries)
+      require "csv"
+
+      CSV.generate do |csv|
+        # Header
+        csv << ["Timestamp", "Duration (ms)", "Query Name", "SQL", "Source File", "Source Line"]
+
+        # Data rows
+        queries.each do |query|
+          csv << [
+            query[:timestamp],
+            query[:duration_ms],
+            query[:name],
+            query[:sql],
+            query.dig(:source_location, :file),
+            query.dig(:source_location, :line)
+          ]
+        end
+      end
+    end
+
+    def generate_query_monitor_text(queries)
+      output = []
+      output << "=" * 80
+      output << "Query Monitor Export"
+      output << "Generated: #{Time.current.strftime("%Y-%m-%d %H:%M:%S")}"
+      output << "Total Queries: #{queries.size}"
+      output << "=" * 80
+      output << ""
+
+      queries.each_with_index do |query, index|
+        output << "Query ##{index + 1}"
+        output << "-" * 80
+        output << "Timestamp:  #{query[:timestamp]}"
+        output << "Duration:   #{query[:duration_ms]}ms"
+        output << "Name:       #{query[:name]}"
+
+        if query[:source_location]
+          output << "Source:     #{query[:source_location][:file]}:#{query[:source_location][:line]}"
+        end
+
+        output << ""
+        output << "SQL:"
+        output << query[:sql]
+        output << ""
+        output << ""
+      end
+
+      output.join("\n")
     end
   end
 end

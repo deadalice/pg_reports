@@ -33,6 +33,11 @@ module PgReports
     # Development/testing settings
     attr_accessor :fake_source_data             # Inject fake source data for IDE link testing
 
+    # Query monitoring settings
+    attr_accessor :query_monitor_log_file       # Path to log file for query monitoring
+    attr_accessor :query_monitor_max_queries    # Maximum number of queries to keep in buffer
+    attr_accessor :query_monitor_backtrace_filter # Proc to filter backtrace lines
+
     def initialize
       # Telegram
       @telegram_bot_token = ENV.fetch("PG_REPORTS_TELEGRAM_TOKEN", nil)
@@ -64,6 +69,14 @@ module PgReports
 
       # Development/testing
       @fake_source_data = ENV.fetch("PG_REPORTS_FAKE_SOURCE_DATA", "false") == "true"
+
+      # Query monitoring
+      @query_monitor_log_file = defined?(Rails) ? Rails.root.join("log", "pg_reports.log") : nil
+      @query_monitor_max_queries = 100
+      @query_monitor_backtrace_filter = ->(location) {
+        # Exclude gem paths, framework paths
+        !location.path.match?(%r{/(gems|ruby|railties)/})
+      }
     end
 
     def connection

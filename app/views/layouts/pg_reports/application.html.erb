@@ -540,6 +540,288 @@
         justify-content: center;
       }
     }
+
+    /* ============================================
+       Query Monitoring Panel
+       ============================================ */
+    .query-monitoring-panel {
+      margin-bottom: 2rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.25rem 1.5rem;
+    }
+
+    .query-monitoring-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .query-monitoring-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .monitoring-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+    }
+
+    .monitoring-indicator.active {
+      background: var(--accent-rose);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    .session-badge {
+      margin-left: 0.5rem;
+      padding: 0.375rem 0.75rem;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .session-badge strong {
+      color: var(--accent-purple);
+      font-family: <%= PgReports.config.load_external_fonts ? "'JetBrains Mono', " : "" %>monospace;
+    }
+
+    .query-monitoring-controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .query-monitoring-count {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .query-monitoring-count strong {
+      color: var(--accent-blue);
+      font-weight: 600;
+    }
+
+    /* Query Feed */
+    .query-feed {
+      max-height: 600px;
+      overflow-y: auto;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1rem;
+    }
+
+    .query-feed::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .query-feed::-webkit-scrollbar-track {
+      background: var(--bg-secondary);
+      border-radius: 4px;
+    }
+
+    .query-feed::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 4px;
+    }
+
+    .query-feed::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+
+    .query-feed-empty {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .query-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.875rem;
+      margin-bottom: 0.75rem;
+      font-size: 0.85rem;
+      transition: all 0.15s;
+    }
+
+    .query-item:hover {
+      border-color: var(--accent-purple);
+    }
+
+    .query-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .query-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .query-meta {
+      display: flex;
+      gap: 1rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .query-timestamp {
+      color: var(--text-secondary);
+    }
+
+    .query-duration {
+      color: var(--accent-amber);
+      font-weight: 600;
+    }
+
+    .query-duration.fast {
+      color: var(--accent-green);
+    }
+
+    .query-duration.slow {
+      color: var(--accent-rose);
+    }
+
+    .query-name {
+      color: var(--text-secondary);
+      font-style: italic;
+    }
+
+    .query-expand-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.7rem;
+      transition: all 0.15s;
+      border-radius: 4px;
+    }
+
+    .query-expand-btn:hover {
+      background: var(--bg-tertiary);
+      color: var(--accent-purple);
+    }
+
+    .query-sql-wrapper {
+      margin-bottom: 0.5rem;
+    }
+
+    .query-sql {
+      padding: 0.75rem;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-family: <%= PgReports.config.load_external_fonts ? "'JetBrains Mono', " : "" %>monospace;
+      font-size: 0.75rem;
+      color: var(--accent-blue);
+      word-wrap: break-word;
+      overflow-x: auto;
+    }
+
+    .query-sql-collapsed {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .query-sql-expanded {
+      white-space: pre-wrap;
+    }
+
+    .query-source {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-family: <%= PgReports.config.load_external_fonts ? "'JetBrains Mono', " : "" %>monospace;
+    }
+
+    .query-source a {
+      color: var(--accent-purple);
+      text-decoration: none;
+    }
+
+    .query-source a:hover {
+      text-decoration: underline;
+    }
+
+    /* Download Dropdown */
+    .download-dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .download-menu {
+      position: absolute;
+      top: calc(100% + 0.5rem);
+      right: 0;
+      min-width: 180px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      z-index: 100;
+      overflow: hidden;
+    }
+
+    .download-menu a {
+      display: block;
+      padding: 0.75rem 1rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: all 0.15s ease;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .download-menu a:last-child {
+      border-bottom: none;
+    }
+
+    .download-menu a:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .btn-small {
+      height: 32px;
+      padding: 0 1rem;
+      font-size: 0.8rem;
+    }
+
+    .btn-danger {
+      background: var(--accent-rose);
+      color: white;
+      border-color: var(--accent-rose);
+    }
+
+    .btn-danger:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
   </style>
 </head>
 <body>

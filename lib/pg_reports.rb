@@ -13,6 +13,7 @@ require_relative "pg_reports/report"
 require_relative "pg_reports/telegram_sender"
 require_relative "pg_reports/annotation_parser"
 require_relative "pg_reports/explain_analyzer"
+require_relative "pg_reports/query_monitor"
 
 # YAML-based report system
 require_relative "pg_reports/filter"

@@ -205,6 +205,46 @@ pg_stat_statements.track = all</pre>
   </div>
 </div>
 
+<!-- Query Monitoring Panel -->
+<div id="query-monitoring" class="query-monitoring-panel" style="display: none;">
+  <div class="query-monitoring-header">
+    <div class="query-monitoring-title">
+      <span class="monitoring-indicator" id="monitor-indicator"></span>
+      <span>SQL Query Monitor</span>
+      <span class="session-badge" id="session-badge" style="display: none;">
+        Session: <strong id="session-id"></strong>
+      </span>
+    </div>
+    <div class="query-monitoring-controls">
+      <button class="btn btn-small btn-primary" onclick="startQueryMonitoring(this)" id="start-monitor-btn">
+        ▶ Start Monitoring
+      </button>
+      <button class="btn btn-small btn-danger" onclick="stopQueryMonitoring(this)" id="stop-monitor-btn" style="display: none;">
+        ⏹ Stop Monitoring
+      </button>
+      <div class="download-dropdown" id="monitor-download-dropdown" style="display: none;">
+        <button class="btn btn-small btn-secondary" onclick="toggleMonitorDownloadMenu(event)">
+          📥 Download
+        </button>
+        <div class="download-menu" id="monitor-download-menu" style="display: none;">
+          <a href="#" onclick="downloadQueryMonitor('txt'); return false;">📄 Text (.txt)</a>
+          <a href="#" onclick="downloadQueryMonitor('csv'); return false;">📊 CSV (.csv)</a>
+          <a href="#" onclick="downloadQueryMonitor('json'); return false;">📋 JSON (.json)</a>
+        </div>
+      </div>
+      <span class="query-monitoring-count">
+        Queries: <strong id="query-count">0</strong>
+      </span>
+    </div>
+  </div>
+
+  <div class="query-feed" id="query-feed">
+    <div class="query-feed-empty">
+      Click "Start Monitoring" to begin capturing SQL queries
+    </div>
+  </div>
+</div>
+
 <div class="categories-grid">
   <% @categories.each do |category_key, category| %>
     <div class="category-card<%= ' disabled' if category_key == :queries && !@pg_stat_status[:ready] %>">
@@ -1020,4 +1060,364 @@ pg_stat_statements.track = all</pre>
 
   document.addEventListener('DOMContentLoaded', initLiveMonitoring);
   window.addEventListener('beforeunload', stopPolling);
+
+  // ============================================
+  // Query Monitoring
+  // ============================================
+
+  const QUERY_MONITOR_CONFIG = {
+    pollInterval: 2000,
+    maxQueries: 50
+  };
+
+  let queryMonitorEnabled = false;
+  let queryMonitorPollTimer = null;
+  let currentSessionId = null;
+  let queryCount = 0;
+
+  function initQueryMonitoring() {
+    const panel = document.getElementById('query-monitoring');
+    if (!panel) return;
+
+    // Check initial status
+    checkQueryMonitorStatus();
+  }
+
+  async function checkQueryMonitorStatus() {
+    try {
+      const response = await fetch(`${pgReportsRoot}/query_monitor/status`);
+      const data = await response.json();
+
+      if (data.success && data.enabled) {
+        queryMonitorEnabled = true;
+        currentSessionId = data.session_id;
+        queryCount = data.query_count;
+        updateQueryMonitorUI(true);
+        startQueryMonitorPolling();
+      } else {
+        // Monitoring not active - load history from log file
+        queryMonitorEnabled = false;
+        await loadQueryHistory();
+        updateQueryMonitorUI(false);
+      }
+    } catch (error) {
+      console.error('Failed to check query monitor status:', error);
+      // Show panel anyway even if status check fails
+      updateQueryMonitorUI(false);
+    }
+  }
+
+  async function loadQueryHistory() {
+    try {
+      const response = await fetch(
+        `${pgReportsRoot}/query_monitor/history?limit=${QUERY_MONITOR_CONFIG.maxQueries}`
+      );
+      const data = await response.json();
+
+      if (data.success && data.queries && data.queries.length > 0) {
+        renderQueryFeed(data.queries);
+      }
+    } catch (error) {
+      console.error('Failed to load query history:', error);
+    }
+  }
+
+  async function loadSessionFromLog(sessionId) {
+    try {
+      const response = await fetch(
+        `${pgReportsRoot}/query_monitor/history?session_id=${sessionId}&limit=${QUERY_MONITOR_CONFIG.maxQueries}`
+      );
+      const data = await response.json();
+
+      if (data.success && data.queries && data.queries.length > 0) {
+        renderQueryFeed(data.queries);
+      }
+    } catch (error) {
+      console.error('Failed to load session from log:', error);
+    }
+  }
+
+  async function startQueryMonitoring(button) {
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner"></span> Starting...';
+
+    try {
+      const response = await fetch(`${pgReportsRoot}/query_monitor/start`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        queryMonitorEnabled = true;
+        currentSessionId = data.session_id;
+        updateQueryMonitorUI(true);
+        startQueryMonitorPolling();
+        showToast(data.message);
+      } else {
+        showToast(data.message || 'Failed to start monitoring', 'error');
+        button.disabled = false;
+        button.innerHTML = '▶ Start Monitoring';
+      }
+    } catch (error) {
+      showToast('Network error: ' + error.message, 'error');
+      button.disabled = false;
+      button.innerHTML = '▶ Start Monitoring';
+    }
+  }
+
+  async function stopQueryMonitoring(button) {
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner"></span> Stopping...';
+
+    try {
+      const response = await fetch(`${pgReportsRoot}/query_monitor/stop`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        queryMonitorEnabled = false;
+        const stoppedSessionId = data.session_id || currentSessionId;
+        currentSessionId = null;
+        stopQueryMonitorPolling();
+
+        // Load complete session data from log file
+        if (stoppedSessionId) {
+          await loadSessionFromLog(stoppedSessionId);
+        }
+
+        updateQueryMonitorUI(false);
+        showToast(data.message);
+      } else {
+        showToast(data.message || 'Failed to stop monitoring', 'error');
+        button.disabled = false;
+        button.innerHTML = '⏹ Stop Monitoring';
+      }
+    } catch (error) {
+      showToast('Network error: ' + error.message, 'error');
+      button.disabled = false;
+      button.innerHTML = '⏹ Stop Monitoring';
+    }
+  }
+
+  function updateQueryMonitorUI(enabled) {
+    const panel = document.getElementById('query-monitoring');
+    const indicator = document.getElementById('monitor-indicator');
+    const startBtn = document.getElementById('start-monitor-btn');
+    const stopBtn = document.getElementById('stop-monitor-btn');
+    const sessionBadge = document.getElementById('session-badge');
+    const sessionIdEl = document.getElementById('session-id');
+    const downloadDropdown = document.getElementById('monitor-download-dropdown');
+    const feed = document.getElementById('query-feed');
+
+    panel.style.display = 'block';
+
+    if (enabled) {
+      indicator.classList.add('active');
+      startBtn.style.display = 'none';
+      stopBtn.style.display = 'inline-block';
+      stopBtn.disabled = false;
+      stopBtn.innerHTML = '⏹ Stop Monitoring';
+      sessionBadge.style.display = 'inline-block';
+      sessionIdEl.textContent = currentSessionId ? currentSessionId.substring(0, 8) : '';
+      downloadDropdown.style.display = 'inline-block';
+    } else {
+      indicator.classList.remove('active');
+      startBtn.style.display = 'inline-block';
+      startBtn.disabled = false;
+      startBtn.innerHTML = '▶ Start Monitoring';
+      stopBtn.style.display = 'none';
+      sessionBadge.style.display = 'none';
+
+      // Keep results visible after stopping, only hide download if no queries
+      const hasQueries = queryCount > 0;
+      downloadDropdown.style.display = hasQueries ? 'inline-block' : 'none';
+
+      // Only clear feed if no queries captured
+      if (!hasQueries) {
+        feed.innerHTML = '<div class="query-feed-empty">Click "Start Monitoring" to begin capturing SQL queries</div>';
+      }
+    }
+  }
+
+  function toggleMonitorDownloadMenu(event) {
+    event.stopPropagation();
+    const menu = document.getElementById('monitor-download-menu');
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+  }
+
+  function downloadQueryMonitor(format) {
+    // Hide dropdown menu
+    document.getElementById('monitor-download-menu').style.display = 'none';
+
+    // Build download URL
+    const url = `${pgReportsRoot}/query_monitor/download?format=${format}`;
+
+    // Use hidden iframe to download without page reload
+    let iframe = document.getElementById('download-iframe');
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.id = 'download-iframe';
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+    }
+    iframe.src = url;
+  }
+
+  // Close download menu when clicking outside
+  document.addEventListener('click', function(event) {
+    const menu = document.getElementById('monitor-download-menu');
+    if (menu && menu.style.display === 'block') {
+      const dropdown = document.getElementById('monitor-download-dropdown');
+      if (dropdown && !dropdown.contains(event.target)) {
+        menu.style.display = 'none';
+      }
+    }
+  });
+
+  function startQueryMonitorPolling() {
+    if (queryMonitorPollTimer) clearInterval(queryMonitorPollTimer);
+
+    fetchQueryFeed(); // Immediate fetch
+    queryMonitorPollTimer = setInterval(fetchQueryFeed, QUERY_MONITOR_CONFIG.pollInterval);
+  }
+
+  function stopQueryMonitorPolling() {
+    if (queryMonitorPollTimer) {
+      clearInterval(queryMonitorPollTimer);
+      queryMonitorPollTimer = null;
+    }
+  }
+
+  async function fetchQueryFeed() {
+    if (!queryMonitorEnabled) return;
+
+    try {
+      const response = await fetch(
+        `${pgReportsRoot}/query_monitor/feed?limit=${QUERY_MONITOR_CONFIG.maxQueries}&session_id=${currentSessionId || ''}`
+      );
+      const data = await response.json();
+
+      if (data.success && data.queries) {
+        renderQueryFeed(data.queries);
+      }
+    } catch (error) {
+      console.error('Failed to fetch query feed:', error);
+    }
+  }
+
+  function renderQueryFeed(queries) {
+    const feed = document.getElementById('query-feed');
+
+    if (queries.length === 0) {
+      feed.innerHTML = '<div class="query-feed-empty">No queries captured yet...</div>';
+      queryCount = 0;
+      document.getElementById('query-count').textContent = '0';
+      return;
+    }
+
+    queryCount = queries.length;
+    document.getElementById('query-count').textContent = queryCount;
+
+    // Render queries in reverse chronological order
+    const html = queries.slice().reverse().map(query => renderQueryItem(query)).join('');
+    feed.innerHTML = html;
+  }
+
+  function renderQueryItem(query) {
+    const duration = query.duration_ms;
+    const durationClass = duration < 10 ? 'fast' : duration > 100 ? 'slow' : '';
+    const timestamp = new Date(query.timestamp).toLocaleTimeString();
+    const queryId = `query-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    let sourceInfo = 'Unknown source';
+    if (query.source_location && query.source_location.file) {
+      const file = query.source_location.file;
+      const line = query.source_location.line;
+      sourceInfo = `<a href="#" onclick="openInIDE('${escapeHtml(file)}', ${line}); return false;">
+         ${escapeHtml(file)}:${line}
+       </a>`;
+    }
+
+    // Prepare SQL: collapse to single line and truncate
+    const fullSql = query.sql.trim();
+    const collapsedSql = fullSql.replace(/\s+/g, ' ').trim();
+    const truncatedSql = collapsedSql.length > 100
+      ? collapsedSql.substring(0, 100) + '...'
+      : collapsedSql;
+
+    return `
+      <div class="query-item">
+        <div class="query-header">
+          <div class="query-meta">
+            <span class="query-timestamp">${timestamp}</span>
+            <span class="query-duration ${durationClass}">${duration.toFixed(2)}ms</span>
+            <span class="query-source">${sourceInfo}</span>
+          </div>
+          <button class="query-expand-btn" onclick="toggleQueryExpand('${queryId}')" title="Expand/Collapse">
+            <span id="${queryId}-icon">▼</span>
+          </button>
+        </div>
+        <div class="query-sql-wrapper">
+          <div class="query-sql query-sql-collapsed" id="${queryId}-sql">
+            ${escapeHtml(truncatedSql)}
+          </div>
+          <div class="query-sql query-sql-expanded" id="${queryId}-sql-full" style="display: none;">
+            ${escapeHtml(fullSql)}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function toggleQueryExpand(queryId) {
+    const collapsedEl = document.getElementById(`${queryId}-sql`);
+    const expandedEl = document.getElementById(`${queryId}-sql-full`);
+    const iconEl = document.getElementById(`${queryId}-icon`);
+
+    if (collapsedEl.style.display === 'none') {
+      // Currently expanded, collapse it
+      collapsedEl.style.display = 'block';
+      expandedEl.style.display = 'none';
+      iconEl.textContent = '▼';
+    } else {
+      // Currently collapsed, expand it
+      collapsedEl.style.display = 'none';
+      expandedEl.style.display = 'block';
+      iconEl.textContent = '▲';
+    }
+  }
+
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function showToast(message, type = 'success') {
+    // Simple console log for now - can be enhanced with actual toast UI
+    if (type === 'error') {
+      console.error(message);
+    } else {
+      console.log(message);
+    }
+    // TODO: Implement actual toast notification UI
+  }
+
+  // Initialize on page load
+  document.addEventListener('DOMContentLoaded', initQueryMonitoring);
+  window.addEventListener('beforeunload', () => {
+    stopQueryMonitorPolling();
+  });
 </script>

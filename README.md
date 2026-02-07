@@ -22,6 +22,7 @@ A comprehensive PostgreSQL monitoring and analysis library for Rails application
 - 🔗 **IDE Integration** - Open source locations in VS Code, Cursor, RubyMine, or IntelliJ (with WSL support)
 - 📌 **Comparison Mode** - Save records to compare before/after optimization
 - 📊 **EXPLAIN ANALYZE** - Advanced query plan analyzer with problem detection and recommendations
+- 🔍 **SQL Query Monitoring** - Real-time monitoring of all executed SQL queries with source location tracking
 - 🔌 **Connection Pool Analytics** - Monitor pool usage, wait times, saturation warnings, and connection churn
 - 🗑️ **Migration Generator** - Generate Rails migrations to drop unused indexes
 
@@ -345,6 +346,61 @@ The advanced query analyzer provides intelligent problem detection and recommend
 - Slow execution/planning times
 
 > Note: Queries with parameter placeholders ($1, $2) from pg_stat_statements require parameter input before analysis.
+
+### SQL Query Monitoring
+
+Monitor all SQL queries executed in your Rails application in real-time:
+
+1. Visit the dashboard at `/pg_reports`
+2. Click **"▶ Start Monitoring"** button in the SQL Query Monitor panel
+3. Execute operations in your application (web requests, console commands, background jobs)
+4. View captured queries in the dashboard with:
+   - **SQL text** - Formatted with syntax highlighting
+   - **Execution duration** - Color-coded: 🟢 green (< 10ms), 🟡 yellow (< 100ms), 🔴 red (> 100ms)
+   - **Source location** - File:line with click-to-open in IDE
+   - **Timestamp** - When the query was executed
+5. Click **"⏹ Stop Monitoring"** when done
+
+**Features:**
+- Uses Rails' built-in **ActiveSupport::Notifications** (`sql.active_record` events)
+- Global monitoring session (shared by all dashboard users)
+- Automatically filters internal queries (SCHEMA, CACHE, pg_reports' own queries)
+- Keeps last N queries in memory (configurable, default 100)
+- 2-second auto-refresh while monitoring is active
+- Session-based tracking with unique IDs
+- Logged to `log/pg_reports.log` in JSON Lines format
+
+**Configuration:**
+
+```ruby
+PgReports.configure do |config|
+  # Query monitoring
+  config.query_monitor_log_file = Rails.root.join("log", "custom_monitor.log")
+  config.query_monitor_max_queries = 200  # Keep last 200 queries (default: 100)
+
+  # Custom backtrace filtering to show only application code
+  config.query_monitor_backtrace_filter = ->(location) {
+    !location.path.match?(%r{/(gems|ruby|railties)/})
+  }
+end
+```
+
+**Log Format:**
+
+The log file uses JSON Lines format (one JSON object per line):
+
+```json
+{"type":"session_start","session_id":"550e8400-e29b-41d4-a716-446655440000","timestamp":"2024-02-07T10:30:00Z"}
+{"type":"query","session_id":"550e8400-e29b-41d4-a716-446655440000","sql":"SELECT * FROM users WHERE id = 1","duration_ms":2.34,"name":"User Load","source_location":{"file":"app/controllers/users_controller.rb","line":15,"method":"show"},"timestamp":"2024-02-07T10:30:01Z"}
+{"type":"session_end","session_id":"550e8400-e29b-41d4-a716-446655440000","timestamp":"2024-02-07T10:35:00Z"}
+```
+
+**Use Cases:**
+- 🐛 Debug N+1 query problems during development
+- 🐌 Identify slow queries in real-time
+- 🔍 Track down source of unexpected queries
+- 📊 Monitor query patterns during feature development
+- 📚 Teaching tool for understanding ActiveRecord behavior
 
 ### Migration Generator
 

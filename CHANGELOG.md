@@ -45,6 +45,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Identifies missing or misconfigured connection pooling
 - Complete i18n translations (English and Russian) for all new reports
 - Documentation for each report with usage patterns and nuances
+- **SQL Query Monitoring** - real-time query capture and analysis:
+  - New `QueryMonitor` singleton service for capturing all SQL queries via ActiveSupport::Notifications
+  - Dashboard panel with start/stop controls and live query feed
+  - Query capture features:
+    - SQL text, execution duration (color-coded: green < 10ms, yellow < 100ms, red > 100ms)
+    - Source location (file:line) with click-to-open in IDE
+    - Timestamp and query name
+    - Session-based tracking with unique UUIDs
+  - Smart filtering:
+    - Automatically excludes SCHEMA, CACHE, EXPLAIN queries
+    - Filters DDL statements (CREATE, ALTER, DROP)
+    - Excludes pg_reports' internal queries
+    - Configurable backtrace filtering for source location extraction
+  - UI features:
+    - Collapsible/expandable queries (truncated to 100 chars by default)
+    - Real-time updates via 2-second polling
+    - Reverse chronological order (newest first)
+    - Query counter with session badge
+  - Persistence:
+    - JSON Lines (JSONL) log format in `log/pg_reports.log`
+    - Session markers (session_start/session_end)
+    - In-memory circular buffer (configurable, default 100 queries)
+    - Automatic log loading on dashboard open
+    - Results persist after stopping monitoring
+  - Export capabilities:
+    - Download in TXT, CSV, or JSON formats
+    - Works even after monitoring stopped
+    - Includes all query metadata (timestamp, duration, source, SQL)
+    - Uses hidden iframe for downloads (doesn't interrupt monitoring)
+  - Configuration options:
+    - `query_monitor_log_file` - custom log file path
+    - `query_monitor_max_queries` - buffer size (default: 100)
+    - `query_monitor_backtrace_filter` - Proc for filtering backtrace lines
+  - New routes and controller actions:
+    - `POST /query_monitor/start` - start monitoring
+    - `POST /query_monitor/stop` - stop monitoring
+    - `GET /query_monitor/status` - check monitoring status
+    - `GET /query_monitor/feed` - get live query feed
+    - `GET /query_monitor/history` - load queries from log file
+    - `GET /query_monitor/download` - export queries
+  - Comprehensive test coverage (39 unit tests + 5 integration tests)
 
 ### Changed
 
