@@ -21,7 +21,8 @@ A comprehensive PostgreSQL monitoring and analysis library for Rails application
 - 📥 **Export** - Download reports in TXT, CSV, or JSON format
 - 🔗 **IDE Integration** - Open source locations in VS Code, Cursor, RubyMine, or IntelliJ (with WSL support)
 - 📌 **Comparison Mode** - Save records to compare before/after optimization
-- 📊 **EXPLAIN ANALYZE** - Run query plans directly from the dashboard
+- 📊 **EXPLAIN ANALYZE** - Advanced query plan analyzer with problem detection and recommendations
+- 🔌 **Connection Pool Analytics** - Monitor pool usage, wait times, saturation warnings, and connection churn
 - 🗑️ **Migration Generator** - Generate Rails migrations to drop unused indexes
 
 ## Installation
@@ -195,6 +196,10 @@ config.active_record.query_log_tags = [:controller, :action]
 | `blocking_queries` | Queries blocking others |
 | `locks` | Current database locks |
 | `idle_connections` | Idle connections |
+| `pool_usage` | 🆕 Connection pool utilization analysis |
+| `pool_wait_times` | 🆕 Resource wait time analysis |
+| `pool_saturation` | 🆕 Pool health warnings with recommendations |
+| `connection_churn` | 🆕 Connection lifecycle and churn rate analysis |
 | `kill_connection(pid)` | Terminate a backend process |
 | `cancel_query(pid)` | Cancel a running query |
 
@@ -316,13 +321,30 @@ Records are stored in browser localStorage per report type.
 
 ### EXPLAIN ANALYZE
 
-For query reports, you can run EXPLAIN ANALYZE directly:
+The advanced query analyzer provides intelligent problem detection and recommendations:
 
 1. Expand a row with a query
 2. Click "📊 EXPLAIN ANALYZE"
-3. View the execution plan with timing statistics
+3. View the color-coded execution plan with:
+   - **🟢🟡🔴 Status indicator** - Overall query health assessment
+   - **📈 Key metrics** - Planning/Execution time, Cost, Rows
+   - **⚠️ Detected problems** - Sequential scans, high costs, slow sorts, estimation errors
+   - **💡 Recommendations** - Actionable advice for each issue
+   - **🎨 Colored plan** - Node types color-coded by performance impact:
+     - 🟢 Green: Efficient operations (Index Scan, Hash Join)
+     - 🔵 Blue: Normal operations (Bitmap Scan, HashAggregate)
+     - 🟡 Yellow: Potential issues (Seq Scan, Sort, Materialize)
+   - **Line-by-line annotations** - Problems highlighted on specific plan lines
 
-> Note: Queries with parameter placeholders ($1, $2) from pg_stat_statements cannot be analyzed directly. Copy the query and replace parameters with actual values.
+**Problem Detection:**
+- Sequential scans on large tables (> 1000 rows)
+- High-cost operations (> 10,000 cost units)
+- Sorts spilling to disk
+- Slow sort operations (> 1s)
+- Inaccurate row estimates (> 10x off)
+- Slow execution/planning times
+
+> Note: Queries with parameter placeholders ($1, $2) from pg_stat_statements require parameter input before analysis.
 
 ### Migration Generator
 
@@ -332,6 +354,41 @@ For unused or invalid indexes, generate Rails migrations:
 2. Expand a row and click "🗑️ Generate Migration"
 3. Copy the code or create the file directly
 4. The file opens automatically in your configured IDE
+
+### Connection Pool Analytics
+
+Monitor your connection pool health with specialized reports:
+
+**Pool Usage** - Real-time utilization metrics:
+- Total, active, idle connections per database
+- Pool utilization percentage with 🟢🟡🔴 indicators
+- Idle in transaction connections (resource waste)
+- Available connection capacity
+
+**Wait Times** - Identify resource bottlenecks:
+- Queries waiting for locks, I/O, or network
+- Wait event types (ClientRead, Lock, IO)
+- Wait duration with severity thresholds
+- Helps diagnose contention issues
+
+**Pool Saturation** - Health warnings with actionable recommendations:
+- Overall pool metrics with status indicators
+- Automatic severity assessment (Normal/Elevated/Warning/Critical)
+- Context-aware recommendations for each metric
+- Detects approaching exhaustion, high idle transactions
+
+**Connection Churn** - Lifecycle analysis:
+- Connection age distribution by application
+- Short-lived connection detection (< 10 seconds)
+- Churn rate percentage calculation
+- Identifies missing/misconfigured connection pooling
+
+```ruby
+# Console usage
+PgReports.pool_usage.display
+PgReports.pool_saturation.display
+PgReports.connection_churn.display
+```
 
 ### Authentication
 

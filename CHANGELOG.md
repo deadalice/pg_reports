@@ -7,8 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **EXPLAIN ANALYZE Advanced Analyzer** - intelligent query plan analysis with problem detection:
+  - New `ExplainAnalyzer` service class for parsing and analyzing EXPLAIN output
+  - Color-coded node types (🟢 efficient, 🔵 normal, 🟡 potential issues)
+  - Automatic problem detection:
+    - Sequential scans on large tables (cost > 1000, rows > 1000)
+    - High-cost operations (> 10,000)
+    - Sort operations spilling to disk
+    - Slow sorts (> 1 second)
+    - Inaccurate row estimates (> 10x deviation)
+    - Slow execution/planning times
+  - Summary card with overall status (🟢 No issues / 🟡 Warnings / 🔴 Critical)
+  - Problem list with detailed explanations and recommendations
+  - Line-by-line plan annotations with problem indicators
+  - Metric highlighting (cost, rows, time, loops)
+  - Copy to clipboard functionality
+- **Connection Pool Analytics** - comprehensive pool monitoring and diagnostics:
+  - `pool_usage` report - real-time utilization metrics per database:
+    - Active, idle, idle-in-transaction connection breakdown
+    - Utilization percentage with thresholds (70% warning, 85% critical)
+    - Available connection capacity calculation
+  - `pool_wait_times` report - resource wait analysis:
+    - Queries waiting for locks, I/O, or network operations
+    - Wait event type classification (ClientRead, Lock, IO)
+    - Duration tracking with severity thresholds (10s warning, 60s critical)
+  - `pool_saturation` report - health warnings with recommendations:
+    - Overall pool metrics with status indicators (🟢🟡🔴)
+    - Automatic severity assessment per metric
+    - Context-aware recommendations embedded in SQL
+    - Tracks total, active, idle, idle-in-transaction, and waiting connections
+  - `connection_churn` report - lifecycle and churn analysis:
+    - Connection age distribution per application
+    - Short-lived connection detection (< 10 seconds)
+    - Churn rate percentage calculation (50% warning, 75% critical)
+    - Identifies missing or misconfigured connection pooling
+- Complete i18n translations (English and Russian) for all new reports
+- Documentation for each report with usage patterns and nuances
+
 ### Changed
 
+- **Unified status indicators** - consistent 🟢🟡🔴 emoji usage across all reports:
+  - Replaced ✅ checkmark with 🟢 green circle for "good" status
+  - Replaced ⚠️ warning sign with 🟡 yellow circle for "warning" status
+  - Retained 🔴 red circle for "critical" status
+  - Applied to EXPLAIN analyzer summary and connection pool reports
 - **Simplified database filtering** - all reports now use only current database from project settings:
   - Removed database selector UI component from dashboard
   - All SQL queries now filter by `current_database()` function automatically
