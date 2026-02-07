@@ -118,6 +118,25 @@ module PgReports
           thresholds: {idle_count: {warning: 30, critical: 80}},
           problem_fields: ["idle_count"]
         },
+        pool_usage: {
+          thresholds: {utilization_pct: {warning: 70, critical: 85}},
+          problem_fields: ["utilization_pct"]
+        },
+        pool_wait_times: {
+          thresholds: {wait_duration_seconds: {warning: 10, critical: 60}},
+          problem_fields: ["wait_duration_seconds"]
+        },
+        pool_saturation: {
+          thresholds: {utilization_pct: {warning: 70, critical: 85}},
+          problem_fields: ["utilization_pct"]
+        },
+        connection_churn: {
+          thresholds: {
+            churn_rate_pct: {warning: 50, critical: 75},
+            short_lived_connections: {warning: 10, critical: 25}
+          },
+          problem_fields: ["churn_rate_pct", "short_lived_connections"]
+        },
 
         # === SYSTEM ===
         database_sizes: {
@@ -200,7 +219,11 @@ module PgReports
             long_running_queries: {name: "Long Running", description: "Queries running for extended period"},
             blocking_queries: {name: "Blocking Queries", description: "Queries blocking others"},
             locks: {name: "Locks", description: "Current database locks"},
-            idle_connections: {name: "Idle Connections", description: "Idle connections"}
+            idle_connections: {name: "Idle Connections", description: "Idle connections"},
+            pool_usage: {name: "Pool Usage", description: "Connection pool utilization"},
+            pool_wait_times: {name: "Wait Times", description: "Resource wait analysis"},
+            pool_saturation: {name: "Pool Saturation", description: "Pool health warnings"},
+            connection_churn: {name: "Connection Churn", description: "Connection lifecycle analysis"}
           }
         },
         system: {

@@ -249,6 +249,46 @@ en:
           - "Too many idle = application not closing connections or pool is too large."
           - "idle_session_timeout (PostgreSQL 14+) can automatically close idle connections."
 
+      pool_usage:
+        title: "Connection Pool Usage"
+        what: "Current connection pool utilization showing active, idle, and available connections across databases."
+        how: "Analyzes pg_stat_activity connection states and compares against max_connections limit."
+        nuances:
+          - "Utilization above 70% indicates approaching pool limits — consider scaling."
+          - "Idle in transaction connections waste resources and block VACUUM."
+          - "max_connections is database-wide, not per-database."
+          - "Connection poolers (PgBouncer/pgpool) allow many more application connections than database connections."
+
+      pool_wait_times:
+        title: "Pool Wait Time Analysis"
+        what: "Queries currently waiting for resources like locks, I/O, or network operations."
+        how: "Analyzes wait_event and wait_event_type from pg_stat_activity for non-idle connections."
+        nuances:
+          - "ClientRead waits = slow client not consuming data fast enough."
+          - "Lock waits = contention between concurrent queries."
+          - "IO waits = disk performance issues or insufficient cache."
+          - "Waits over 60 seconds are critical and need immediate investigation."
+
+      pool_saturation:
+        title: "Pool Saturation Warnings"
+        what: "Overall connection pool health metrics with saturation warnings and recommendations."
+        how: "Calculates utilization percentages for total, active, idle, and problematic connections."
+        nuances:
+          - "Consistent utilization above 70% = need for pool tuning or scaling."
+          - "High idle in transaction count = application transaction handling issues."
+          - "superuser_reserved_connections reduce available pool capacity."
+          - "Monitor trends — sudden spikes may indicate connection leaks."
+
+      connection_churn:
+        title: "Connection Churn Analysis"
+        what: "Analyzes connection lifecycle patterns to identify excessive connection churn (frequent connect/disconnect)."
+        how: "Examines connection ages to identify short-lived connections and calculate churn rates per application."
+        nuances:
+          - "Connections under 10 seconds = short-lived."
+          - "Churn rate over 50% = missing/misconfigured connection pooling."
+          - "Many short connections = increased CPU and authentication overhead."
+          - "Web apps should maintain connection pools, not create per-request connections."
+
       # === SYSTEM ===
       database_sizes:
         title: "Database Sizes"
@@ -321,3 +361,8 @@ en:
       long_running: "Long-running query. May block other operations."
       blocking: "Blocking other queries. Requires attention."
       idle_in_transaction: "Open transaction without activity. Blocks VACUUM and holds locks."
+      high_pool_usage: "Connection pool utilization is high. Scale up max_connections or implement connection pooling."
+      long_wait_time: "Query waiting for resources for too long. Check for lock contention or I/O issues."
+      pool_saturation: "Connection pool is saturated. Risk of connection exhaustion and application errors."
+      high_connection_churn: "High connection churn rate. Implement connection pooling to reduce overhead."
+      too_many_short_connections: "Too many short-lived connections. Application should reuse connections via pooling."

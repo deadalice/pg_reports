@@ -1,0 +1,43 @@
+# Connection Pool Usage Statistics
+# Shows current pool utilization, limits, and capacity warnings
+
+report:
+  name: pool_usage
+  module: connections
+  description: "Connection pool usage and capacity analysis"
+
+  sql:
+    category: connections
+    file: pool_usage
+
+  title: "Connection Pool Usage"
+
+  columns:
+    - database
+    - total_connections
+    - active_connections
+    - idle_connections
+    - idle_in_transaction
+    - max_connections
+    - utilization_pct
+    - available_connections
+
+  thresholds:
+    utilization_pct:
+      warning: 70
+      critical: 85
+
+  problem_fields:
+    - utilization_pct
+
+  problem_explanations:
+    utilization_pct: high_pool_usage
+
+  documentation:
+    what: "Current connection pool utilization across all databases, showing active, idle, and available connections."
+    why: "High pool utilization can lead to connection exhaustion, causing application errors and degraded performance. Monitoring pool usage helps prevent connection starvation."
+    nuances:
+      - "Utilization above 70% indicates you're approaching pool limits"
+      - "Idle in transaction connections hold locks and can block other queries"
+      - "max_connections is a database-wide setting, not per-database"
+      - "Consider using connection pooling (PgBouncer/pgpool) for better resource management"

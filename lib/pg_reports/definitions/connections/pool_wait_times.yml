@@ -1,0 +1,44 @@
+# Connection Pool Wait Time Analysis
+# Analyzes queries waiting for resources (locks, IO, etc.)
+
+report:
+  name: pool_wait_times
+  module: connections
+  description: "Analysis of queries waiting for resources"
+
+  sql:
+    category: connections
+    file: pool_wait_times
+
+  title: "Pool Wait Time Analysis"
+
+  columns:
+    - pid
+    - database
+    - username
+    - wait_event_type
+    - wait_event
+    - state
+    - wait_duration_seconds
+    - query_start
+    - query
+
+  thresholds:
+    wait_duration_seconds:
+      warning: 10
+      critical: 60
+
+  problem_fields:
+    - wait_duration_seconds
+
+  problem_explanations:
+    wait_duration_seconds: long_wait_time
+
+  documentation:
+    what: "Queries currently waiting for resources like locks, I/O, or network operations."
+    why: "Long wait times indicate resource contention or bottlenecks. Understanding what queries are waiting for helps identify performance issues."
+    nuances:
+      - "ClientRead wait events indicate slow clients not consuming data fast enough"
+      - "Lock waits suggest contention between concurrent queries"
+      - "IO waits may indicate disk performance issues or need for more cache"
+      - "Wait times above 60 seconds are critical and should be investigated immediately"

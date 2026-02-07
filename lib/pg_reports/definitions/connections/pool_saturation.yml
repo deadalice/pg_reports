@@ -1,0 +1,42 @@
+# Connection Pool Saturation Warnings
+# Identifies connection pool saturation and potential exhaustion
+
+report:
+  name: pool_saturation
+  module: connections
+  description: "Connection pool saturation analysis and warnings"
+
+  sql:
+    category: connections
+    file: pool_saturation
+
+  title: "Pool Saturation Warnings"
+
+  columns:
+    - metric
+    - current_value
+    - max_value
+    - utilization_pct
+    - status
+    - recommendation
+
+  thresholds:
+    utilization_pct:
+      warning: 70
+      critical: 85
+
+  problem_fields:
+    - utilization_pct
+
+  problem_explanations:
+    utilization_pct: pool_saturation
+
+  documentation:
+    what: "Overall connection pool health metrics with saturation warnings and recommendations."
+    why: "Pool saturation leads to connection exhaustion, causing 'too many connections' errors and application failures. Early detection prevents outages."
+    nuances:
+      - "Utilization consistently above 70% suggests need for pool tuning or scaling"
+      - "High idle in transaction connections waste resources and should be minimized"
+      - "Reserved connections (superuser_reserved_connections) reduce available pool"
+      - "Consider implementing connection pooling if not already in use"
+      - "Monitor trends over time - sudden spikes may indicate connection leaks"

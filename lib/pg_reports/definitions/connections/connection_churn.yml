@@ -1,0 +1,49 @@
+# Connection Churn Analysis
+# Analyzes connection creation/destruction patterns and short-lived connections
+
+report:
+  name: connection_churn
+  module: connections
+  description: "Connection churn and short-lived connection analysis"
+
+  sql:
+    category: connections
+    file: connection_churn
+
+  title: "Connection Churn Analysis"
+
+  columns:
+    - database
+    - application
+    - total_connections
+    - avg_connection_age_seconds
+    - min_connection_age_seconds
+    - max_connection_age_seconds
+    - short_lived_connections
+    - churn_rate_pct
+
+  thresholds:
+    churn_rate_pct:
+      warning: 50
+      critical: 75
+    short_lived_connections:
+      warning: 10
+      critical: 25
+
+  problem_fields:
+    - churn_rate_pct
+    - short_lived_connections
+
+  problem_explanations:
+    churn_rate_pct: high_connection_churn
+    short_lived_connections: too_many_short_connections
+
+  documentation:
+    what: "Analyzes connection lifecycle patterns to identify excessive connection churn (frequent connect/disconnect cycles)."
+    why: "High connection churn wastes resources on connection setup/teardown and indicates potential connection pooling issues. Short-lived connections suggest the application isn't reusing connections efficiently."
+    nuances:
+      - "Connections under 10 seconds old are considered short-lived"
+      - "High churn rate (>50%) suggests missing or misconfigured connection pooling"
+      - "Many short-lived connections increase CPU overhead and authentication load"
+      - "Consider using PgBouncer or similar pooler to reduce churn"
+      - "Web applications should maintain a connection pool, not create connections per request"

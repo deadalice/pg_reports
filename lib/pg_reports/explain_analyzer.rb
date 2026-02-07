@@ -317,11 +317,11 @@ module PgReports
       elsif @summary[:warnings] > 0
         @summary[:status] = "warning"
         @summary[:status_text] = "Potential issues detected"
-        @summary[:status_icon] = "⚠️"
+        @summary[:status_icon] = "🟡"
       else
         @summary[:status] = "good"
         @summary[:status_text] = "No issues detected"
-        @summary[:status_icon] = "✅"
+        @summary[:status_icon] = "🟢"
       end
 
       # Group problems by type for summary
