@@ -64,9 +64,9 @@ RSpec.describe "YAML-based Reports" do
   describe "Filter class" do
     let(:data) do
       [
-        { "value" => "10" },
-        { "value" => "20" },
-        { "value" => "30" }
+        {"value" => "10"},
+        {"value" => "20"},
+        {"value" => "30"}
       ]
     end
 
@@ -74,12 +74,12 @@ RSpec.describe "YAML-based Reports" do
       filter_config = {
         "field" => "value",
         "operator" => "lte",
-        "value" => { "source" => "param", "key" => "threshold" },
+        "value" => {"source" => "param", "key" => "threshold"},
         "cast" => "integer"
       }
 
       filter = PgReports::Filter.new(filter_config)
-      result = filter.apply(data, { threshold: 20 })
+      result = filter.apply(data, {threshold: 20})
 
       expect(result.size).to eq(2)
       expect(result.map { |r| r["value"] }).to eq(%w[10 20])
@@ -89,12 +89,12 @@ RSpec.describe "YAML-based Reports" do
       filter_config = {
         "field" => "value",
         "operator" => "gte",
-        "value" => { "source" => "param", "key" => "threshold" },
+        "value" => {"source" => "param", "key" => "threshold"},
         "cast" => "integer"
       }
 
       filter = PgReports::Filter.new(filter_config)
-      result = filter.apply(data, { threshold: 20 })
+      result = filter.apply(data, {threshold: 20})
 
       expect(result.size).to eq(2)
       expect(result.map { |r| r["value"] }).to eq(%w[20 30])

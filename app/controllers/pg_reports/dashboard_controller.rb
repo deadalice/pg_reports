@@ -9,6 +9,7 @@ module PgReports
 
     def index
       @pg_stat_status = PgReports.pg_stat_statements_status
+      @current_database = PgReports.system.current_database
     end
 
     def enable_pg_stat_statements
@@ -195,7 +196,7 @@ module PgReports
 
       # Security: Only allow SELECT and SHOW queries
       normalized = query.strip.gsub(/\s+/, " ").downcase
-      unless normalized.start_with?("select") || normalized.start_with?("show")
+      unless normalized.start_with?("select", "show")
         render json: {success: false, error: "Only SELECT and SHOW queries are allowed"}, status: :unprocessable_entity
         return
       end
@@ -326,7 +327,7 @@ module PgReports
 
       # Also allow threshold overrides (calls_threshold, etc.)
       params.each do |key, value|
-        if key.to_s.end_with?('_threshold') && value.present?
+        if key.to_s.end_with?("_threshold") && value.present?
           result[key.to_sym] = value.to_i
         end
       end
@@ -356,7 +357,7 @@ module PgReports
       result = query.dup
 
       # Sort by param number descending to replace $10 before $1
-      params_hash.keys.map(&:to_i).sort.reverse.each do |num|
+      params_hash.keys.map(&:to_i).sort.reverse_each do |num|
         value = params_hash[num.to_s] || params_hash[num]
         next if value.nil? || value.to_s.empty?
 

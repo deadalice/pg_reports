@@ -16,9 +16,9 @@ report:
     - query
     - source
     - calls
-    - seq_scan_count
-    - rows_examined
-    - table_name
+    - total_time_ms
+    - rows_per_call
+    - disk_read_ratio
 
   parameters:
     limit:

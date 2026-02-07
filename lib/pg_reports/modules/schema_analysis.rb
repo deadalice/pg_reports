@@ -89,12 +89,10 @@ module PgReports
         ].uniq
 
         possible_names.each do |model_name|
-          begin
-            model = model_name.constantize
-            return model if model.is_a?(Class) && model < ActiveRecord::Base
-          rescue NameError
-            # Model doesn't exist, try next one
-          end
+          model = model_name.constantize
+          return model if model.is_a?(Class) && model < ActiveRecord::Base
+        rescue NameError
+          # Model doesn't exist, try next one
         end
 
         nil

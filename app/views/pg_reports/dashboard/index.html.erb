@@ -91,6 +91,9 @@ pg_stat_statements.track = all</pre>
     <div class="live-monitoring-title">
       <span class="live-indicator"></span>
       <span>Live Monitoring</span>
+      <span class="database-badge">
+        Database: <strong><%= @current_database %></strong>
+      </span>
     </div>
     <div class="live-monitoring-controls">
       <span class="live-monitoring-interval">Updates every 5s</span>
@@ -512,6 +515,22 @@ pg_stat_statements.track = all</pre>
     gap: 0.75rem;
     font-weight: 600;
     font-size: 1rem;
+  }
+
+  .database-badge {
+    margin-left: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .database-badge strong {
+    color: var(--text-primary);
+    font-weight: 600;
   }
 
   .live-indicator {

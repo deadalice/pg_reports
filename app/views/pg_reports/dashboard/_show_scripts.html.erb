@@ -999,7 +999,9 @@
   }
 
   // Render saved records on page load
-  document.addEventListener('DOMContentLoaded', renderSavedRecords);
+  document.addEventListener('DOMContentLoaded', function() {
+    renderSavedRecords();
+  });
 
   // ==========================================
   // EXPLAIN ANALYZE FUNCTIONALITY

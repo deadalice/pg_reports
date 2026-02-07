@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Simplified database filtering** - all reports now use only current database from project settings:
+  - Removed database selector UI component from dashboard
+  - All SQL queries now filter by `current_database()` function automatically
+  - Current database name displayed in Live Monitoring header
+  - Removed `database` parameter from all query reports
+  - Removed `databases_list` endpoint and related routes
+  - Cleaner, more focused dashboard experience
 - **Optimized gem dependencies** - replaced full Rails framework dependency with specific components:
   - Now using `activesupport`, `activerecord`, `actionpack`, `railties` instead of `rails`
   - Removed unnecessary components: actioncable, actionmailer, actiontext, activejob, activestorage

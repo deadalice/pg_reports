@@ -14,8 +14,8 @@ RSpec.describe PgReports::Modules::Indexes, "YAML-based methods" do
   describe "#unused_indexes" do
     let(:mock_data) do
       [
-        { "schema" => "public", "table_name" => "users", "index_name" => "idx_1", "idx_scan" => "5", "index_size_mb" => "1.5" },
-        { "schema" => "public", "table_name" => "posts", "index_name" => "idx_2", "idx_scan" => "100", "index_size_mb" => "2.5" }
+        {"schema" => "public", "table_name" => "users", "index_name" => "idx_1", "idx_scan" => "5", "index_size_mb" => "1.5"},
+        {"schema" => "public", "table_name" => "posts", "index_name" => "idx_2", "idx_scan" => "100", "index_size_mb" => "2.5"}
       ]
     end
 
@@ -46,7 +46,7 @@ RSpec.describe PgReports::Modules::Indexes, "YAML-based methods" do
 
     it "respects limit parameter" do
       many_rows = 100.times.map do |i|
-        { "schema" => "public", "table_name" => "t#{i}", "index_name" => "idx_#{i}", "idx_scan" => "5", "index_size_mb" => "1.0" }
+        {"schema" => "public", "table_name" => "t#{i}", "index_name" => "idx_#{i}", "idx_scan" => "5", "index_size_mb" => "1.0"}
       end
       allow(mock_connection).to receive(:exec_query).and_return(double(to_a: many_rows))
 
@@ -57,7 +57,7 @@ RSpec.describe PgReports::Modules::Indexes, "YAML-based methods" do
 
   describe "#duplicate_indexes" do
     let(:mock_data) do
-      [{ "table_name" => "users", "index_name" => "idx_email", "duplicate_of" => "idx_email_unique", "index_size_mb" => "2.5" }]
+      [{"table_name" => "users", "index_name" => "idx_email", "duplicate_of" => "idx_email_unique", "index_size_mb" => "2.5"}]
     end
 
     before do
@@ -124,10 +124,10 @@ RSpec.describe PgReports::Modules::Indexes, "YAML-based methods" do
   describe "#bloated_indexes" do
     let(:mock_data) do
       [
-        { "schema" => "public", "table_name" => "users", "index_name" => "idx_1",
-          "index_size_mb" => "10.0", "bloat_size_mb" => "5.0", "bloat_percent" => "50.0" },
-        { "schema" => "public", "table_name" => "posts", "index_name" => "idx_2",
-          "index_size_mb" => "20.0", "bloat_size_mb" => "2.0", "bloat_percent" => "10.0" }
+        {"schema" => "public", "table_name" => "users", "index_name" => "idx_1",
+         "index_size_mb" => "10.0", "bloat_size_mb" => "5.0", "bloat_percent" => "50.0"},
+        {"schema" => "public", "table_name" => "posts", "index_name" => "idx_2",
+         "index_size_mb" => "20.0", "bloat_size_mb" => "2.0", "bloat_percent" => "10.0"}
       ]
     end
 

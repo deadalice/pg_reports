@@ -50,8 +50,7 @@ module PgReports
       # @return [Hash] Metrics data
       def live_metrics(long_query_threshold: 60)
         data = executor.execute_from_file(:system, :live_metrics,
-          long_query_threshold: long_query_threshold
-        )
+          long_query_threshold: long_query_threshold)
 
         row = data.first || {}
 
@@ -114,6 +113,24 @@ module PgReports
             {success: false, message: "Failed to create extension: #{error_message}"}
           end
         end
+      end
+
+      # Get list of all databases
+      # @return [Array<Hash>] List of databases with sizes
+      def databases_list
+        executor.execute_from_file(:system, :databases_list)
+      rescue
+        # Fallback to empty array if query fails
+        []
+      end
+
+      # Get current database name
+      # @return [String] Current database name
+      def current_database
+        result = executor.execute("SELECT current_database() AS database")
+        result.first&.fetch("database", "unknown") || "unknown"
+      rescue
+        "unknown"
       end
 
       private
