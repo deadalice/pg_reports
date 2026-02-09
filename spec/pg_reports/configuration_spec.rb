@@ -27,6 +27,10 @@ RSpec.describe PgReports::Configuration do
       expect(config.query_monitor_max_queries).to eq(100)
       expect(config.query_monitor_backtrace_filter).to be_a(Proc)
     end
+
+    it "sets default security settings" do
+      expect(config.allow_raw_query_execution).to be false
+    end
   end
 
   describe "query monitoring configuration" do
@@ -66,6 +70,42 @@ RSpec.describe PgReports::Configuration do
       location = double("Location", path: "/app/controllers/users_controller.rb")
 
       expect(config.query_monitor_backtrace_filter.call(location)).to be true
+    end
+  end
+
+  describe "#allow_raw_query_execution" do
+    it "can be set to true" do
+      config.allow_raw_query_execution = true
+      expect(config.allow_raw_query_execution).to be true
+    end
+
+    it "can be set to false" do
+      config.allow_raw_query_execution = false
+      expect(config.allow_raw_query_execution).to be false
+    end
+
+    context "when reading from ENV" do
+      after do
+        ENV.delete("PG_REPORTS_ALLOW_RAW_QUERY_EXECUTION")
+      end
+
+      it "reads PG_REPORTS_ALLOW_RAW_QUERY_EXECUTION=true" do
+        ENV["PG_REPORTS_ALLOW_RAW_QUERY_EXECUTION"] = "true"
+        new_config = described_class.new
+        expect(new_config.allow_raw_query_execution).to be true
+      end
+
+      it "reads PG_REPORTS_ALLOW_RAW_QUERY_EXECUTION=false" do
+        ENV["PG_REPORTS_ALLOW_RAW_QUERY_EXECUTION"] = "false"
+        new_config = described_class.new
+        expect(new_config.allow_raw_query_execution).to be false
+      end
+
+      it "defaults to false when ENV variable not set" do
+        ENV.delete("PG_REPORTS_ALLOW_RAW_QUERY_EXECUTION")
+        new_config = described_class.new
+        expect(new_config.allow_raw_query_execution).to be false
+      end
     end
   end
 

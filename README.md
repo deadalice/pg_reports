@@ -128,6 +128,47 @@ PgReports.configure do |config|
 end
 ```
 
+### Query Execution Security
+
+⚠️ **Security Warning**: By default, the dashboard **does not allow** executing raw SQL queries via "Execute Query" and "EXPLAIN ANALYZE" buttons. This prevents accidental or malicious query execution in production environments.
+
+To enable query execution (only in secure environments):
+
+```ruby
+PgReports.configure do |config|
+  # Enable query execution from dashboard (default: false)
+  config.allow_raw_query_execution = true
+end
+```
+
+Or via environment variable:
+
+```bash
+export PG_REPORTS_ALLOW_RAW_QUERY_EXECUTION=true
+```
+
+**Recommended setup** (only enable in development/staging):
+
+```ruby
+# config/initializers/pg_reports.rb
+PgReports.configure do |config|
+  # Only allow query execution in development/staging
+  config.allow_raw_query_execution = Rails.env.development? || Rails.env.staging?
+
+  # Combine with authentication for additional security
+  config.dashboard_auth = -> {
+    authenticate_or_request_with_http_basic do |user, pass|
+      user == ENV["PG_REPORTS_USER"] && pass == ENV["PG_REPORTS_PASSWORD"]
+    end
+  }
+end
+```
+
+When disabled:
+- API endpoints `/execute_query` and `/explain_analyze` return 403 Forbidden
+- UI buttons are disabled with explanation tooltips
+- Existing safety measures (SELECT/SHOW only, automatic LIMIT) still apply when enabled
+
 ## Query Source Tracking
 
 PgReports automatically parses query annotations to show **where queries originated**. Works with:

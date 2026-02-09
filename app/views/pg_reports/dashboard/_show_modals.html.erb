@@ -71,10 +71,20 @@
         <div id="explain-params-inputs"></div>
       </div>
       <div class="explain-actions">
-        <button class="btn btn-primary" onclick="executeExplainAnalyze()" id="btn-explain">
+        <button class="btn btn-primary" onclick="executeExplainAnalyze()" id="btn-explain"
+          <% unless PgReports.config.allow_raw_query_execution %>
+            disabled
+            title="Query execution is disabled. Enable with config.allow_raw_query_execution = true"
+            style="opacity: 0.5; cursor: not-allowed;"
+          <% end %>>
           📊 EXPLAIN ANALYZE
         </button>
-        <button class="btn btn-secondary" onclick="executeQuery()" id="btn-execute">
+        <button class="btn btn-secondary" onclick="executeQuery()" id="btn-execute"
+          <% unless PgReports.config.allow_raw_query_execution %>
+            disabled
+            title="Query execution is disabled. Enable with config.allow_raw_query_execution = true"
+            style="opacity: 0.5; cursor: not-allowed;"
+          <% end %>>
           ▶ Execute Query
         </button>
       </div>

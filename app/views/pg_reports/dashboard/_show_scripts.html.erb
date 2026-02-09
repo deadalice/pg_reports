@@ -5,6 +5,7 @@
   const reportKey = '<%= @report_key %>';
   const railsEnv = '<%= Rails.env %>';
   const isDevelopment = railsEnv === 'development';
+  const allowRawQueryExecution = <%= PgReports.config.allow_raw_query_execution.to_s.downcase %>;
   let syncingScroll = false;
   let currentSort = { column: null, direction: 'asc' };
 
@@ -1276,6 +1277,13 @@
   async function executeExplainAnalyze() {
     const loading = document.getElementById('explain-loading');
     const content = document.getElementById('explain-content');
+
+    // Security check
+    if (!allowRawQueryExecution) {
+      content.innerHTML = `<div class="error-message">EXPLAIN ANALYZE is disabled. Enable it in configuration with 'config.allow_raw_query_execution = true'</div>`;
+      return;
+    }
+
     const params = getParamValues();
 
     loading.style.display = 'flex';
@@ -1309,6 +1317,13 @@
   async function executeQuery() {
     const loading = document.getElementById('explain-loading');
     const content = document.getElementById('explain-content');
+
+    // Security check
+    if (!allowRawQueryExecution) {
+      content.innerHTML = `<div class="error-message">Query execution is disabled. Enable it in configuration with 'config.allow_raw_query_execution = true'</div>`;
+      return;
+    }
+
     const params = getParamValues();
 
     loading.style.display = 'flex';

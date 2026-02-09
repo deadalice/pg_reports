@@ -38,6 +38,9 @@ module PgReports
     attr_accessor :query_monitor_max_queries    # Maximum number of queries to keep in buffer
     attr_accessor :query_monitor_backtrace_filter # Proc to filter backtrace lines
 
+    # Security settings
+    attr_accessor :allow_raw_query_execution    # Allow execute_query and explain_analyze from dashboard
+
     def initialize
       # Telegram
       @telegram_bot_token = ENV.fetch("PG_REPORTS_TELEGRAM_TOKEN", nil)
@@ -77,6 +80,11 @@ module PgReports
         # Exclude gem paths, framework paths
         !location.path.match?(%r{/(gems|ruby|railties)/})
       }
+
+      # Security
+      @allow_raw_query_execution = ActiveModel::Type::Boolean.new.cast(
+        ENV.fetch("PG_REPORTS_ALLOW_RAW_QUERY_EXECUTION", false)
+      )
     end
 
     def connection

@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-02-09
+
+### Added
+
+- **Query Execution Security** - new configuration to control raw SQL execution from dashboard:
+  - New config option `allow_raw_query_execution` (default: `false`)
+  - Environment variable support: `PG_REPORTS_ALLOW_RAW_QUERY_EXECUTION`
+  - Security documentation in README with examples and best practices
+  - Frontend UI: disabled buttons with tooltips when feature is off
+  - JavaScript validation in `executeQuery()` and `executeExplainAnalyze()` functions
+  - Configuration tests for new security setting
+
+### Changed
+
+- **BREAKING CHANGE**: `execute_query` and `explain_analyze` endpoints now require explicit opt-in
+  - Both endpoints return 403 Forbidden when `allow_raw_query_execution` is `false` (default)
+  - Dashboard "Execute Query" and "EXPLAIN ANALYZE" buttons disabled by default
+  - To restore previous behavior, add to initializer: `config.allow_raw_query_execution = true`
+  - **Migration path**: Users must explicitly enable this feature if they were using Query Analyzer
+
+### Security
+
+- Raw SQL execution from dashboard is now **disabled by default** to prevent unauthorized data access
+- Recommended setup: only enable in development/staging environments
+- Existing safety measures (SELECT/SHOW only, automatic LIMIT) still apply when enabled
+
 ## [0.5.0] - 2026-02-07
 
 ### Added

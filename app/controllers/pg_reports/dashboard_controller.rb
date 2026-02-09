@@ -26,15 +26,40 @@ module PgReports
 
     def live_metrics
       threshold = params[:long_query_threshold]&.to_i || 60
-      data = Modules::System.live_metrics(long_query_threshold: threshold)
 
-      render json: {
-        success: true,
-        metrics: data,
-        timestamp: Time.current.to_i
-      }
-    rescue => e
-      render json: {success: false, error: e.message}, status: :unprocessable_entity
+      # Check if we have access to required statistics
+      begin
+        data = Modules::System.live_metrics(long_query_threshold: threshold)
+
+        # Validate that we got actual data
+        if data[:connections][:total].nil? && data[:transactions][:total].nil?
+          render json: {
+            success: false,
+            error: "Unable to fetch database statistics. Check database permissions.",
+            available: false
+          }, status: :service_unavailable
+          return
+        end
+
+        render json: {
+          success: true,
+          metrics: data,
+          timestamp: Time.current.to_i,
+          available: true
+        }
+      rescue PG::InsufficientPrivilege => e
+        render json: {
+          success: false,
+          error: "Insufficient database permissions to access statistics views",
+          available: false
+        }, status: :forbidden
+      rescue => e
+        render json: {
+          success: false,
+          error: e.message,
+          available: false
+        }, status: :unprocessable_entity
+      end
     end
 
     def show
@@ -143,10 +168,28 @@ module PgReports
         return
       end
 
+      # Security: Check if raw query execution is allowed
+      unless PgReports.config.allow_raw_query_execution
+        render json: {
+          success: false,
+          error: "Query execution from dashboard is disabled. Enable it in configuration with 'config.allow_raw_query_execution = true'"
+        }, status: :forbidden
+        return
+      end
+
       # Security: Only allow SELECT queries for EXPLAIN ANALYZE (SHOW not supported by EXPLAIN)
       normalized = query.strip.gsub(/\s+/, " ").downcase
       unless normalized.start_with?("select")
         render json: {success: false, error: "Only SELECT queries are allowed for EXPLAIN ANALYZE"}, status: :unprocessable_entity
+        return
+      end
+
+      # Check for trigger variables (NEW, OLD) which are only available in trigger context
+      if query.match?(/\b(NEW|OLD)\./i)
+        render json: {
+          success: false,
+          error: "Cannot EXPLAIN ANALYZE queries with trigger variables (NEW, OLD). These are only available within trigger functions."
+        }, status: :unprocessable_entity
         return
       end
 
@@ -187,6 +230,15 @@ module PgReports
 
       if query.blank?
         render json: {success: false, error: "Query is required"}, status: :unprocessable_entity
+        return
+      end
+
+      # Security: Check if raw query execution is allowed
+      unless PgReports.config.allow_raw_query_execution
+        render json: {
+          success: false,
+          error: "Query execution from dashboard is disabled. Enable it in configuration with 'config.allow_raw_query_execution = true'"
+        }, status: :forbidden
         return
       end
 
