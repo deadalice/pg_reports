@@ -15,23 +15,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - New config option `allow_raw_query_execution` (default: `false`)
   - Environment variable support: `PG_REPORTS_ALLOW_RAW_QUERY_EXECUTION`
   - Security documentation in README with examples and best practices
-  - Frontend UI: disabled buttons with tooltips when feature is off
-  - JavaScript validation in `executeQuery()` and `executeExplainAnalyze()` functions
   - Configuration tests for new security setting
+- **Hash-based Query Execution System** - prevents SQL injection and query tampering:
+  - Backend generates SHA256 hash for each query and stores in Rails.cache (1-hour TTL)
+  - Frontend sends only hash (not query text) to execution endpoints
+  - Backend retrieves and validates original query by hash
+  - Strict validation: only SELECT queries, no dangerous keywords, no multiple statements
+  - Cache failure handling with clear error messages
+  - Protection against nested SQL injection attempts
+- **Enhanced Error Handling** - improved user feedback:
+  - Active warning messages instead of disabled buttons when feature is off
+  - Toast notifications with configuration instructions
+  - Detailed error messages in modal with code examples
+  - Clear messaging when Redis/cache backend is unavailable
 
 ### Changed
 
 - **BREAKING CHANGE**: `execute_query` and `explain_analyze` endpoints now require explicit opt-in
   - Both endpoints return 403 Forbidden when `allow_raw_query_execution` is `false` (default)
-  - Dashboard "Execute Query" and "EXPLAIN ANALYZE" buttons disabled by default
   - To restore previous behavior, add to initializer: `config.allow_raw_query_execution = true`
   - **Migration path**: Users must explicitly enable this feature if they were using Query Analyzer
+- **UI/UX Improvements**:
+  - Query Analyzer modal size increased: width 600px→900px, height 80vh→90vh for better query visibility
+  - "EXPLAIN ANALYZE", "Execute Query", and "Create Migration" buttons now show active warnings when clicked (instead of being disabled)
+  - Warning messages include configuration instructions with code examples
+  - Better visual feedback for disabled features
+- **Query Execution Flow**:
+  - `execute_query` and `explain_analyze` endpoints now accept `query_hash` parameter (instead of `query`)
+  - New helper methods: `store_query_with_hash()` and `retrieve_query_by_hash()`
+  - Frontend stores `data-query-hash` attribute on EXPLAIN ANALYZE buttons
+  - JavaScript validation happens client-side before API calls
 
 ### Security
 
-- Raw SQL execution from dashboard is now **disabled by default** to prevent unauthorized data access
+- **Critical Security Enhancement**: Raw SQL execution from dashboard is now **disabled by default** to prevent unauthorized data access
+- **Query Tampering Prevention**: Frontend cannot modify queries - hash-based verification ensures query integrity
+- **SQL Injection Protection**: Strict validation on backend prevents any non-SELECT queries or dangerous keywords
+- **Multiple Statement Prevention**: Semicolon detection blocks SQL injection attempts with multiple statements
+- **Cache Dependency**: Query execution temporarily disabled if Redis/cache backend is unavailable (fail-secure)
 - Recommended setup: only enable in development/staging environments
-- Existing safety measures (SELECT/SHOW only, automatic LIMIT) still apply when enabled
+- Existing safety measures (automatic LIMIT) still apply when enabled
 
 ## [0.5.0] - 2026-02-07
 
