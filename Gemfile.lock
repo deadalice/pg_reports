@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    pg_reports (0.5.1)
+    pg_reports (0.5.2)
       actionpack (>= 5.0)
       activerecord (>= 5.0)
       activesupport (>= 5.0)
