@@ -1280,7 +1280,17 @@
 
     // Security check
     if (!allowRawQueryExecution) {
-      content.innerHTML = `<div class="error-message">EXPLAIN ANALYZE is disabled. Enable it in configuration with 'config.allow_raw_query_execution = true'</div>`;
+      const message = '⚠️ EXPLAIN ANALYZE отключен. Включите в конфигурации: config.allow_raw_query_execution = true';
+      showToast(message, 'error');
+      content.innerHTML = `<div class="error-message">
+        <strong>⚠️ Query execution is disabled</strong><br><br>
+        To enable this feature, add to your configuration:<br>
+        <code style="display: block; margin-top: 0.5rem; padding: 0.5rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
+PgReports.configure do |config|<br>
+&nbsp;&nbsp;config.allow_raw_query_execution = true<br>
+end
+        </code>
+      </div>`;
       return;
     }
 
@@ -1320,7 +1330,17 @@
 
     // Security check
     if (!allowRawQueryExecution) {
-      content.innerHTML = `<div class="error-message">Query execution is disabled. Enable it in configuration with 'config.allow_raw_query_execution = true'</div>`;
+      const message = '⚠️ Выполнение запросов отключено. Включите в конфигурации: config.allow_raw_query_execution = true';
+      showToast(message, 'error');
+      content.innerHTML = `<div class="error-message">
+        <strong>⚠️ Query execution is disabled</strong><br><br>
+        To enable this feature, add to your configuration:<br>
+        <code style="display: block; margin-top: 0.5rem; padding: 0.5rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
+PgReports.configure do |config|<br>
+&nbsp;&nbsp;config.allow_raw_query_execution = true<br>
+end
+        </code>
+      </div>`;
       return;
     }
 
@@ -1474,6 +1494,30 @@ end
 
   async function createMigrationFile() {
     if (!currentMigrationData) return;
+
+    // Security check
+    if (!allowRawQueryExecution) {
+      const message = '⚠️ Создание миграций отключено. Включите в конфигурации: config.allow_raw_query_execution = true';
+      showToast(message, 'error');
+
+      const modalBody = document.getElementById('migration-modal-body');
+      if (modalBody) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message';
+        errorDiv.style.marginTop = '1rem';
+        errorDiv.innerHTML = `
+          <strong>⚠️ Migration creation is disabled</strong><br><br>
+          To enable this feature, add to your configuration:<br>
+          <code style="display: block; margin-top: 0.5rem; padding: 0.5rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
+PgReports.configure do |config|<br>
+&nbsp;&nbsp;config.allow_raw_query_execution = true<br>
+end
+          </code>
+        `;
+        modalBody.appendChild(errorDiv);
+      }
+      return;
+    }
 
     try {
       const response = await fetch(`${pgReportsRoot}/create_migration`, {
