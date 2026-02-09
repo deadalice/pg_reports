@@ -48,11 +48,17 @@ module PgReports
       # Live metrics for dashboard monitoring
       # @param long_query_threshold [Integer] Threshold in seconds for long queries
       # @return [Hash] Metrics data
+      # @raise [StandardError] If no data is returned
       def live_metrics(long_query_threshold: 60)
         data = executor.execute_from_file(:system, :live_metrics,
           long_query_threshold: long_query_threshold)
 
-        row = data.first || {}
+        row = data.first
+
+        # If no data returned, something is wrong with the query or permissions
+        if row.nil? || row.empty?
+          raise StandardError, "No statistics data returned. Check database permissions and pg_stat views."
+        end
 
         {
           connections: {

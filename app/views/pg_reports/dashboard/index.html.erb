@@ -855,6 +855,9 @@ pg_stat_statements.track = all</pre>
   let liveMonitoringEnabled = true;
   let pollTimer = null;
   let previousMetrics = null;
+  let metricsAvailable = true;
+  let consecutiveErrors = 0;
+  const MAX_CONSECUTIVE_ERRORS = 3;
   const metricsHistory = {
     connections: [],
     tps: [],
@@ -867,8 +870,6 @@ pg_stat_statements.track = all</pre>
     const panel = document.getElementById('live-monitoring');
     if (!panel) return;
 
-    panel.style.display = 'block';
-
     const savedState = localStorage.getItem('pgReportsLiveMonitoring');
     if (savedState === 'disabled') {
       liveMonitoringEnabled = false;
@@ -876,9 +877,45 @@ pg_stat_statements.track = all</pre>
     }
 
     if (liveMonitoringEnabled) {
-      fetchLiveMetrics();
-      startPolling();
+      // First try to fetch metrics to see if they're available
+      fetchLiveMetrics().then(success => {
+        if (success) {
+          panel.style.display = 'block';
+          startPolling();
+        } else {
+          showMetricsUnavailableMessage();
+        }
+      });
+    } else {
+      panel.style.display = 'block';
     }
+  }
+
+  function showMetricsUnavailableMessage() {
+    const panel = document.getElementById('live-monitoring');
+    if (!panel) return;
+
+    panel.style.display = 'block';
+    panel.innerHTML = `
+      <div class="live-monitoring-header">
+        <div class="live-monitoring-title">
+          <span class="badge-dot error"></span>
+          <span>Live Monitoring Unavailable</span>
+        </div>
+      </div>
+      <div style="padding: 2rem; text-align: center; color: var(--text-muted);">
+        <p style="margin-bottom: 1rem;">Unable to fetch database statistics.</p>
+        <p style="font-size: 0.875rem;">This may be due to:</p>
+        <ul style="list-style: none; padding: 0; margin: 1rem 0; font-size: 0.875rem;">
+          <li>• Insufficient database permissions</li>
+          <li>• Database statistics views not accessible</li>
+          <li>• Connection issues</li>
+        </ul>
+        <button class="btn btn-small btn-primary" onclick="location.reload()" style="margin-top: 1rem;">
+          Retry
+        </button>
+      </div>
+    `;
   }
 
   function startPolling() {
@@ -899,6 +936,9 @@ pg_stat_statements.track = all</pre>
     updateToggleUI();
 
     if (liveMonitoringEnabled) {
+      // Reset error counter when manually re-enabling
+      consecutiveErrors = 0;
+      metricsAvailable = true;
       fetchLiveMetrics();
       startPolling();
     } else {
@@ -924,11 +964,38 @@ pg_stat_statements.track = all</pre>
       const response = await fetch(`${pgReportsRoot}/live_metrics`);
       const data = await response.json();
 
-      if (data.success) {
+      if (data.success && data.available !== false) {
+        consecutiveErrors = 0;
+        metricsAvailable = true;
         updateMetricsDisplay(data.metrics);
+        return true;
+      } else {
+        consecutiveErrors++;
+        console.error('Metrics unavailable:', data.error);
+
+        // If we get too many consecutive errors, show error state
+        if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+          metricsAvailable = false;
+          stopPolling();
+          showMetricsUnavailableMessage();
+        } else if (consecutiveErrors === 1) {
+          // Show toast on first error
+          showToast(data.error || 'Failed to fetch live metrics', 'error');
+        }
+        return false;
       }
     } catch (error) {
+      consecutiveErrors++;
       console.error('Failed to fetch live metrics:', error);
+
+      if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+        metricsAvailable = false;
+        stopPolling();
+        showMetricsUnavailableMessage();
+      } else if (consecutiveErrors === 1) {
+        showToast('Network error: ' + error.message, 'error');
+      }
+      return false;
     }
   }
 
