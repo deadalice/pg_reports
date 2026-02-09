@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-02-09
+
+### Fixed
+
+- **pg_stat_statements detection no longer requires `pg_read_all_settings` role**:
+  - Changed `pg_stat_statements_preloaded?` to query pg_stat_statements directly instead of checking `shared_preload_libraries`
+  - Fixes permission denied errors in environments like CloudnativePG where regular users lack access to `shared_preload_libraries` setting
+  - Works seamlessly with Kubernetes PostgreSQL operators and managed databases with restricted permissions
+  - Improved error messages in `enable_pg_stat_statements!` method
+
 ## [0.5.1] - 2026-02-09
 
 ### Added

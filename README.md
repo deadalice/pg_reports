@@ -277,6 +277,8 @@ For query analysis, you need to enable `pg_stat_statements`:
    PgReports.enable_pg_stat_statements!
    ```
 
+> **Note**: PgReports does **not** require the `pg_read_all_settings` role. It detects `pg_stat_statements` availability by directly querying the extension, making it compatible with CloudnativePG, managed databases, and other environments with restricted permissions.
+
 ## Report Object
 
 Every method returns a `PgReports::Report` object:

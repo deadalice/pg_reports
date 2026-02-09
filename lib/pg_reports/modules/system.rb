@@ -25,14 +25,19 @@ module PgReports
         result.first&.fetch("available", false) || false
       end
 
-      # Check if pg_stat_statements is in shared_preload_libraries
+      # Check if pg_stat_statements is preloaded and functional
       # @return [Boolean] Whether pg_stat_statements is preloaded
+      # @note This method tries to query pg_stat_statements directly instead of
+      #       checking shared_preload_libraries, which requires pg_read_all_settings role
       def pg_stat_statements_preloaded?
-        result = executor.execute(<<~SQL)
-          SELECT setting FROM pg_settings WHERE name = 'shared_preload_libraries'
-        SQL
-        setting = result.first&.fetch("setting", "") || ""
-        setting.include?("pg_stat_statements")
+        # If extension is not installed, it can't be preloaded
+        return false unless pg_stat_statements_available?
+
+        # Try to query pg_stat_statements - if it works, it's properly preloaded
+        executor.execute("SELECT 1 FROM pg_stat_statements LIMIT 1")
+        true
+      rescue
+        false
       end
 
       # Get pg_stat_statements status details
@@ -94,13 +99,19 @@ module PgReports
           executor.execute("CREATE EXTENSION IF NOT EXISTS pg_stat_statements")
 
           # Verify it worked
-          if pg_stat_statements_available?
+          if pg_stat_statements_available? && pg_stat_statements_preloaded?
             {success: true, message: "pg_stat_statements extension created successfully"}
+          elsif pg_stat_statements_available?
+            {
+              success: false,
+              message: "Extension created but not preloaded. Add 'pg_stat_statements' to shared_preload_libraries in postgresql.conf and restart PostgreSQL.",
+              requires_restart: true
+            }
           else
             {
               success: false,
-              message: "Extension created but not working. Check shared_preload_libraries in postgresql.conf",
-              requires_restart: true
+              message: "Failed to create extension. Check database permissions.",
+              requires_restart: false
             }
           end
         rescue => e

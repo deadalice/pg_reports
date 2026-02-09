@@ -55,10 +55,63 @@ RSpec.describe PgReports::Modules::System do
   end
 
   describe ".pg_stat_statements_preloaded?" do
-    it "returns boolean" do
-      allow(described_class).to receive(:pg_stat_statements_preloaded?).and_return(true)
-      result = described_class.pg_stat_statements_preloaded?
-      expect(result).to be_in([true, false])
+    let(:mock_executor) { instance_double(PgReports::Executor) }
+
+    before do
+      # Reset the cached executor and inject our mock
+      described_class.instance_variable_set(:@executor, nil)
+      allow(PgReports::Executor).to receive(:new).and_return(mock_executor)
+    end
+
+    after do
+      # Clean up
+      described_class.instance_variable_set(:@executor, nil)
+    end
+
+    context "when extension is not installed" do
+      it "returns false" do
+        allow(mock_executor).to receive(:execute).and_return([{"available" => false}])
+        result = described_class.pg_stat_statements_preloaded?
+        expect(result).to be false
+      end
+    end
+
+    context "when extension is installed and preloaded" do
+      it "returns true" do
+        # Mock pg_stat_statements_available? to return true
+        allow(mock_executor).to receive(:execute).with(/SELECT EXISTS.*pg_extension/m).and_return([{"available" => "t"}])
+        # Mock the query to pg_stat_statements to succeed
+        allow(mock_executor).to receive(:execute).with("SELECT 1 FROM pg_stat_statements LIMIT 1").and_return([{"?column?" => 1}])
+
+        result = described_class.pg_stat_statements_preloaded?
+        expect(result).to be true
+      end
+    end
+
+    context "when extension is installed but not preloaded" do
+      it "returns false" do
+        # Mock pg_stat_statements_available? to return true
+        allow(mock_executor).to receive(:execute).with(/SELECT EXISTS.*pg_extension/m).and_return([{"available" => "t"}])
+        # Mock the query to pg_stat_statements to fail
+        allow(mock_executor).to receive(:execute).with("SELECT 1 FROM pg_stat_statements LIMIT 1").and_raise(
+          StandardError.new("relation \"pg_stat_statements\" does not exist")
+        )
+
+        result = described_class.pg_stat_statements_preloaded?
+        expect(result).to be false
+      end
+    end
+
+    context "when user lacks pg_read_all_settings permission" do
+      it "still works by querying pg_stat_statements directly" do
+        # Mock pg_stat_statements_available? to return true
+        allow(mock_executor).to receive(:execute).with(/SELECT EXISTS.*pg_extension/m).and_return([{"available" => "t"}])
+        # Mock the query to pg_stat_statements to succeed
+        allow(mock_executor).to receive(:execute).with("SELECT 1 FROM pg_stat_statements LIMIT 1").and_return([{"?column?" => 1}])
+
+        result = described_class.pg_stat_statements_preloaded?
+        expect(result).to be true
+      end
     end
   end
 
