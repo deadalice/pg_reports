@@ -1,6 +1,6 @@
 # PgReports
 
-[![Gem Version](https://badge.fury.io/rb/pg_reports.svg)](https://badge.fury.io/rb/pg_reports)
+[![Gem Version](https://img.shields.io/gem/v/pg_reports.svg)](https://rubygems.org/gems/pg_reports)
 [![Ruby](https://img.shields.io/badge/Ruby-2.7%2B-red.svg)](https://www.ruby-lang.org/)
 [![Rails](https://img.shields.io/badge/Rails-5.0%2B-red.svg)](https://rubyonrails.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
