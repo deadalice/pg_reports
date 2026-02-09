@@ -123,7 +123,7 @@ module PgReports
 
         queries
       rescue => e
-        Rails.logger.warn("PgReports: Failed to load queries from log: #{e.message}")
+        Rails.logger.warn("PgReports: Failed to load queries from log: #{e.message}") if defined?(Rails)
         []
       end
     end
@@ -188,33 +188,46 @@ module PgReports
     end
 
     def query_from_pg_reports?
-      # Check if query originates from pg_reports gem code (not tests)
+      # Check if query originates from pg_reports gem internal code
       locations = caller_locations(0, 30)
       return false unless locations
 
       locations.any? do |location|
         path = location.path
-        # Match gem paths: /gems/pg_reports-X.Y.Z/lib/ or local /lib/pg_reports/
-        # But exclude test paths: /spec/
+        # Exclude test paths
         next if path.include?("/spec/")
 
-        # Match both gem installation and local development lib paths
+        # Filter queries from pg_reports internal modules only:
+        # - Installed gem: /gems/pg_reports-X.Y.Z/lib/
+        # - Local gem: /pg_reports/lib/pg_reports/modules/
+        # - Dashboard controller: /pg_reports/app/controllers/pg_reports/
         path.match?(%r{/gems/pg_reports[-\d.]+/lib/}) ||
-          path.match?(%r{/lib/pg_reports/})
+          path.match?(%r{/pg_reports/lib/pg_reports/modules/}) ||
+          path.match?(%r{/pg_reports/app/controllers/pg_reports/dashboard_controller\.rb})
       end
     end
 
     def extract_source_location
-      filter_proc = PgReports.config.query_monitor_backtrace_filter
-
       # Get caller locations, skip first few frames (this file, active_support)
-      locations = caller_locations(5, 20)
+      # Increase limit to 50 to capture more of the stack
+      locations = caller_locations(5, 50)
 
       return nil unless locations
 
       # Find first application code location
+      # Look for paths that are NOT from gems/ruby/railties
       app_location = locations.find do |location|
-        filter_proc.call(location)
+        path = location.path
+
+        # Skip framework and gem paths
+        next if path.match?(%r{/(gems|ruby|railties)/})
+
+        # Skip pg_reports internal paths
+        next if path.match?(%r{/pg_reports/lib/pg_reports/})
+        next if path.match?(%r{/pg_reports/app/controllers/pg_reports/})
+
+        # This is likely application code
+        true
       end
 
       return nil unless app_location

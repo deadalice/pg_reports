@@ -685,17 +685,19 @@
     .query-meta {
       display: flex;
       gap: 1rem;
-      font-size: 0.75rem;
+      font-size: 0.8rem;
       color: var(--text-muted);
     }
 
     .query-timestamp {
       color: var(--text-secondary);
+      font-size: 0.8rem;
     }
 
     .query-duration {
       color: var(--accent-amber);
       font-weight: 600;
+      font-size: 0.8rem;
     }
 
     .query-duration.fast {
@@ -717,7 +719,7 @@
       color: var(--text-muted);
       cursor: pointer;
       padding: 0.25rem 0.5rem;
-      font-size: 0.7rem;
+      font-size: 0.8rem;
       transition: all 0.15s;
       border-radius: 4px;
     }
@@ -737,7 +739,7 @@
       border: 1px solid var(--border-color);
       border-radius: 6px;
       font-family: <%= PgReports.config.load_external_fonts ? "'JetBrains Mono', " : "" %>monospace;
-      font-size: 0.75rem;
+      font-size: 0.8rem;
       color: var(--accent-blue);
       word-wrap: break-word;
       overflow-x: auto;
@@ -754,7 +756,7 @@
     }
 
     .query-source {
-      font-size: 0.7rem;
+      font-size: 0.8rem;
       color: var(--text-muted);
       font-family: <%= PgReports.config.load_external_fonts ? "'JetBrains Mono', " : "" %>monospace;
     }

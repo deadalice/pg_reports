@@ -337,7 +337,7 @@ module PgReports
     end
 
     def start_query_monitoring
-      monitor = QueryMonitor.instance
+      monitor = PgReports::QueryMonitor.instance
 
       result = monitor.start
 
@@ -351,7 +351,7 @@ module PgReports
     end
 
     def stop_query_monitoring
-      monitor = QueryMonitor.instance
+      monitor = PgReports::QueryMonitor.instance
 
       result = monitor.stop
 
@@ -365,7 +365,7 @@ module PgReports
     end
 
     def query_monitor_status
-      monitor = QueryMonitor.instance
+      monitor = PgReports::QueryMonitor.instance
       status = monitor.status
 
       render json: {
@@ -379,7 +379,7 @@ module PgReports
     end
 
     def query_monitor_feed
-      monitor = QueryMonitor.instance
+      monitor = PgReports::QueryMonitor.instance
 
       unless monitor.enabled
         render json: {success: false, message: "Monitoring not active"}
@@ -401,9 +401,9 @@ module PgReports
     end
 
     def load_query_history
-      monitor = QueryMonitor.instance
+      monitor = PgReports::QueryMonitor.instance
 
-      limit = params[:limit]&.to_i || 100
+      limit = params[:limit]&.to_i || 50
       session_id = params[:session_id]
 
       queries = monitor.load_from_log(limit: limit, session_id: session_id)
@@ -418,7 +418,7 @@ module PgReports
     end
 
     def download_query_monitor
-      monitor = QueryMonitor.instance
+      monitor = PgReports::QueryMonitor.instance
 
       # Allow download even when monitoring is stopped, as long as there are queries
       queries = monitor.queries

@@ -222,6 +222,9 @@ pg_stat_statements.track = all</pre>
       <button class="btn btn-small btn-danger" onclick="stopQueryMonitoring(this)" id="stop-monitor-btn" style="display: none;">
         ⏹ Stop Monitoring
       </button>
+      <button class="btn btn-small btn-secondary" onclick="loadQueryHistory(this)" id="load-history-btn">
+        📜 Load History (50)
+      </button>
       <div class="download-dropdown" id="monitor-download-dropdown" style="display: none;">
         <button class="btn btn-small btn-secondary" onclick="toggleMonitorDownloadMenu(event)">
           📥 Download
@@ -1162,9 +1165,8 @@ pg_stat_statements.track = all</pre>
         updateQueryMonitorUI(true);
         startQueryMonitorPolling();
       } else {
-        // Monitoring not active - load history from log file
+        // Monitoring not active
         queryMonitorEnabled = false;
-        await loadQueryHistory();
         updateQueryMonitorUI(false);
       }
     } catch (error) {
@@ -1174,33 +1176,28 @@ pg_stat_statements.track = all</pre>
     }
   }
 
-  async function loadQueryHistory() {
+  async function loadQueryHistory(button) {
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner"></span> Loading...';
+
     try {
       const response = await fetch(
-        `${pgReportsRoot}/query_monitor/history?limit=${QUERY_MONITOR_CONFIG.maxQueries}`
+        `${pgReportsRoot}/query_monitor/history?limit=50`
       );
       const data = await response.json();
 
       if (data.success && data.queries && data.queries.length > 0) {
         renderQueryFeed(data.queries);
+        showToast(`Loaded ${data.queries.length} queries from history`);
+      } else {
+        showToast('No query history found', 'error');
       }
     } catch (error) {
       console.error('Failed to load query history:', error);
-    }
-  }
-
-  async function loadSessionFromLog(sessionId) {
-    try {
-      const response = await fetch(
-        `${pgReportsRoot}/query_monitor/history?session_id=${sessionId}&limit=${QUERY_MONITOR_CONFIG.maxQueries}`
-      );
-      const data = await response.json();
-
-      if (data.success && data.queries && data.queries.length > 0) {
-        renderQueryFeed(data.queries);
-      }
-    } catch (error) {
-      console.error('Failed to load session from log:', error);
+      showToast('Failed to load history: ' + error.message, 'error');
+    } finally {
+      button.disabled = false;
+      button.innerHTML = '📜 Load History (50)';
     }
   }
 
@@ -1254,14 +1251,8 @@ pg_stat_statements.track = all</pre>
 
       if (data.success) {
         queryMonitorEnabled = false;
-        const stoppedSessionId = data.session_id || currentSessionId;
         currentSessionId = null;
         stopQueryMonitorPolling();
-
-        // Load complete session data from log file
-        if (stoppedSessionId) {
-          await loadSessionFromLog(stoppedSessionId);
-        }
 
         updateQueryMonitorUI(false);
         showToast(data.message);
@@ -1282,6 +1273,7 @@ pg_stat_statements.track = all</pre>
     const indicator = document.getElementById('monitor-indicator');
     const startBtn = document.getElementById('start-monitor-btn');
     const stopBtn = document.getElementById('stop-monitor-btn');
+    const loadHistoryBtn = document.getElementById('load-history-btn');
     const sessionBadge = document.getElementById('session-badge');
     const sessionIdEl = document.getElementById('session-id');
     const downloadDropdown = document.getElementById('monitor-download-dropdown');
@@ -1295,6 +1287,7 @@ pg_stat_statements.track = all</pre>
       stopBtn.style.display = 'inline-block';
       stopBtn.disabled = false;
       stopBtn.innerHTML = '⏹ Stop Monitoring';
+      loadHistoryBtn.style.display = 'none';  // Hide when monitoring active
       sessionBadge.style.display = 'inline-block';
       sessionIdEl.textContent = currentSessionId ? currentSessionId.substring(0, 8) : '';
       downloadDropdown.style.display = 'inline-block';
@@ -1304,6 +1297,7 @@ pg_stat_statements.track = all</pre>
       startBtn.disabled = false;
       startBtn.innerHTML = '▶ Start Monitoring';
       stopBtn.style.display = 'none';
+      loadHistoryBtn.style.display = 'inline-block';  // Show when monitoring stopped
       sessionBadge.style.display = 'none';
 
       // Keep results visible after stopping, only hide download if no queries
