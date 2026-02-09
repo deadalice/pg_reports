@@ -98,11 +98,24 @@ module PgReports
       problem_fields = Dashboard::ReportsRegistry.problem_fields(report_key)
       problem_explanations = load_problem_explanations(category, report_key)
 
+      # Add query hashes for security
+      data_with_hashes = report.data.first(100).map do |row|
+        row_hash = row.dup
+
+        # If this row contains a query column, store it with a hash
+        if row_hash.key?("query") && row_hash["query"].present?
+          query_hash = store_query_with_hash(row_hash["query"])
+          row_hash["query_hash"] = query_hash
+        end
+
+        row_hash
+      end
+
       render json: {
         success: true,
         title: report.title,
         columns: report.columns,
-        data: report.data.first(100),
+        data: data_with_hashes,
         total: report.size,
         generated_at: report.generated_at.strftime("%Y-%m-%d %H:%M:%S"),
         thresholds: thresholds,
@@ -160,11 +173,11 @@ module PgReports
     end
 
     def explain_analyze
-      query = params[:query]
+      query_hash = params[:query_hash]
       query_params = params[:params] || {}
 
-      if query.blank?
-        render json: {success: false, error: "Query is required"}, status: :unprocessable_entity
+      if query_hash.blank?
+        render json: {success: false, error: "Query hash is required"}, status: :unprocessable_entity
         return
       end
 
@@ -177,10 +190,16 @@ module PgReports
         return
       end
 
-      # Security: Only allow SELECT queries for EXPLAIN ANALYZE (SHOW not supported by EXPLAIN)
-      normalized = query.strip.gsub(/\s+/, " ").downcase
-      unless normalized.start_with?("select")
-        render json: {success: false, error: "Only SELECT queries are allowed for EXPLAIN ANALYZE"}, status: :unprocessable_entity
+      # Security: Retrieve and validate query by hash
+      begin
+        query = retrieve_query_by_hash(query_hash)
+
+        if query.nil?
+          render json: {success: false, error: "Query not found or expired. Please refresh the page."}, status: :not_found
+          return
+        end
+      rescue SecurityError => e
+        render json: {success: false, error: "Security violation: #{e.message}"}, status: :forbidden
         return
       end
 
@@ -225,11 +244,11 @@ module PgReports
     end
 
     def execute_query
-      query = params[:query]
+      query_hash = params[:query_hash]
       query_params = params[:params] || {}
 
-      if query.blank?
-        render json: {success: false, error: "Query is required"}, status: :unprocessable_entity
+      if query_hash.blank?
+        render json: {success: false, error: "Query hash is required"}, status: :unprocessable_entity
         return
       end
 
@@ -242,10 +261,16 @@ module PgReports
         return
       end
 
-      # Security: Only allow SELECT and SHOW queries
-      normalized = query.strip.gsub(/\s+/, " ").downcase
-      unless normalized.start_with?("select", "show")
-        render json: {success: false, error: "Only SELECT and SHOW queries are allowed"}, status: :unprocessable_entity
+      # Security: Retrieve and validate query by hash
+      begin
+        query = retrieve_query_by_hash(query_hash)
+
+        if query.nil?
+          render json: {success: false, error: "Query not found or expired. Please refresh the page."}, status: :not_found
+          return
+        end
+      rescue SecurityError => e
+        render json: {success: false, error: "Security violation: #{e.message}"}, status: :forbidden
         return
       end
 
@@ -560,6 +585,67 @@ module PgReports
       else
         "#{query} LIMIT #{limit}"
       end
+    end
+
+    # Generate a secure hash for a query and store it in cache
+    def store_query_with_hash(query)
+      require "digest"
+
+      # Generate SHA256 hash of the query
+      query_hash = Digest::SHA256.hexdigest(query)
+
+      # Store in Rails cache with 1 hour expiration
+      begin
+        Rails.cache.write("pg_reports:query:#{query_hash}", query, expires_in: 1.hour)
+      rescue => e
+        # Log cache error but don't fail - we'll catch it on retrieval
+        Rails.logger.warn("PgReports: Failed to store query hash in cache: #{e.message}") if defined?(Rails.logger)
+      end
+
+      query_hash
+    end
+
+    # Retrieve and validate a query by its hash
+    def retrieve_query_by_hash(query_hash)
+      return nil if query_hash.blank?
+
+      # Retrieve from cache with error handling
+      query = nil
+      begin
+        query = Rails.cache.read("pg_reports:query:#{query_hash}")
+      rescue => e
+        # Cache backend is unavailable
+        Rails.logger.error("PgReports: Failed to read from cache: #{e.message}") if defined?(Rails.logger)
+        raise SecurityError, "Cache system unavailable. Query execution temporarily disabled for security. Please ensure Redis/cache backend is running."
+      end
+
+      if query.blank?
+        # Query not found - either expired or was never stored
+        return nil
+      end
+
+      # Strict validation: must be a SELECT query only
+      normalized = query.strip.gsub(/\s+/, " ").downcase
+
+      # Check for semicolons (prevents multiple statements)
+      if query.include?(";")
+        raise SecurityError, "Multiple statements are not allowed (semicolons detected)"
+      end
+
+      # Must start with SELECT (case insensitive)
+      unless normalized.start_with?("select")
+        raise SecurityError, "Only SELECT queries are allowed. Found: #{normalized.split.first&.upcase || 'unknown'}"
+      end
+
+      # Check for dangerous keywords that might be in subqueries or CTEs
+      dangerous_keywords = %w[insert update delete drop alter create truncate grant revoke]
+      dangerous_keywords.each do |keyword|
+        if normalized.match?(/\b#{keyword}\b/)
+          raise SecurityError, "Dangerous keyword detected: #{keyword.upcase}"
+        end
+      end
+
+      query
     end
 
     def generate_query_monitor_csv(queries)

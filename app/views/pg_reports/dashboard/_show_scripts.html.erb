@@ -596,9 +596,10 @@
       // Only show EXPLAIN ANALYZE for SELECT queries
       const queryNormalized = row.query.trim().toLowerCase();
       if (queryNormalized.startsWith('select')) {
-        // Use data attribute to avoid escaping issues with special characters
+        // Use data attribute to pass query hash for security
         const queryBase64 = btoa(unescape(encodeURIComponent(row.query)));
-        html += `<button class="btn-explain" data-query-b64="${queryBase64}" onclick="event.stopPropagation(); runExplainAnalyzeFromButton(this)">📊 EXPLAIN ANALYZE</button>`;
+        const queryHash = row.query_hash || '';
+        html += `<button class="btn-explain" data-query-b64="${queryBase64}" data-query-hash="${queryHash}" onclick="event.stopPropagation(); runExplainAnalyzeFromButton(this)">📊 EXPLAIN ANALYZE</button>`;
       }
     }
 
@@ -1009,6 +1010,7 @@
   // ==========================================
 
   let currentExplainQuery = '';
+  let currentExplainQueryHash = '';
   let currentQueryParams = [];
 
   // Parse $1, $2, etc. from query
@@ -1024,19 +1026,22 @@
   // Decode base64 query from button and run analyzer
   function runExplainAnalyzeFromButton(btn) {
     const queryBase64 = btn.dataset.queryB64;
+    const queryHash = btn.dataset.queryHash;
+
     if (!queryBase64) return;
 
     try {
       const query = decodeURIComponent(escape(atob(queryBase64)));
-      runExplainAnalyze(query);
+      runExplainAnalyze(query, queryHash);
     } catch (e) {
       showToast('Failed to decode query', 'error');
     }
   }
 
   // Show query analyzer modal
-  function runExplainAnalyze(query) {
+  function runExplainAnalyze(query, queryHash = '') {
     currentExplainQuery = query;
+    currentExplainQueryHash = queryHash;
     currentQueryParams = parseQueryParams(query);
 
     const modal = document.getElementById('explain-modal');
@@ -1306,7 +1311,7 @@ end
           'Content-Type': 'application/json',
           'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
         },
-        body: JSON.stringify({ query: currentExplainQuery, params: params })
+        body: JSON.stringify({ query_hash: currentExplainQueryHash, params: params })
       });
 
       const data = await response.json();
@@ -1356,7 +1361,7 @@ end
           'Content-Type': 'application/json',
           'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
         },
-        body: JSON.stringify({ query: currentExplainQuery, params: params })
+        body: JSON.stringify({ query_hash: currentExplainQueryHash, params: params })
       });
 
       const data = await response.json();
