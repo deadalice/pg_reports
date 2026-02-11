@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-02-11
+
+### Fixed
+
+- **Live Query Monitor critical fix for multi-process servers** - monitoring now works correctly with Puma, Unicorn, and other multi-process web servers:
+  - Migrated from Singleton instance variables to Rails.cache for cross-process state sharing
+  - Fixed "Monitoring not active" errors when requests hit different worker processes
+  - Each process now subscribes to SQL notifications when monitoring is enabled
+  - State (enabled/session_id) stored in Rails.cache with 24-hour TTL
+  - Added cache helper methods with graceful error handling
+  - Monitoring state now persists across all processes in multi-worker environments
+  - Exclude `query_monitor.rb` itself from `query_from_pg_reports?` check to prevent false positives
+
+### Added
+
+- **Enhanced error handling for Query Monitor**:
+  - Toast notification system with visual feedback (success/error/warning types)
+  - Server errors now displayed to users with clear messages
+  - Automatic monitoring stop and UI reset when errors occur
+  - Smooth animations with auto-dismiss after 4 seconds
+
 ## [0.5.3] - 2026-02-11
 
 ### Fixed

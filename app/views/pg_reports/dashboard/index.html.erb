@@ -789,6 +789,44 @@ pg_stat_statements.track = all</pre>
   .metric-status.ok { background: var(--accent-green); }
   .metric-status.warning { background: var(--accent-amber); }
   .metric-status.critical { background: var(--accent-rose); }
+
+  /* Toast Notifications */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    padding: 1rem 1.5rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    z-index: 9999;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .toast.toast-success {
+    border-left: 3px solid var(--accent-green);
+  }
+
+  .toast.toast-error {
+    border-left: 3px solid var(--accent-rose);
+    background: rgba(244, 63, 94, 0.1);
+    border-color: var(--accent-rose);
+  }
+
+  .toast.toast-warning {
+    border-left: 3px solid var(--accent-amber);
+  }
 </style>
 
 <script>
@@ -1568,9 +1606,20 @@ pg_stat_statements.track = all</pre>
 
       if (data.success && data.queries) {
         renderQueryFeed(data.queries);
+      } else if (!data.success) {
+        // Server returned an error (e.g., "Monitoring not active")
+        const errorMsg = data.message || data.error || 'Query monitoring error';
+        showToast(errorMsg, 'error');
+
+        // Stop polling and update UI since monitoring is not active
+        queryMonitorEnabled = false;
+        currentSessionId = null;
+        stopQueryMonitorPolling();
+        updateQueryMonitorUI(false);
       }
     } catch (error) {
       console.error('Failed to fetch query feed:', error);
+      showToast('Network error: ' + error.message, 'error');
     }
   }
 
@@ -1664,13 +1713,29 @@ pg_stat_statements.track = all</pre>
   }
 
   function showToast(message, type = 'success') {
-    // Simple console log for now - can be enhanced with actual toast UI
+    // Log to console as well
     if (type === 'error') {
       console.error(message);
     } else {
       console.log(message);
     }
-    // TODO: Implement actual toast notification UI
+
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+
+    // Add to page
+    document.body.appendChild(toast);
+
+    // Trigger animation
+    setTimeout(() => toast.classList.add('show'), 10);
+
+    // Remove after 4 seconds
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 300);
+    }, 4000);
   }
 
   // Initialize on page load

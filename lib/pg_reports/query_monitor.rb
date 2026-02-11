@@ -8,48 +8,63 @@ module PgReports
   class QueryMonitor
     include Singleton
 
-    attr_reader :enabled, :session_id
+    CACHE_KEY_ENABLED = "pg_reports:query_monitor:enabled"
+    CACHE_KEY_SESSION_ID = "pg_reports:query_monitor:session_id"
+    CACHE_TTL = 24.hours
 
     def initialize
-      @enabled = false
       @subscriber = nil
       @mutex = Mutex.new
-      @session_id = nil
       @queries = []
+      ensure_subscription_if_enabled
+    end
+
+    def enabled
+      cache_read(CACHE_KEY_ENABLED) || false
+    end
+
+    def session_id
+      cache_read(CACHE_KEY_SESSION_ID)
     end
 
     def start
       @mutex.synchronize do
-        if @enabled
+        if enabled
+          Rails.logger.info("PgReports: Monitoring already active, session_id=#{session_id}") if defined?(Rails)
           return {success: false, message: "Monitoring already active"}
         end
 
-        @session_id = SecureRandom.uuid
+        new_session_id = SecureRandom.uuid
         @queries = []
-        @enabled = true
 
-        # Subscribe to sql.active_record events
-        @subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |name, started, finished, unique_id, payload|
-          handle_sql_event(name, started, finished, unique_id, payload)
-        end
+        # Store state in cache so all processes can see it
+        cache_write(CACHE_KEY_ENABLED, true)
+        cache_write(CACHE_KEY_SESSION_ID, new_session_id)
+
+        Rails.logger.info("PgReports: Monitoring started, session_id=#{new_session_id}") if defined?(Rails)
+
+        # Subscribe to sql.active_record events in THIS process
+        ensure_subscription
 
         # Write session start marker to file
         write_session_marker("session_start")
 
-        {success: true, message: "Query monitoring started", session_id: @session_id}
+        {success: true, message: "Query monitoring started", session_id: new_session_id}
       end
     rescue => e
-      @enabled = false
+      cache_write(CACHE_KEY_ENABLED, false)
       {success: false, error: e.message}
     end
 
     def stop
       @mutex.synchronize do
-        unless @enabled
+        unless enabled
           return {success: false, message: "Monitoring not active"}
         end
 
-        # Unsubscribe from notifications
+        current_session_id = session_id
+
+        # Unsubscribe from notifications in THIS process
         if @subscriber
           ActiveSupport::Notifications.unsubscribe(@subscriber)
           @subscriber = nil
@@ -61,12 +76,13 @@ module PgReports
         # Flush queries to file
         flush_to_file
 
-        @enabled = false
-        @queries = []
-        session_id = @session_id
-        @session_id = nil
+        # Clear state from cache
+        cache_delete(CACHE_KEY_ENABLED)
+        cache_delete(CACHE_KEY_SESSION_ID)
 
-        {success: true, message: "Query monitoring stopped", session_id: session_id}
+        @queries = []
+
+        {success: true, message: "Query monitoring stopped", session_id: current_session_id}
       end
     rescue => e
       {success: false, error: e.message}
@@ -74,8 +90,8 @@ module PgReports
 
     def status
       {
-        enabled: @enabled,
-        session_id: @session_id,
+        enabled: enabled,
+        session_id: session_id,
         query_count: @queries.size
       }
     end
@@ -130,8 +146,53 @@ module PgReports
 
     private
 
+    # Cache helpers - work with or without Rails.cache
+    def cache_read(key)
+      return nil unless cache_available?
+      Rails.cache.read(key)
+    rescue => e
+      Rails.logger.warn("PgReports: Cache read failed: #{e.message}") if defined?(Rails.logger)
+      nil
+    end
+
+    def cache_write(key, value)
+      return false unless cache_available?
+      Rails.cache.write(key, value, expires_in: CACHE_TTL)
+    rescue => e
+      Rails.logger.warn("PgReports: Cache write failed: #{e.message}") if defined?(Rails.logger)
+      false
+    end
+
+    def cache_delete(key)
+      return false unless cache_available?
+      Rails.cache.delete(key)
+    rescue => e
+      Rails.logger.warn("PgReports: Cache delete failed: #{e.message}") if defined?(Rails.logger)
+      false
+    end
+
+    def cache_available?
+      defined?(Rails) && defined?(Rails.cache)
+    end
+
+    # Ensure this process is subscribed to notifications if monitoring is enabled
+    def ensure_subscription_if_enabled
+      return unless enabled
+      ensure_subscription
+    end
+
+    def ensure_subscription
+      return if @subscriber # Already subscribed
+
+      @subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |name, started, finished, unique_id, payload|
+        handle_sql_event(name, started, finished, unique_id, payload)
+      end
+
+      Rails.logger.debug("PgReports: Subscribed to sql.active_record in process #{Process.pid}") if defined?(Rails.logger)
+    end
+
     def handle_sql_event(name, started, finished, unique_id, payload)
-      return unless @enabled
+      return unless enabled
 
       # Skip if should be filtered
       return if should_skip?(payload)
@@ -146,7 +207,7 @@ module PgReports
       # Build query entry
       query_entry = {
         type: "query",
-        session_id: @session_id,
+        session_id: session_id,
         sql: sql,
         duration_ms: duration_ms,
         name: query_name,
@@ -196,6 +257,10 @@ module PgReports
         path = location.path
         # Exclude test paths
         next if path.include?("/spec/")
+
+        # IMPORTANT: Exclude query_monitor.rb itself to prevent false positives
+        # when gem is installed from RubyGems
+        next if path.include?("/query_monitor.rb")
 
         # Filter queries from pg_reports internal modules only:
         # - Installed gem: /gems/pg_reports-X.Y.Z/lib/
@@ -257,7 +322,7 @@ module PgReports
 
       marker = {
         type: marker_type,
-        session_id: @session_id,
+        session_id: session_id,
         timestamp: Time.current.iso8601
       }
 

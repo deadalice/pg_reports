@@ -47,7 +47,7 @@ module PgReports
           timestamp: Time.current.to_i,
           available: true
         }
-      rescue PG::InsufficientPrivilege => e
+      rescue PG::InsufficientPrivilege
         render json: {
           success: false,
           error: "Insufficient database permissions to access statistics views",
@@ -363,8 +363,10 @@ module PgReports
 
     def start_query_monitoring
       monitor = PgReports::QueryMonitor.instance
+      Rails.logger.info("PgReports: start_query_monitoring called. Instance: #{monitor.object_id}")
 
       result = monitor.start
+      Rails.logger.info("PgReports: start result: #{result.inspect}")
 
       if result[:success]
         render json: result
@@ -372,6 +374,7 @@ module PgReports
         render json: result, status: :unprocessable_entity
       end
     rescue => e
+      Rails.logger.error("PgReports: start_query_monitoring error: #{e.message}\n#{e.backtrace.first(5).join("\n")}")
       render json: {success: false, error: e.message}, status: :unprocessable_entity
     end
 
@@ -407,6 +410,7 @@ module PgReports
       monitor = PgReports::QueryMonitor.instance
 
       unless monitor.enabled
+        Rails.logger.warn("PgReports: query_monitor_feed called but monitoring not active. Instance: #{monitor.object_id}, enabled: #{monitor.enabled}, session_id: #{monitor.session_id}")
         render json: {success: false, message: "Monitoring not active"}
         return
       end
@@ -634,7 +638,7 @@ module PgReports
 
       # Must start with SELECT (case insensitive)
       unless normalized.start_with?("select")
-        raise SecurityError, "Only SELECT queries are allowed. Found: #{normalized.split.first&.upcase || 'unknown'}"
+        raise SecurityError, "Only SELECT queries are allowed. Found: #{normalized.split.first&.upcase || "unknown"}"
       end
 
       # Check for dangerous keywords that might be in subqueries or CTEs
