@@ -776,6 +776,53 @@
       text-decoration: underline;
     }
 
+    /* IDE Dropdown for query source links */
+    .ide-dropdown-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      display: none;
+    }
+
+    .ide-dropdown-overlay.show {
+      display: block;
+    }
+
+    .ide-menu {
+      position: fixed;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      z-index: 1000;
+      min-width: 160px;
+      overflow: hidden;
+      display: none;
+    }
+
+    .ide-menu.show {
+      display: block;
+    }
+
+    .ide-menu a {
+      display: block;
+      padding: 0.6rem 0.875rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.75rem;
+      transition: all 0.15s ease;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .ide-menu a:last-child {
+      border-bottom: none;
+    }
+
+    .ide-menu a:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
     /* Download Dropdown */
     .download-dropdown {
       position: relative;
@@ -831,6 +878,58 @@
       opacity: 0.9;
       transform: translateY(-1px);
     }
+
+    /* IDE Settings Modal */
+    .settings-label {
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .ide-options {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .ide-option {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .ide-option:hover {
+      background: var(--bg-secondary);
+      border-color: var(--accent-purple);
+    }
+
+    .ide-option:has(input:checked) {
+      background: rgba(157, 140, 214, 0.15);
+      border-color: var(--accent-purple);
+    }
+
+    .ide-option input[type="radio"] {
+      accent-color: var(--accent-purple);
+    }
+
+    .ide-option span {
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+    }
+
+    .ide-option:has(input:checked) span {
+      color: var(--text-primary);
+    }
+
+    .modal-small {
+      max-width: 360px;
+    }
   </style>
 </head>
 <body>
@@ -839,6 +938,10 @@
   </div>
 
   <div id="toast" class="toast"></div>
+
+  <!-- IDE Dropdown overlay and menu -->
+  <div id="ide-dropdown-overlay" class="ide-dropdown-overlay" onclick="closeIdeMenu()"></div>
+  <div id="ide-menu" class="ide-menu"></div>
 
   <script>
     const pgReportsRoot = document.querySelector('meta[name="pg-reports-root"]')?.content || '/pg_reports';

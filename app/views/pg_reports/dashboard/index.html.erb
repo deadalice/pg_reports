@@ -20,6 +20,7 @@
       </button>
       <button class="btn-info" onclick="showPgStatInfo()">?</button>
     <% end %>
+    <button class="btn-info" onclick="showIdeSettingsModal()" title="IDE Settings">⚙️</button>
     <div class="header-badge" id="pg-stat-badge">
       <% if @pg_stat_status[:ready] %>
         <span class="badge-dot"></span>
@@ -80,6 +81,49 @@ pg_stat_statements.track = all</pre>
       <div class="modal-actions">
         <button class="btn btn-secondary" onclick="closeResetConfirmModal()">Cancel</button>
         <button class="btn btn-danger" onclick="resetStatistics()" id="confirm-reset-btn">Yes, Reset</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- IDE Settings Modal -->
+<div id="ide-settings-modal" class="modal" style="display: none;">
+  <div class="modal-content modal-small">
+    <div class="modal-header">
+      <h3>⚙️ IDE Settings</h3>
+      <button class="modal-close" onclick="closeIdeSettingsModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="settings-label">Default IDE for source links:</p>
+      <div class="ide-options">
+        <label class="ide-option">
+          <input type="radio" name="default-ide" value="" onchange="setDefaultIde('')">
+          <span>Show menu (default)</span>
+        </label>
+        <label class="ide-option">
+          <input type="radio" name="default-ide" value="vscode-wsl" onchange="setDefaultIde('vscode-wsl')">
+          <span>VS Code (WSL)</span>
+        </label>
+        <label class="ide-option">
+          <input type="radio" name="default-ide" value="vscode" onchange="setDefaultIde('vscode')">
+          <span>VS Code</span>
+        </label>
+        <label class="ide-option">
+          <input type="radio" name="default-ide" value="rubymine" onchange="setDefaultIde('rubymine')">
+          <span>RubyMine</span>
+        </label>
+        <label class="ide-option">
+          <input type="radio" name="default-ide" value="intellij" onchange="setDefaultIde('intellij')">
+          <span>IntelliJ IDEA</span>
+        </label>
+        <label class="ide-option">
+          <input type="radio" name="default-ide" value="cursor-wsl" onchange="setDefaultIde('cursor-wsl')">
+          <span>Cursor (WSL)</span>
+        </label>
+        <label class="ide-option">
+          <input type="radio" name="default-ide" value="cursor" onchange="setDefaultIde('cursor')">
+          <span>Cursor</span>
+        </label>
       </div>
     </div>
   </div>
@@ -1132,6 +1176,159 @@ pg_stat_statements.track = all</pre>
   window.addEventListener('beforeunload', stopPolling);
 
   // ============================================
+  // IDE Integration
+  // ============================================
+
+  const railsRootPath = '<%= Rails.root.to_s %>';
+  const wslDistro = 'Ubuntu';
+
+  const ideKeyMap = {
+    'vscode-wsl': 0,
+    'vscode': 1,
+    'rubymine': 2,
+    'intellij': 3,
+    'cursor-wsl': 4,
+    'cursor': 5
+  };
+
+  function getDefaultIde() {
+    return localStorage.getItem('pgReportsDefaultIde') || '';
+  }
+
+  function generateIdeUrls(filePath, lineNumber) {
+    if (!filePath) return [];
+
+    // Convert relative paths to absolute paths using Rails.root
+    let absolutePath = filePath;
+    if (!filePath.startsWith('/')) {
+      absolutePath = `${railsRootPath}/${filePath}`;
+    }
+
+    const line = lineNumber || 1;
+    const urls = [];
+
+    // VSCode (WSL Remote format)
+    urls.push({
+      name: 'VS Code (WSL)',
+      url: `vscode://vscode-remote/wsl+${wslDistro}${absolutePath}:${line}`
+    });
+
+    // VSCode (direct path)
+    urls.push({
+      name: 'VS Code',
+      url: `vscode://file${absolutePath}:${line}`
+    });
+
+    // RubyMine
+    urls.push({
+      name: 'RubyMine',
+      url: `rubymine://open?file=${absolutePath}&line=${line}`
+    });
+
+    // IntelliJ
+    urls.push({
+      name: 'IntelliJ',
+      url: `idea://open?file=${absolutePath}&line=${line}`
+    });
+
+    // Cursor (WSL Remote format)
+    urls.push({
+      name: 'Cursor (WSL)',
+      url: `cursor://vscode-remote/wsl+${wslDistro}${absolutePath}:${line}`
+    });
+
+    // Cursor (direct path)
+    urls.push({
+      name: 'Cursor',
+      url: `cursor://file${absolutePath}:${line}`
+    });
+
+    return urls;
+  }
+
+  function openInIDE(filePath, lineNumber, event) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    const ideUrls = generateIdeUrls(filePath, lineNumber);
+    if (ideUrls.length === 0) return;
+
+    const defaultIde = getDefaultIde();
+
+    // If default IDE is set, open directly
+    if (defaultIde && ideKeyMap[defaultIde] !== undefined) {
+      const ideUrl = ideUrls[ideKeyMap[defaultIde]];
+      if (ideUrl) {
+        window.location.href = ideUrl.url;
+        return;
+      }
+    }
+
+    // No default IDE - show dropdown menu
+    const menu = document.getElementById('ide-menu');
+    const overlay = document.getElementById('ide-dropdown-overlay');
+
+    let menuHtml = '';
+    ideUrls.forEach(ide => {
+      menuHtml += `<a href="${ide.url}" onclick="closeIdeMenu()">${ide.name}</a>`;
+    });
+    menu.innerHTML = menuHtml;
+
+    // Position menu near the clicked element
+    if (event && event.target) {
+      const rect = event.target.getBoundingClientRect();
+      menu.style.top = (rect.bottom + 4) + 'px';
+      menu.style.left = rect.left + 'px';
+    }
+
+    // Show menu and overlay
+    menu.classList.add('show');
+    overlay.classList.add('show');
+  }
+
+  function closeIdeMenu() {
+    document.getElementById('ide-menu')?.classList.remove('show');
+    document.getElementById('ide-dropdown-overlay')?.classList.remove('show');
+  }
+
+  function showIdeSettingsModal() {
+    const modal = document.getElementById('ide-settings-modal');
+    modal.style.display = 'flex';
+    loadIdeSettingsState();
+  }
+
+  function closeIdeSettingsModal() {
+    document.getElementById('ide-settings-modal').style.display = 'none';
+  }
+
+  function setDefaultIde(ideKey) {
+    if (ideKey) {
+      localStorage.setItem('pgReportsDefaultIde', ideKey);
+    } else {
+      localStorage.removeItem('pgReportsDefaultIde');
+    }
+  }
+
+  function loadIdeSettingsState() {
+    const currentIde = getDefaultIde();
+    const radios = document.querySelectorAll('input[name="default-ide"]');
+    radios.forEach(radio => {
+      radio.checked = (radio.value === currentIde);
+    });
+  }
+
+  // Close IDE settings modal on backdrop click
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('ide-settings-modal')?.addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeIdeSettingsModal();
+      }
+    });
+  });
+
+  // ============================================
   // Query Monitoring
   // ============================================
 
@@ -1405,7 +1602,7 @@ pg_stat_statements.track = all</pre>
     if (query.source_location && query.source_location.file) {
       const file = query.source_location.file;
       const line = query.source_location.line;
-      sourceInfo = `<a href="#" onclick="openInIDE('${escapeHtml(file)}', ${line}); return false;">
+      sourceInfo = `<a href="#" onclick="openInIDE('${escapeHtml(file)}', ${line}, event); return false;">
          ${escapeHtml(file)}:${line}
        </a>`;
     }

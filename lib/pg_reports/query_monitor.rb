@@ -200,10 +200,10 @@ module PgReports
         # Filter queries from pg_reports internal modules only:
         # - Installed gem: /gems/pg_reports-X.Y.Z/lib/
         # - Local gem: /pg_reports/lib/pg_reports/modules/
-        # - Dashboard controller: /pg_reports/app/controllers/pg_reports/
+        # Note: We intentionally DO NOT filter dashboard_controller.rb
+        # to allow monitoring of user application queries made during dashboard page loads
         path.match?(%r{/gems/pg_reports[-\d.]+/lib/}) ||
-          path.match?(%r{/pg_reports/lib/pg_reports/modules/}) ||
-          path.match?(%r{/pg_reports/app/controllers/pg_reports/dashboard_controller\.rb})
+          path.match?(%r{/pg_reports/lib/pg_reports/modules/})
       end
     end
 

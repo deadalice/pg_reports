@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-02-11
+
+### Fixed
+
+- **Live Query Monitor** - fixed filtering that was too aggressive:
+  - Removed `dashboard_controller.rb` from query filtering to allow monitoring user application queries
+  - Now correctly shows queries from user's application even when dashboard page is active
+  - Only internal pg_reports module queries are filtered (as intended)
+
+### Added
+
+- **IDE Integration for Live Query Monitor**:
+  - Clickable source file links in query monitor now open files in IDE
+  - Support for multiple IDEs: VS Code, RubyMine, IntelliJ IDEA, Cursor (with WSL variants)
+  - Smart IDE selection: shows menu or opens directly if favorite IDE is set
+  - IDE settings button (⚙️) in dashboard header for choosing default IDE
+  - Settings persist in localStorage across all dashboard pages
+
 ## [0.5.2] - 2026-02-09
 
 ### Fixed
