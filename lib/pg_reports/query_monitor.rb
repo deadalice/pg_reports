@@ -16,6 +16,7 @@ module PgReports
       @subscriber = nil
       @mutex = Mutex.new
       @queries = []
+      @handling_sql_event = false
       ensure_subscription_if_enabled
     end
 
@@ -192,30 +193,34 @@ module PgReports
     end
 
     def handle_sql_event(name, started, finished, unique_id, payload)
-      return unless enabled
+      return if @handling_sql_event
 
-      # Skip if should be filtered
-      return if should_skip?(payload)
+      @handling_sql_event = true
+      begin
+        return unless enabled
 
-      duration_ms = ((finished - started) * 1000).round(2)
-      sql = payload[:sql]
-      query_name = payload[:name]
+        return if should_skip?(payload)
 
-      # Extract source location
-      source_location = extract_source_location
+        duration_ms = ((finished - started) * 1000).round(2)
+        sql = payload[:sql]
+        query_name = payload[:name]
 
-      # Build query entry
-      query_entry = {
-        type: "query",
-        session_id: session_id,
-        sql: sql,
-        duration_ms: duration_ms,
-        name: query_name,
-        source_location: source_location,
-        timestamp: Time.current.iso8601
-      }
+        source_location = extract_source_location
 
-      add_to_buffer(query_entry)
+        query_entry = {
+          type: "query",
+          session_id: session_id,
+          sql: sql,
+          duration_ms: duration_ms,
+          name: query_name,
+          source_location: source_location,
+          timestamp: Time.current.iso8601
+        }
+
+        add_to_buffer(query_entry)
+      ensure
+        @handling_sql_event = false
+      end
     end
 
     def should_skip?(payload)
