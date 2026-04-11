@@ -13,6 +13,8 @@ module PgReports
       # - invalid_indexes
       # - missing_indexes(limit: 20)
       # - inefficient_indexes(limit: 50)
+      # - fk_without_indexes(limit: 50)
+      # - index_correlation(limit: 50)
       # - index_usage(limit: 50)
       # - bloated_indexes(limit: 20)
       # - index_sizes(limit: 50)

@@ -1,0 +1,30 @@
+# Foreign keys without indexes on the child table
+# Missing indexes cause sequential scans on parent DELETE/UPDATE
+
+report:
+  name: fk_without_indexes
+  module: indexes
+  description: "Foreign keys missing indexes on the referencing table"
+
+  sql:
+    category: indexes
+    file: fk_without_indexes
+
+  title: "Foreign Keys Without Indexes"
+
+  columns:
+    - constraint_name
+    - child_table
+    - child_column
+    - parent_table
+    - parent_column
+    - child_table_size_mb
+
+  parameters:
+    limit:
+      type: integer
+      default: 50
+      description: "Maximum number of results"
+
+  problem_explanations:
+    child_table_size_mb: fk_without_index

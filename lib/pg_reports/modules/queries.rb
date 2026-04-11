@@ -13,6 +13,7 @@ module PgReports
       # - expensive_queries(limit: 20)
       # - missing_index_queries(limit: 20)
       # - low_cache_hit_queries(limit: 20, min_calls: 100)
+      # - temp_file_queries(limit: 20)
       # - all_queries(limit: 50)
 
       # Reset pg_stat_statements statistics

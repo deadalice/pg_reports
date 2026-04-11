@@ -1,0 +1,31 @@
+# Transaction ID wraparound risk
+# Monitors proximity to the 2-billion XID limit that triggers emergency shutdown
+
+report:
+  name: wraparound_risk
+  module: system
+  description: "Transaction ID wraparound risk for all databases"
+
+  sql:
+    category: system
+    file: wraparound_risk
+
+  title: "Transaction ID Wraparound Risk"
+
+  columns:
+    - database_name
+    - xid_age
+    - pct_towards_wraparound
+    - remaining_xids
+    - freeze_max_age
+    - status
+    - database_size
+
+  parameters:
+    limit:
+      type: integer
+      default: 50
+      description: "Maximum number of results"
+
+  problem_explanations:
+    pct_towards_wraparound: wraparound_risk

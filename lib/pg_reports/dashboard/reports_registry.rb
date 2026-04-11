@@ -32,6 +32,10 @@ module PgReports
           thresholds: {},
           problem_fields: []
         },
+        temp_file_queries: {
+          thresholds: {temp_mb_written: {warning: 100, critical: 1000}},
+          problem_fields: ["temp_mb_written"]
+        },
 
         # === INDEXES ===
         unused_indexes: {
@@ -66,6 +70,14 @@ module PgReports
           thresholds: {size_bytes: {warning: 1073741824, critical: 10737418240}},
           problem_fields: ["size_bytes"]
         },
+        fk_without_indexes: {
+          thresholds: {},
+          problem_fields: ["child_table_size_mb"]
+        },
+        index_correlation: {
+          thresholds: {correlation: {warning: 0.5, critical: 0.2, inverted: true}},
+          problem_fields: ["correlation"]
+        },
 
         # === TABLES ===
         table_sizes: {
@@ -93,6 +105,10 @@ module PgReports
           problem_fields: ["seq_scan", "seq_tup_read"]
         },
         recently_modified: {
+          thresholds: {},
+          problem_fields: []
+        },
+        tables_without_pk: {
           thresholds: {},
           problem_fields: []
         },
@@ -163,6 +179,14 @@ module PgReports
           thresholds: {cache_hit_ratio: {warning: 0.95, critical: 0.90, inverted: true}},
           problem_fields: ["cache_hit_ratio"]
         },
+        wraparound_risk: {
+          thresholds: {pct_towards_wraparound: {warning: 50, critical: 75}},
+          problem_fields: ["pct_towards_wraparound"]
+        },
+        checkpoint_stats: {
+          thresholds: {requested_pct: {warning: 50, critical: 75}},
+          problem_fields: ["requested_pct"]
+        },
 
         # === SCHEMA ANALYSIS ===
         missing_validations: {
@@ -182,6 +206,7 @@ module PgReports
             expensive_queries: {name: "Expensive Queries", description: "Queries consuming most total time"},
             missing_index_queries: {name: "Missing Index Queries", description: "Queries potentially missing indexes"},
             low_cache_hit_queries: {name: "Low Cache Hit", description: "Queries with poor cache utilization"},
+            temp_file_queries: {name: "Temp File Queries", description: "Queries spilling to disk", new: true},
             all_queries: {name: "All Queries", description: "All query statistics"}
           }
         },
@@ -194,9 +219,11 @@ module PgReports
             duplicate_indexes: {name: "Duplicate Indexes", description: "Redundant indexes"},
             invalid_indexes: {name: "Invalid Indexes", description: "Indexes that failed to build"},
             missing_indexes: {name: "Missing Indexes", description: "Tables potentially missing indexes"},
-            inefficient_indexes: {name: "Inefficient Indexes", description: "Indexes with high read-to-fetch ratio"},
+            inefficient_indexes: {name: "Inefficient Indexes", description: "Indexes with high read-to-fetch ratio", new: true},
             index_usage: {name: "Index Usage", description: "Index scan statistics"},
             bloated_indexes: {name: "Bloated Indexes", description: "Indexes with high bloat"},
+            fk_without_indexes: {name: "FK Without Indexes", description: "Foreign keys missing indexes", new: true},
+            index_correlation: {name: "Index Correlation", description: "Low physical correlation indexes", new: true},
             index_sizes: {name: "Index Sizes", description: "Index disk usage"}
           }
         },
@@ -211,6 +238,7 @@ module PgReports
             row_counts: {name: "Row Counts", description: "Table row counts"},
             cache_hit_ratios: {name: "Cache Hit Ratios", description: "Table cache statistics"},
             seq_scans: {name: "Sequential Scans", description: "Tables with high sequential scans"},
+            tables_without_pk: {name: "No Primary Key", description: "Tables missing primary keys", new: true},
             recently_modified: {name: "Recently Modified", description: "Tables with recent activity"}
           }
         },
@@ -240,6 +268,8 @@ module PgReports
             settings: {name: "Settings", description: "PostgreSQL configuration"},
             extensions: {name: "Extensions", description: "Installed extensions"},
             activity_overview: {name: "Activity Overview", description: "Current activity summary"},
+            wraparound_risk: {name: "Wraparound Risk", description: "Transaction ID wraparound proximity", new: true},
+            checkpoint_stats: {name: "Checkpoint Stats", description: "Checkpoint and bgwriter statistics", new: true},
             cache_stats: {name: "Cache Stats", description: "Database cache statistics"}
           }
         },

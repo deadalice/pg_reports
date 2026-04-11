@@ -14,6 +14,7 @@ module PgReports
       # - row_counts(limit: 50)
       # - cache_hit_ratios(limit: 50)
       # - seq_scans(limit: 20)
+      # - tables_without_pk(limit: 50)
       # - recently_modified(limit: 20)
 
       private

@@ -51,6 +51,16 @@ en:
           - "Increasing shared_buffers helps, but there's a limit to effectiveness (typically 25% of RAM)."
           - "Covering indexes (INCLUDE) allow index-only scans without accessing the table."
 
+      temp_file_queries:
+        title: "Temp File Queries"
+        what: "Queries that spill intermediate results to temporary files on disk."
+        how: "Analyzes temp_blks_written and temp_blks_read from pg_stat_statements. Temporary files are created when work_mem is insufficient for sorting, hashing, or materializing."
+        nuances:
+          - "Temp file writes are orders of magnitude slower than in-memory operations."
+          - "Increasing work_mem can eliminate temp files, but affects all sessions — use SET LOCAL for specific queries."
+          - "Common causes: large sorts (ORDER BY), hash joins on big tables, DISTINCT on many rows, complex CTEs."
+          - "Consider adding indexes to avoid sorts, or rewriting queries to reduce intermediate result sets."
+
       all_queries:
         title: "All Queries"
         what: "Complete statistics for all queries from pg_stat_statements."
@@ -128,6 +138,27 @@ en:
           - "pg_repack allows rebuilding indexes without locks."
           - "Bloat >30-50% — reason for action."
 
+      fk_without_indexes:
+        title: "FK Without Indexes"
+        what: "Foreign keys on child tables that lack a supporting index."
+        how: "Compares pg_constraint (foreign keys) with pg_index to find FK columns without a matching leading index column."
+        nuances:
+          - "Without an index, DELETE or UPDATE on the parent table triggers a sequential scan on the child table."
+          - "On large child tables this can cause severe lock contention and slow cascading operations."
+          - "The index must have the FK column as the leading (first) column to be effective."
+          - "Small tables (< 10K rows) may not benefit from adding an index — PostgreSQL will prefer seq scan anyway."
+
+      index_correlation:
+        title: "Index Correlation"
+        what: "Indexes where physical row order poorly matches the index order."
+        how: "Reads pg_stats.correlation for leading index columns. Correlation near 0 means random physical order relative to the index, causing excessive random I/O on range scans."
+        nuances:
+          - "Correlation ranges from -1 to 1. Values near 0 mean random order; near 1 or -1 mean ordered."
+          - "Low correlation mainly impacts range scans (BETWEEN, >, <) and ORDER BY — point lookups are less affected."
+          - "CLUSTER table USING index physically reorders rows but locks the table and is not maintained automatically."
+          - "For append-only tables with timestamp columns, correlation is naturally high — no action needed."
+          - "Only tables > 10MB with > 100 index scans are shown to reduce noise."
+
       index_sizes:
         title: "Index Sizes"
         what: "Index sizes on disk."
@@ -193,6 +224,16 @@ en:
           - "seq_tup_read shows how many rows were read — this is more important than scan count."
           - "High seq_tup_read/seq_scan = many rows per scan = probably normal."
           - "Low seq_tup_read/seq_scan = many small scans = possibly N+1."
+
+      tables_without_pk:
+        title: "Tables Without Primary Keys"
+        what: "Tables that have no primary key defined."
+        how: "Checks pg_index for missing indisprimary entries on user tables."
+        nuances:
+          - "Logical replication requires a primary key or REPLICA IDENTITY to identify rows."
+          - "Without a PK, UPDATE and DELETE need another way to uniquely identify rows, often resulting in full table scans."
+          - "Join tables (many-to-many) often lack PKs intentionally — consider adding a composite PK."
+          - "Some ORMs (e.g., Rails) assume an 'id' primary key — tables without it may cause framework errors."
 
       recently_modified:
         title: "Recently Modified"
@@ -337,6 +378,28 @@ en:
           - "Useful for quick assessment of database state."
           - "Compare with baseline to identify anomalies."
 
+      wraparound_risk:
+        title: "Wraparound Risk"
+        what: "Transaction ID age proximity to the 2-billion wraparound limit."
+        how: "Reads age(datfrozenxid) from pg_database. When this approaches 2^31 (~2.1 billion), PostgreSQL will shut down to prevent data corruption."
+        nuances:
+          - "autovacuum_freeze_max_age (default 200M) triggers aggressive anti-wraparound VACUUM automatically."
+          - "If age exceeds freeze_max_age, anti-wraparound VACUUM should already be running — if not, investigate why."
+          - "Long-running transactions prevent VACUUM from advancing the frozen XID — monitor idle-in-transaction."
+          - "In emergencies, run VACUUM FREEZE on the largest/oldest tables first."
+          - "Pct > 50% is a warning; > 75% is critical and requires immediate action."
+
+      checkpoint_stats:
+        title: "Checkpoint Stats"
+        what: "Checkpoint frequency and background writer performance metrics."
+        how: "Data from pg_stat_bgwriter shows checkpoint counts, timing, and buffer write distribution."
+        nuances:
+          - "checkpoints_timed = scheduled checkpoints (healthy); checkpoints_req = forced checkpoints (under pressure)."
+          - "High requested_pct means WAL fills up before checkpoint_timeout — increase max_wal_size."
+          - "buffers_backend > 0 means backends write dirty buffers themselves — increase shared_buffers or bgwriter activity."
+          - "bgwriter_stops (maxwritten_clean) > 0 means bgwriter hit its per-round limit — increase bgwriter_lru_maxpages."
+          - "Stats accumulate since stats_reset — compare over time for meaningful analysis."
+
       cache_stats:
         title: "Cache Stats"
         what: "Database caching statistics."
@@ -368,6 +431,12 @@ en:
       high_seq_scan: "Many sequential scans. Possibly missing an index."
       unused_index: "Index is not used. Candidate for removal."
       inefficient_index: "Index reads far more entries than it fetches. Composite index column order likely misaligned with query predicates."
+      fk_without_index: "Foreign key column has no supporting index. DELETE/UPDATE on parent table will cause sequential scan."
+      low_correlation: "Low physical correlation between index and row order. Range scans will cause excessive random I/O."
+      temp_file_heavy: "Query spills data to temporary files on disk. Consider increasing work_mem or optimizing the query."
+      missing_pk: "Table has no primary key. This breaks logical replication and may cause issues with ORMs."
+      wraparound_risk: "Transaction ID age is approaching the wraparound limit. VACUUM FREEZE required."
+      high_checkpoint_req: "High percentage of forced checkpoints. Consider increasing max_wal_size."
       high_bloat: "High bloat. REINDEX or VACUUM required."
       many_dead_tuples: "Many dead tuples. VACUUM required."
       long_running: "Long-running query. May block other operations."

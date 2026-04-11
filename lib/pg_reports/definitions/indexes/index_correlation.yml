@@ -1,0 +1,31 @@
+# Index correlation analysis
+# Low correlation means physical row order doesn't match index order, causing random I/O
+
+report:
+  name: index_correlation
+  module: indexes
+  description: "Indexes with low physical correlation causing excessive random I/O"
+
+  sql:
+    category: indexes
+    file: index_correlation
+
+  title: "Index Correlation (tables > 10MB, scans > 100)"
+
+  columns:
+    - schema
+    - table_name
+    - column_name
+    - index_name
+    - correlation
+    - table_size_mb
+    - idx_scan
+
+  parameters:
+    limit:
+      type: integer
+      default: 50
+      description: "Maximum number of results"
+
+  problem_explanations:
+    correlation: low_correlation

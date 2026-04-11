@@ -1,0 +1,28 @@
+# Tables without primary keys
+# Missing PKs break logical replication and make row identification unreliable
+
+report:
+  name: tables_without_pk
+  module: tables
+  description: "Tables missing a primary key"
+
+  sql:
+    category: tables
+    file: tables_without_pk
+
+  title: "Tables Without Primary Keys"
+
+  columns:
+    - schema
+    - table_name
+    - estimated_rows
+    - table_size_mb
+
+  parameters:
+    limit:
+      type: integer
+      default: 50
+      description: "Maximum number of results"
+
+  problem_explanations:
+    table_name: missing_pk

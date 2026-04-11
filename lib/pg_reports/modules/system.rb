@@ -12,7 +12,11 @@ module PgReports
       # - settings
       # - extensions
       # - activity_overview
+      # - wraparound_risk(limit: 50)
       # - cache_stats
+      #
+      # Manually implemented (version-dependent SQL):
+      # - checkpoint_stats(limit: 10)
 
       # pg_stat_statements availability check
       # @return [Boolean] Whether pg_stat_statements is available
@@ -132,6 +136,22 @@ module PgReports
         end
       end
 
+      # Checkpoint stats — uses version-specific SQL because PostgreSQL 17+
+      # moved checkpoint columns from pg_stat_bgwriter to pg_stat_checkpointer
+      def checkpoint_stats(limit: 10)
+        sql_file = pg_version >= 170_000 ? :checkpoint_stats : :checkpoint_stats_legacy
+        data = executor.execute_from_file(:system, sql_file)
+        data = data.first(limit) if limit
+
+        Report.new(
+          title: "Checkpoint Statistics",
+          data: data,
+          columns: %w[checkpoints_timed checkpoints_requested checkpoint_write_time_sec
+                      checkpoint_sync_time_sec buffers_checkpoint buffers_clean
+                      bgwriter_stops buffers_alloc requested_pct stats_reset]
+        )
+      end
+
       # Get list of all databases
       # @return [Array<Hash>] List of databases with sizes
       def databases_list
@@ -151,6 +171,13 @@ module PgReports
       end
 
       private
+
+      def pg_version
+        @pg_version ||= begin
+          result = executor.execute("SELECT current_setting('server_version_num')::int AS v")
+          result.first&.fetch("v", 0).to_i
+        end
+      end
 
       def executor
         @executor ||= Executor.new

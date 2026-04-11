@@ -1,0 +1,39 @@
+# Temp file heavy queries
+# Queries that spill to disk due to insufficient work_mem
+
+report:
+  name: temp_file_queries
+  module: queries
+  description: "Queries spilling data to temporary files on disk"
+
+  sql:
+    category: queries
+    file: temp_file_queries
+    params:
+      max_query_length:
+        source: config
+        key: max_query_length
+
+  title: "Temp File Queries"
+
+  columns:
+    - query
+    - calls
+    - temp_mb_written
+    - temp_mb_read
+    - total_time_sec
+    - mean_time_ms
+    - rows
+
+  parameters:
+    limit:
+      type: integer
+      default: 20
+      description: "Maximum number of results"
+
+  enrichment:
+    module: queries
+    hook: enrich_with_annotations
+
+  problem_explanations:
+    temp_mb_written: temp_file_heavy

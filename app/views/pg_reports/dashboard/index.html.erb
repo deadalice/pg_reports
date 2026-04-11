@@ -313,7 +313,10 @@ pg_stat_statements.track = all</pre>
           <% if category_key == :queries && !@pg_stat_status[:ready] %>
             <div class="report-link disabled">
               <div class="report-link-info">
-                <span class="report-link-name"><%= report[:name] %></span>
+                <span class="report-link-name">
+                  <%= report[:name] %>
+                  <% if report[:new] %><span class="report-badge-new">NEW</span><% end %>
+                </span>
                 <span class="report-link-desc"><%= report[:description] %></span>
               </div>
               <span class="lock">🔒</span>
@@ -321,7 +324,10 @@ pg_stat_statements.track = all</pre>
           <% else %>
             <%= link_to report_path(category: category_key, report: report_key), class: "report-link" do %>
               <div class="report-link-info">
-                <span class="report-link-name"><%= report[:name] %></span>
+                <span class="report-link-name">
+                  <%= report[:name] %>
+                  <% if report[:new] %><span class="report-badge-new">NEW</span><% end %>
+                </span>
                 <span class="report-link-desc"><%= report[:description] %></span>
               </div>
               <span class="arrow">→</span>
