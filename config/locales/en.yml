@@ -107,6 +107,17 @@ en:
           - "idx_tup_read — rows read from the index."
           - "idx_tup_fetch — rows fetched from table after index scan (for non-covering indexes)."
 
+      inefficient_indexes:
+        title: "Inefficient Indexes"
+        what: "Indexes that are used but scan far more entries than they actually fetch."
+        how: "Compares idx_tup_read (index entries scanned) vs idx_tup_fetch (heap rows fetched) from pg_stat_user_indexes. A high ratio means the index column order doesn't match query predicates, forcing PostgreSQL to scan large index ranges."
+        nuances:
+          - "A read-to-fetch ratio >10 means the index reads 10x more entries than it returns — strong sign of misaligned column order."
+          - "For composite indexes (a, b, c), queries filtering on (b) or (c) without (a) cannot seek directly and must scan wider ranges."
+          - "Solution: create a targeted index with columns matching the most selective WHERE predicates first."
+          - "Use EXPLAIN ANALYZE to confirm the index scan is reading excessive entries before making changes."
+          - "Index-only scans (where idx_tup_fetch = 0) are excluded — they indicate covering indexes working efficiently."
+
       bloated_indexes:
         title: "Bloated Indexes"
         what: "Indexes with high bloat level due to dead tuples."
@@ -356,6 +367,7 @@ en:
       low_cache_hit: "Low cache hit ratio. Query frequently reads from disk instead of cache."
       high_seq_scan: "Many sequential scans. Possibly missing an index."
       unused_index: "Index is not used. Candidate for removal."
+      inefficient_index: "Index reads far more entries than it fetches. Composite index column order likely misaligned with query predicates."
       high_bloat: "High bloat. REINDEX or VACUUM required."
       many_dead_tuples: "Many dead tuples. VACUUM required."
       long_running: "Long-running query. May block other operations."

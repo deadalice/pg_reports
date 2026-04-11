@@ -13,6 +13,7 @@ module PgReports
 
     # Index analysis thresholds
     attr_accessor :unused_index_threshold_scans # Index with fewer scans is unused
+    attr_accessor :inefficient_index_threshold_ratio # Read/fetch ratio above this is inefficient
 
     # Table analysis thresholds
     attr_accessor :bloat_threshold_percent      # Tables with more bloat are problematic
@@ -53,6 +54,7 @@ module PgReports
 
       # Index thresholds
       @unused_index_threshold_scans = 50
+      @inefficient_index_threshold_ratio = 10
 
       # Table thresholds
       @bloat_threshold_percent = 20

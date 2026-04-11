@@ -1,0 +1,45 @@
+# Inefficient indexes - indexes that are used but scan far more entries than they fetch
+# High read-to-fetch ratio indicates misaligned composite index column order
+
+report:
+  name: inefficient_indexes
+  module: indexes
+  description: "Indexes with high read-to-fetch ratio indicating inefficient scans"
+
+  sql:
+    category: indexes
+    file: inefficient_indexes
+
+  title: "Inefficient Indexes (read/fetch ratio > ${threshold})"
+  title_vars:
+    threshold:
+      source: config
+      key: inefficient_index_threshold_ratio
+
+  columns:
+    - schema
+    - table_name
+    - index_name
+    - idx_scan
+    - idx_tup_read
+    - idx_tup_fetch
+    - read_to_fetch_ratio
+    - index_size_mb
+    - index_definition
+
+  parameters:
+    limit:
+      type: integer
+      default: 50
+      description: "Maximum number of results"
+
+  filters:
+    - field: read_to_fetch_ratio
+      operator: gte
+      value:
+        source: config
+        key: inefficient_index_threshold_ratio
+      cast: float
+
+  problem_explanations:
+    read_to_fetch_ratio: inefficient_index

@@ -50,6 +50,10 @@ module PgReports
           thresholds: {seq_scan_ratio: {warning: 0.5, critical: 0.9}},
           problem_fields: ["seq_scan", "seq_tup_read"]
         },
+        inefficient_indexes: {
+          thresholds: {read_to_fetch_ratio: {warning: 10, critical: 100}},
+          problem_fields: ["read_to_fetch_ratio"]
+        },
         index_usage: {
           thresholds: {},
           problem_fields: []
@@ -190,6 +194,7 @@ module PgReports
             duplicate_indexes: {name: "Duplicate Indexes", description: "Redundant indexes"},
             invalid_indexes: {name: "Invalid Indexes", description: "Indexes that failed to build"},
             missing_indexes: {name: "Missing Indexes", description: "Tables potentially missing indexes"},
+            inefficient_indexes: {name: "Inefficient Indexes", description: "Indexes with high read-to-fetch ratio"},
             index_usage: {name: "Index Usage", description: "Index scan statistics"},
             bloated_indexes: {name: "Bloated Indexes", description: "Indexes with high bloat"},
             index_sizes: {name: "Index Sizes", description: "Index disk usage"}
