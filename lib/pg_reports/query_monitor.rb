@@ -16,15 +16,23 @@ module PgReports
       @subscriber = nil
       @mutex = Mutex.new
       @queries = []
+      @handling_event = false
+
+      # Local state — used by the event handler to avoid cache reads
+      # (which generate SQL events and cause infinite recursion with DB-backed caches)
+      @enabled = false
+      @session_id = nil
+
+      sync_from_cache
       ensure_subscription_if_enabled
     end
 
     def enabled
-      cache_read(CACHE_KEY_ENABLED) || false
+      @enabled
     end
 
     def session_id
-      cache_read(CACHE_KEY_SESSION_ID)
+      @session_id
     end
 
     def start
@@ -37,7 +45,11 @@ module PgReports
         new_session_id = SecureRandom.uuid
         @queries = []
 
-        # Store state in cache so all processes can see it
+        # Update local state first (used by event handler — no cache round-trip)
+        @enabled = true
+        @session_id = new_session_id
+
+        # Store state in cache so other processes can see it
         cache_write(CACHE_KEY_ENABLED, true)
         cache_write(CACHE_KEY_SESSION_ID, new_session_id)
 
@@ -52,6 +64,8 @@ module PgReports
         {success: true, message: "Query monitoring started", session_id: new_session_id}
       end
     rescue => e
+      @enabled = false
+      @session_id = nil
       cache_write(CACHE_KEY_ENABLED, false)
       {success: false, error: e.message}
     end
@@ -62,7 +76,11 @@ module PgReports
           return {success: false, message: "Monitoring not active"}
         end
 
-        current_session_id = session_id
+        current_session_id = @session_id
+
+        # Clear local state immediately — stops event handler from processing
+        @enabled = false
+        @session_id = nil
 
         # Unsubscribe from notifications in THIS process
         if @subscriber
@@ -71,12 +89,12 @@ module PgReports
         end
 
         # Write session end marker to file
-        write_session_marker("session_end")
+        write_session_marker("session_end", current_session_id)
 
         # Flush queries to file
         flush_to_file
 
-        # Clear state from cache
+        # Clear state from cache so other processes see it
         cache_delete(CACHE_KEY_ENABLED)
         cache_delete(CACHE_KEY_SESSION_ID)
 
@@ -175,9 +193,15 @@ module PgReports
       defined?(Rails) && defined?(Rails.cache)
     end
 
+    # Sync local state from shared cache (called on initialize for multi-process support)
+    def sync_from_cache
+      @enabled = enabled
+      @session_id = session_id
+    end
+
     # Ensure this process is subscribed to notifications if monitoring is enabled
     def ensure_subscription_if_enabled
-      return unless enabled
+      return unless @enabled
       ensure_subscription
     end
 
@@ -192,30 +216,38 @@ module PgReports
     end
 
     def handle_sql_event(name, started, finished, unique_id, payload)
-      return unless enabled
+      # Use local @enabled instead of enabled (which hits cache and may generate SQL,
+      # causing infinite recursion with database-backed cache stores like SolidCache)
+      return unless @enabled
+      return if @handling_event
 
-      # Skip if should be filtered
-      return if should_skip?(payload)
+      @handling_event = true
+      begin
+        # Skip if should be filtered
+        return if should_skip?(payload)
 
-      duration_ms = ((finished - started) * 1000).round(2)
-      sql = payload[:sql]
-      query_name = payload[:name]
+        duration_ms = ((finished - started) * 1000).round(2)
+        sql = payload[:sql]
+        query_name = payload[:name]
 
-      # Extract source location
-      source_location = extract_source_location
+        # Extract source location
+        source_location = extract_source_location
 
-      # Build query entry
-      query_entry = {
-        type: "query",
-        session_id: session_id,
-        sql: sql,
-        duration_ms: duration_ms,
-        name: query_name,
-        source_location: source_location,
-        timestamp: Time.current.iso8601
-      }
+        # Build query entry
+        query_entry = {
+          type: "query",
+          session_id: @session_id,
+          sql: sql,
+          duration_ms: duration_ms,
+          name: query_name,
+          source_location: source_location,
+          timestamp: Time.current.iso8601
+        }
 
-      add_to_buffer(query_entry)
+        add_to_buffer(query_entry)
+      ensure
+        @handling_event = false
+      end
     end
 
     def should_skip?(payload)
@@ -317,12 +349,12 @@ module PgReports
       end
     end
 
-    def write_session_marker(marker_type)
+    def write_session_marker(marker_type, sid = @session_id)
       return unless log_file_enabled?
 
       marker = {
         type: marker_type,
-        session_id: session_id,
+        session_id: sid,
         timestamp: Time.current.iso8601
       }
 
