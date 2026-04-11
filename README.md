@@ -24,6 +24,7 @@ A comprehensive PostgreSQL monitoring and analysis library for Rails application
 - 📊 **EXPLAIN ANALYZE** - Advanced query plan analyzer with problem detection and recommendations
 - 🔍 **SQL Query Monitoring** - Real-time monitoring of all executed SQL queries with source location tracking
 - 🔌 **Connection Pool Analytics** - Monitor pool usage, wait times, saturation warnings, and connection churn
+- 🤖 **AI Prompt Export** - Copy a ready-to-paste prompt for Claude Code, Cursor, or Codex with problem context and report data
 - 🗑️ **Migration Generator** - Generate Rails migrations to drop unused indexes
 
 ## Installation
@@ -201,6 +202,7 @@ config.active_record.query_log_tags = [:controller, :action]
 | `expensive_queries` | Queries consuming most total time |
 | `missing_index_queries` | Queries potentially missing indexes |
 | `low_cache_hit_queries` | Queries with poor cache utilization |
+| `temp_file_queries` | 🆕 Queries spilling to disk via temporary files |
 | `all_queries` | All query statistics |
 | `reset_statistics!` | Reset pg_stat_statements data |
 
@@ -212,6 +214,9 @@ config.active_record.query_log_tags = [:controller, :action]
 | `duplicate_indexes` | Redundant indexes |
 | `invalid_indexes` | Indexes that failed to build |
 | `missing_indexes` | Tables potentially missing indexes |
+| `inefficient_indexes` | 🆕 Indexes with high read-to-fetch ratio (misaligned column order) |
+| `fk_without_indexes` | 🆕 Foreign keys missing indexes on child table |
+| `index_correlation` | 🆕 Low physical correlation causing random I/O |
 | `index_usage` | Index scan statistics |
 | `bloated_indexes` | Indexes with high bloat |
 | `index_sizes` | Index disk usage |
@@ -226,6 +231,7 @@ config.active_record.query_log_tags = [:controller, :action]
 | `row_counts` | Table row counts |
 | `cache_hit_ratios` | Table cache statistics |
 | `seq_scans` | Tables with high sequential scans |
+| `tables_without_pk` | 🆕 Tables missing primary keys |
 | `recently_modified` | Tables with recent activity |
 
 ### Connections
@@ -238,10 +244,10 @@ config.active_record.query_log_tags = [:controller, :action]
 | `blocking_queries` | Queries blocking others |
 | `locks` | Current database locks |
 | `idle_connections` | Idle connections |
-| `pool_usage` | 🆕 Connection pool utilization analysis |
-| `pool_wait_times` | 🆕 Resource wait time analysis |
-| `pool_saturation` | 🆕 Pool health warnings with recommendations |
-| `connection_churn` | 🆕 Connection lifecycle and churn rate analysis |
+| `pool_usage` | Connection pool utilization analysis |
+| `pool_wait_times` | Resource wait time analysis |
+| `pool_saturation` | Pool health warnings with recommendations |
+| `connection_churn` | Connection lifecycle and churn rate analysis |
 | `kill_connection(pid)` | Terminate a backend process |
 | `cancel_query(pid)` | Cancel a running query |
 
@@ -253,6 +259,8 @@ config.active_record.query_log_tags = [:controller, :action]
 | `settings` | PostgreSQL configuration |
 | `extensions` | Installed extensions |
 | `activity_overview` | Current activity summary |
+| `wraparound_risk` | 🆕 Transaction ID wraparound proximity |
+| `checkpoint_stats` | 🆕 Checkpoint and bgwriter statistics (PG 12–18+) |
 | `cache_stats` | Database cache statistics |
 | `pg_stat_statements_available?` | Check if extension is ready |
 | `enable_pg_stat_statements!` | Create the extension |

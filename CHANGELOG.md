@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-04-11
+
+### Added
+
+- **7 new reports** covering previously undetected PostgreSQL problems:
+  - `inefficient_indexes` — indexes with high read-to-fetch ratio indicating misaligned composite index column order
+  - `fk_without_indexes` — foreign keys on child tables missing a supporting index, causing seq scans on parent DELETE/UPDATE
+  - `index_correlation` — low physical correlation between index order and row order, causing excessive random I/O on range scans
+  - `temp_file_queries` — queries spilling intermediate results to disk due to insufficient `work_mem` (requires pg_stat_statements)
+  - `tables_without_pk` — tables missing primary keys, which breaks logical replication and causes ORM issues
+  - `wraparound_risk` — transaction ID age proximity to the 2-billion wraparound limit that triggers emergency PostgreSQL shutdown
+  - `checkpoint_stats` — checkpoint frequency and background writer metrics with PostgreSQL 17+ support
+- **AI Prompt Export** — "Copy Prompt" button in the Export dropdown generates a ready-to-paste prompt for AI coding assistants (Claude Code, Cursor, Codex) with problem description, fix instructions, and actual report data as examples. Available for 28 actionable reports.
+- **Compatibility warnings** — the gem now warns at boot if Ruby, Rails, or PostgreSQL versions are below minimum supported (Ruby 2.7, Rails 5.0, PostgreSQL 12)
+- **`inefficient_index_threshold_ratio`** configuration option (default: 10) for the inefficient indexes report
+- Full i18n support for all new reports in English, Russian, and Ukrainian
+
+### Fixed
+
+- **Critical: infinite recursion in Query Monitor with database-backed cache stores** (SolidCache, ActiveRecord Cache Store) — `handle_sql_event` called `Rails.cache.read()` on every SQL event to check `enabled` state, which with DB-backed caches generated new SQL events, creating an infinite loop. Fixed by storing monitoring state in local instance variables (`@enabled`, `@session_id`) and syncing from cache only at initialization. Added reentrancy guard as additional safety net. (Reported via [PR #7](https://github.com/deadalice/pg_reports/pull/7))
+- **`checkpoint_stats` compatibility with PostgreSQL 17+** — checkpoint columns were moved from `pg_stat_bgwriter` to `pg_stat_checkpointer` with renamed columns. The report now auto-detects the PostgreSQL version and uses the appropriate query.
+- **26 previously failing Query Monitor specs** now pass — tests no longer depend on `Rails.cache` availability
+
+### Changed
+
+- **Dashboard UI redesign** — flattened the visual style to remove typical AI-generated patterns:
+  - Removed gradient buttons, gradient text on logo, backdrop blur on modals
+  - Removed `translateY` hover animations on cards and buttons
+  - Unified `border-radius` to 6px across all components (was 8–16px)
+  - Subdued box-shadows (`0 4px 16px` instead of `0 10px 40px`)
+  - Muted color palette — same CSS variables, lower saturation
+  - Background warmed from `#0f1114` to `#151719`
+  - Removed colored icon backgrounds from category cards
+  - Report links now transparent by default (tertiary fill on hover only)
+  - NEW badge restyled: tinted background instead of solid green
+  - Buttons use flat solid color instead of gradients
+- "Download" button renamed to "Export" with AI Prompt option added to the dropdown
+- New reports tagged with `NEW` badge in the dashboard sidebar
+- Query Monitor `enabled` and `session_id` public methods now return local state instead of hitting cache on every call
+
 ## [0.5.4] - 2026-02-11
 
 ### Fixed
