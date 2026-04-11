@@ -6,6 +6,7 @@ require "active_record"
 
 require_relative "pg_reports/version"
 require_relative "pg_reports/error"
+require_relative "pg_reports/compatibility"
 require_relative "pg_reports/configuration"
 require_relative "pg_reports/sql_loader"
 require_relative "pg_reports/executor"
@@ -138,3 +139,7 @@ end
 
 # Generate YAML-based methods on load
 PgReports::ModuleGenerator.generate!
+
+# Check Ruby and Rails versions immediately (no DB needed)
+PgReports::Compatibility.check_ruby!
+PgReports::Compatibility.check_rails!

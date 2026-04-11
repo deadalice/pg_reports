@@ -13,6 +13,12 @@ module PgReports
       config.i18n.load_path += Dir[root.join("config", "locales", "*.yml")]
     end
 
+    initializer "pg_reports.compatibility_check" do
+      ActiveSupport.on_load(:active_record) do
+        PgReports::Compatibility.check_postgresql!
+      end
+    end
+
     initializer "pg_reports.assets" do |_app|
       # Assets are inline in views, no precompilation needed
     end
