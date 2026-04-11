@@ -13,22 +13,22 @@
   <% end %>
   <style>
     :root {
-      --bg-primary: #0f1114;
-      --bg-secondary: #161a1e;
-      --bg-tertiary: #1e2328;
-      --bg-card: #1a1e23;
-      --border-color: #2d3339;
-      --text-primary: #d4d7dc;
-      --text-secondary: #9ca3ab;
-      --text-muted: #6b7280;
-      --accent-purple: #9d8cd6;
-      --accent-blue: #6b9fe8;
-      --accent-green: #5fb89a;
-      --accent-amber: #d4a056;
-      --accent-rose: #d97084;
-      --accent-indigo: #8b8fd9;
-      --gradient-start: #6b9fe8;
-      --gradient-end: #8b8fd9;
+      --bg-primary: #151719;
+      --bg-secondary: #1c1f22;
+      --bg-tertiary: #232629;
+      --bg-card: #1c1f22;
+      --border-color: #2e3235;
+      --text-primary: #c9cbcd;
+      --text-secondary: #888d93;
+      --text-muted: #5e6369;
+      --accent-purple: #7c8af6;
+      --accent-blue: #5c9eed;
+      --accent-green: #45a87a;
+      --accent-amber: #c89030;
+      --accent-rose: #d45d6e;
+      --accent-indigo: #7c8af6;
+      --gradient-start: #7c8af6;
+      --gradient-end: #7c8af6;
     }
 
     * {
@@ -68,26 +68,24 @@
     }
 
     .logo-icon {
-      width: 44px;
-      height: 44px;
-      background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+      width: 32px;
+      height: 32px;
+      background: var(--accent-purple);
       border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.4rem;
+      font-size: 1rem;
     }
 
     .logo-text h1 {
-      font-size: 1.25rem;
-      font-weight: 700;
-      background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-primary);
     }
 
     .logo-text span {
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       color: var(--text-muted);
     }
 
@@ -130,14 +128,12 @@
     .category-card {
       background: var(--bg-card);
       border: 1px solid var(--border-color);
-      border-radius: 8px;
+      border-radius: 6px;
       padding: 1rem;
-      transition: all 0.2s ease;
     }
 
     .category-card:hover {
-      border-color: var(--accent-purple);
-      transform: translateY(-1px);
+      border-color: #3e4347;
     }
 
     .category-header {
@@ -148,13 +144,15 @@
     }
 
     .category-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 6px;
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.125rem;
+      font-size: 0.95rem;
+      background: transparent !important;
+      color: var(--text-secondary) !important;
     }
 
     .category-title {
@@ -181,19 +179,18 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0.6rem 0.875rem;
-      background: var(--bg-tertiary);
+      padding: 0.45rem 0.7rem;
+      background: transparent;
       border: 1px solid transparent;
-      border-radius: 6px;
+      border-radius: 4px;
       color: var(--text-secondary);
       text-decoration: none;
-      font-size: 0.85rem;
-      transition: all 0.15s ease;
+      font-size: 0.82rem;
+      transition: background 0.1s, color 0.1s;
     }
 
     .report-link:hover {
-      background: var(--bg-secondary);
-      border-color: var(--border-color);
+      background: var(--bg-tertiary);
       color: var(--text-primary);
     }
 
@@ -211,14 +208,14 @@
     .report-badge-new {
       display: inline-block;
       margin-left: 0.4rem;
-      padding: 0.1rem 0.4rem;
-      font-size: 0.6rem;
-      font-weight: 700;
+      padding: 0.1rem 0.35rem;
+      font-size: 0.55rem;
+      font-weight: 600;
       letter-spacing: 0.04em;
       line-height: 1.2;
-      color: #fff;
-      background: #10b981;
-      border-radius: 4px;
+      color: var(--accent-green);
+      background: rgba(69, 168, 122, 0.12);
+      border-radius: 3px;
       vertical-align: middle;
     }
 
@@ -244,7 +241,7 @@
     }
 
     .breadcrumb a:hover {
-      color: var(--accent-purple);
+      color: var(--text-primary);
     }
 
     .report-header {
@@ -278,25 +275,24 @@
       height: 36px;
       padding: 0 1rem;
       border: 1px solid transparent;
-      border-radius: 6px;
+      border-radius: 4px;
       font-family: inherit;
       font-size: 0.8rem;
       font-weight: 500;
       cursor: pointer;
-      transition: all 0.15s ease;
+      transition: background 0.1s;
       white-space: nowrap;
       text-decoration: none;
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
-      color: white;
-      border-color: transparent;
+      background: var(--accent-purple);
+      color: #fff;
+      border-color: var(--accent-purple);
     }
 
     .btn-primary:hover {
-      opacity: 0.9;
-      transform: translateY(-1px);
+      background: #6b79e4;
     }
 
     .btn-secondary {
@@ -306,19 +302,19 @@
     }
 
     .btn-secondary:hover {
-      background: var(--bg-secondary);
+      background: #2a2d31;
       color: var(--text-primary);
     }
 
     .btn-telegram {
-      background: #4a9ebe;
-      color: white;
-      border-color: #4a9ebe;
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
     }
 
     .btn-telegram:hover {
-      background: #5aaccc;
-      border-color: #5aaccc;
+      background: #2a2d31;
+      color: var(--text-primary);
     }
 
     .btn:disabled {
@@ -330,7 +326,7 @@
     .results-container {
       background: var(--bg-card);
       border: 1px solid var(--border-color);
-      border-radius: 8px;
+      border-radius: 6px;
       overflow: hidden;
     }
 
@@ -476,18 +472,17 @@
     .modal {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.6);
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 1000;
-      backdrop-filter: blur(4px);
     }
 
     .modal-content {
       background: var(--bg-card);
       border: 1px solid var(--border-color);
-      border-radius: 8px;
+      border-radius: 6px;
       max-width: 900px;
       width: 90%;
       max-height: 90vh;
@@ -567,7 +562,7 @@
       margin-bottom: 1.5rem;
       background: var(--bg-card);
       border: 1px solid var(--border-color);
-      border-radius: 8px;
+      border-radius: 6px;
       padding: 0.875rem 1rem;
     }
 
@@ -913,7 +908,7 @@
       padding: 0.75rem 1rem;
       background: var(--bg-tertiary);
       border: 1px solid var(--border-color);
-      border-radius: 8px;
+      border-radius: 6px;
       cursor: pointer;
       transition: all 0.15s;
     }
