@@ -11,6 +11,7 @@ en:
           - "High mean time can be caused by: missing index, suboptimal plan, locks, disk I/O load."
           - "For composite indexes, column order matters — index (a, b) is effective for WHERE a = ? and WHERE a = ? AND b = ?, but not for WHERE b = ?."
           - "Queries with LIKE '%pattern%' cannot use B-tree indexes — consider pg_trgm or full-text search."
+        ai_prompt: "Optimize these slow PostgreSQL queries. For each query: analyze the query plan, identify missing indexes, suggest query rewrites. If an index is needed, generate a Rails migration. If the query can be rewritten, show the optimized version."
 
       heavy_queries:
         title: "Heavy Queries"
@@ -21,6 +22,7 @@ en:
           - "N+1 problem: if you see many similar queries with different IDs — this is a sign of N+1, need eager loading."
           - "Consider batch operations instead of multiple single queries."
           - "Prepared statements can reduce parsing overhead for frequent queries."
+        ai_prompt: "Reduce the call frequency of these heavy PostgreSQL queries. For each query: identify the caller in application code, suggest caching strategies (Redis/Memcached), detect N+1 patterns and suggest eager loading fixes. Show code changes needed."
 
       expensive_queries:
         title: "Expensive Queries"
@@ -30,6 +32,7 @@ en:
           - "A query can be fast but called so often that it takes a lot of time in total."
           - "Optimizing expensive queries has the greatest effect on overall system performance."
           - "Consider: adding indexes, rewriting the query, caching results, materialized views."
+        ai_prompt: "Optimize these expensive PostgreSQL queries that consume the most total database time. For each query: analyze the execution plan, suggest indexes or query rewrites, estimate the expected improvement. Generate Rails migrations for any new indexes."
 
       missing_index_queries:
         title: "Missing Index Queries"
@@ -40,6 +43,7 @@ en:
           - "Composite index (a, b, c) covers: WHERE a, WHERE a AND b, WHERE a AND b AND c, but does NOT cover WHERE b or WHERE c."
           - "EXPLAIN ANALYZE will show the actual query execution plan."
           - "Partial indexes (CREATE INDEX ... WHERE condition) save space and speed up specific queries."
+        ai_prompt: "Add missing indexes for these PostgreSQL queries that perform sequential scans. For each table: analyze the query pattern, determine optimal index columns, generate a Rails migration with add_index. Consider partial indexes where appropriate."
 
       low_cache_hit_queries:
         title: "Low Cache Hit Queries"
@@ -50,6 +54,7 @@ en:
           - "Low cache hit may indicate: insufficient shared_buffers, tables too large, inefficient queries scanning too much data."
           - "Increasing shared_buffers helps, but there's a limit to effectiveness (typically 25% of RAM)."
           - "Covering indexes (INCLUDE) allow index-only scans without accessing the table."
+        ai_prompt: "Improve cache hit ratio for these PostgreSQL queries. For each query: suggest covering indexes (with INCLUDE columns) to enable index-only scans, or suggest query rewrites to reduce the data scanned. Generate Rails migrations for new indexes."
 
       temp_file_queries:
         title: "Temp File Queries"
@@ -60,6 +65,7 @@ en:
           - "Increasing work_mem can eliminate temp files, but affects all sessions — use SET LOCAL for specific queries."
           - "Common causes: large sorts (ORDER BY), hash joins on big tables, DISTINCT on many rows, complex CTEs."
           - "Consider adding indexes to avoid sorts, or rewriting queries to reduce intermediate result sets."
+        ai_prompt: "Fix these PostgreSQL queries that spill to temporary files on disk. For each query: identify the cause (large sort, hash join, DISTINCT), suggest an index to avoid the sort, or suggest SET LOCAL work_mem for specific code paths. Show the code changes."
 
       all_queries:
         title: "All Queries"
@@ -80,6 +86,7 @@ en:
           - "Indexes are still updated on INSERT/UPDATE/DELETE, even if not used for reading — this is overhead."
           - "Unique indexes (UNIQUE) may have 0 scans but are needed for constraints."
           - "Foreign key indexes are important for DELETE/UPDATE performance on parent tables."
+        ai_prompt: "Remove these unused PostgreSQL indexes. For each index: generate a Rails migration with remove_index. Group related indexes into one migration. Add a safety comment noting the index can be recreated if needed."
 
       duplicate_indexes:
         title: "Duplicate Indexes"
@@ -89,6 +96,7 @@ en:
           - "Duplicates waste disk space and slow down INSERT/UPDATE/DELETE."
           - "However, sometimes a 'duplicate' is needed: different index types (B-tree vs GIN), partial vs full index."
           - "Index (a, b) does NOT fully replace (b, a) — column order is critical."
+        ai_prompt: "Remove these duplicate PostgreSQL indexes. For each pair: determine which index is redundant (the shorter prefix), generate a Rails migration with remove_index for the redundant one. Verify the remaining index covers all use cases."
 
       invalid_indexes:
         title: "Invalid Indexes"
@@ -98,6 +106,7 @@ en:
           - "Usually appear after a failed CREATE INDEX CONCURRENTLY."
           - "Solution: DROP INDEX and recreate."
           - "REINDEX CONCURRENTLY can help for existing invalid indexes (PostgreSQL 12+)."
+        ai_prompt: "Fix these invalid PostgreSQL indexes. For each index: generate a Rails migration that drops the invalid index and recreates it using `algorithm: :concurrently` to avoid locking the table."
 
       missing_indexes:
         title: "Missing Indexes"
@@ -107,6 +116,7 @@ en:
           - "Not all seq_scans are bad — for small tables it's optimal."
           - "Analyze specific queries via pg_stat_statements to understand which columns to index."
           - "Use EXPLAIN ANALYZE to verify if an index will be used."
+        ai_prompt: "Add missing indexes for these PostgreSQL tables with high sequential scan counts. For each table: analyze the common query patterns, determine optimal index columns, generate a Rails migration with add_index using `algorithm: :concurrently`."
 
       index_usage:
         title: "Index Usage"
@@ -127,6 +137,7 @@ en:
           - "Solution: create a targeted index with columns matching the most selective WHERE predicates first."
           - "Use EXPLAIN ANALYZE to confirm the index scan is reading excessive entries before making changes."
           - "Index-only scans (where idx_tup_fetch = 0) are excluded — they indicate covering indexes working efficiently."
+        ai_prompt: "Fix these inefficient PostgreSQL index scans. For each index: analyze the index definition and identify the misaligned column order, create a new targeted index with columns matching the most selective WHERE predicates first, generate a Rails migration that adds the new index and removes the old one."
 
       bloated_indexes:
         title: "Bloated Indexes"
@@ -137,6 +148,7 @@ en:
           - "Regular VACUUM keeps bloat at acceptable levels."
           - "pg_repack allows rebuilding indexes without locks."
           - "Bloat >30-50% — reason for action."
+        ai_prompt: "Rebuild these bloated PostgreSQL indexes. Generate a rake task or Rails migration that runs REINDEX CONCURRENTLY for each bloated index to reclaim disk space without locking the table."
 
       fk_without_indexes:
         title: "FK Without Indexes"
@@ -147,6 +159,7 @@ en:
           - "On large child tables this can cause severe lock contention and slow cascading operations."
           - "The index must have the FK column as the leading (first) column to be effective."
           - "Small tables (< 10K rows) may not benefit from adding an index — PostgreSQL will prefer seq scan anyway."
+        ai_prompt: "Add missing indexes on foreign key columns in these PostgreSQL tables. For each FK: generate a Rails migration with add_index on the child table's FK column. Use `algorithm: :concurrently` for large tables."
 
       index_correlation:
         title: "Index Correlation"
@@ -158,6 +171,7 @@ en:
           - "CLUSTER table USING index physically reorders rows but locks the table and is not maintained automatically."
           - "For append-only tables with timestamp columns, correlation is naturally high — no action needed."
           - "Only tables > 10MB with > 100 index scans are shown to reduce noise."
+        ai_prompt: "Address low physical correlation for these PostgreSQL indexes. For each: evaluate if CLUSTER is appropriate (for read-heavy tables), or suggest switching to BRIN index for range-scanned timestamp columns. If CLUSTER is chosen, generate a rake task since it locks the table and should be run during maintenance."
 
       index_sizes:
         title: "Index Sizes"
@@ -187,6 +201,7 @@ en:
           - "VACUUM FULL physically reduces file size, but locks the table."
           - "autovacuum should handle this automatically — check its settings if you see high bloat."
           - "Dead tuple ratio >20% — signal of vacuum problems."
+        ai_prompt: "Fix bloat on these PostgreSQL tables with high dead tuple percentage. Generate a rake task that runs VACUUM ANALYZE on each table. For severely bloated tables, suggest VACUUM FULL during maintenance window. Also review autovacuum settings."
 
       vacuum_needed:
         title: "Vacuum Needed"
@@ -196,6 +211,7 @@ en:
           - "last_vacuum and last_autovacuum show when vacuum last ran."
           - "If autovacuum can't keep up, you can: lower autovacuum_vacuum_threshold, increase autovacuum_vacuum_scale_factor, add workers."
           - "For critical tables, you can set individual parameters: ALTER TABLE SET (autovacuum_vacuum_threshold = 1000)."
+        ai_prompt: "Fix vacuum issues on these PostgreSQL tables. Generate a rake task that runs VACUUM ANALYZE on each table. For tables with extreme dead rows, suggest tuning per-table autovacuum parameters via a Rails migration using execute."
 
       row_counts:
         title: "Row Counts"
@@ -214,6 +230,7 @@ en:
           - "Target value: >95% for actively used tables."
           - "Low cache hit: table too large for cache or rarely used."
           - "Solutions: increase shared_buffers, optimize queries, add indexes to reduce scanned data."
+        ai_prompt: "Improve cache hit ratios for these PostgreSQL tables. Suggest specific shared_buffers tuning, recommend indexes to reduce data scanned, and identify queries hitting these tables that could benefit from optimization."
 
       seq_scans:
         title: "Sequential Scans"
@@ -224,6 +241,7 @@ en:
           - "seq_tup_read shows how many rows were read — this is more important than scan count."
           - "High seq_tup_read/seq_scan = many rows per scan = probably normal."
           - "Low seq_tup_read/seq_scan = many small scans = possibly N+1."
+        ai_prompt: "Add indexes for these PostgreSQL tables with high sequential scan counts. For each table: identify the queries causing sequential scans, determine optimal index columns, generate a Rails migration with add_index."
 
       tables_without_pk:
         title: "Tables Without Primary Keys"
@@ -234,6 +252,7 @@ en:
           - "Without a PK, UPDATE and DELETE need another way to uniquely identify rows, often resulting in full table scans."
           - "Join tables (many-to-many) often lack PKs intentionally — consider adding a composite PK."
           - "Some ORMs (e.g., Rails) assume an 'id' primary key — tables without it may cause framework errors."
+        ai_prompt: "Add primary keys to these PostgreSQL tables. For each table: determine the appropriate primary key (auto-increment id or composite key for join tables), generate a Rails migration that adds the primary key."
 
       recently_modified:
         title: "Recently Modified"
@@ -272,6 +291,7 @@ en:
           - "Long queries can hold locks and interfere with other processes."
           - "statement_timeout can automatically terminate queries running too long."
           - "For reports/analytics, use a read replica or configure a separate connection pool."
+        ai_prompt: "Investigate and optimize these long-running PostgreSQL queries. For each query: analyze the execution plan, suggest indexes or query rewrites, recommend statement_timeout configuration. If the query is analytical, suggest moving it to a read replica."
 
       blocking_queries:
         title: "Blocking Queries"
@@ -282,6 +302,7 @@ en:
           - "Common causes: long transactions, missing indexes on UPDATE/DELETE with FK."
           - "pg_cancel_backend(pid) cancels query, pg_terminate_backend(pid) terminates connection."
           - "Consider optimistic locking at the application level."
+        ai_prompt: "Resolve these blocking query chains in PostgreSQL. Identify the root blocker, suggest application-level fixes (shorter transactions, optimistic locking, advisory locks), and recommend indexes on FK columns to speed up cascading operations."
 
       locks:
         title: "Locks"
@@ -300,6 +321,7 @@ en:
           - "A moderate number of idle connections is normal for connection pooling."
           - "Too many idle = application not closing connections or pool is too large."
           - "idle_session_timeout (PostgreSQL 14+) can automatically close idle connections."
+        ai_prompt: "Reduce idle PostgreSQL connections. Suggest database.yml pool size tuning, recommend idle_session_timeout or PgBouncer configuration, and identify application code that may be leaking connections."
 
       pool_usage:
         title: "Connection Pool Usage"
@@ -330,6 +352,7 @@ en:
           - "High idle in transaction count = application transaction handling issues."
           - "superuser_reserved_connections reduce available pool capacity."
           - "Monitor trends — sudden spikes may indicate connection leaks."
+        ai_prompt: "Fix connection pool saturation in PostgreSQL. Suggest specific max_connections and pool size tuning for database.yml, recommend PgBouncer setup if not present, and identify application patterns causing pool exhaustion."
 
       connection_churn:
         title: "Connection Churn Analysis"
@@ -340,6 +363,7 @@ en:
           - "Churn rate over 50% = missing/misconfigured connection pooling."
           - "Many short connections = increased CPU and authentication overhead."
           - "Web apps should maintain connection pools, not create per-request connections."
+        ai_prompt: "Fix excessive connection churn in PostgreSQL. Configure PgBouncer or Rails connection pooling properly, identify application code creating short-lived connections, suggest database.yml pool and checkout_timeout tuning."
 
       # === SYSTEM ===
       database_sizes:
@@ -388,6 +412,7 @@ en:
           - "Long-running transactions prevent VACUUM from advancing the frozen XID — monitor idle-in-transaction."
           - "In emergencies, run VACUUM FREEZE on the largest/oldest tables first."
           - "Pct > 50% is a warning; > 75% is critical and requires immediate action."
+        ai_prompt: "Address transaction ID wraparound risk on these PostgreSQL databases. Generate a rake task that runs VACUUM FREEZE on the affected databases, prioritizing by pct_towards_wraparound. Include monitoring checks to verify the XID age decreased after the operation."
 
       checkpoint_stats:
         title: "Checkpoint Stats"
@@ -399,6 +424,7 @@ en:
           - "buffers_backend > 0 means backends write dirty buffers themselves — increase shared_buffers or bgwriter activity."
           - "bgwriter_stops (maxwritten_clean) > 0 means bgwriter hit its per-round limit — increase bgwriter_lru_maxpages."
           - "Stats accumulate since stats_reset — compare over time for meaningful analysis."
+        ai_prompt: "Optimize PostgreSQL checkpoint and background writer configuration based on these stats. Suggest specific postgresql.conf parameter changes (max_wal_size, checkpoint_completion_target, bgwriter_lru_maxpages) with recommended values and explain the expected impact."
 
       cache_stats:
         title: "Cache Stats"
@@ -408,6 +434,7 @@ en:
           - "Cache hit ratio = blks_hit / (blks_hit + blks_read)."
           - "Target value: >99% for OLTP, >95% for mixed workload."
           - "Low cache hit: increase shared_buffers (up to 25% RAM), or the problem is in queries."
+        ai_prompt: "Improve PostgreSQL cache hit ratio. Suggest specific shared_buffers and effective_cache_size tuning for postgresql.conf based on the current stats. Recommend application-level caching for frequently accessed data."
 
       # === SCHEMA ANALYSIS ===
       missing_validations:
@@ -421,6 +448,7 @@ en:
           - "Some tables may not have models — this is normal for join tables or legacy tables."
           - "Validations in concerns and parent models are also detected."
           - "Primary keys don't need validations — they are automatically unique."
+        ai_prompt: "Add missing uniqueness validations to these Rails models. For each unique index: add `validates :column, uniqueness: true` (or with `scope:` for composite indexes) to the corresponding model. Handle STI and concern-based models correctly."
 
     # Problem explanations for highlighting
     problems:

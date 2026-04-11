@@ -307,6 +307,7 @@ module PgReports
           what: I18n.t("#{i18n_key}.what", default: ""),
           how: I18n.t("#{i18n_key}.how", default: ""),
           nuances: I18n.t("#{i18n_key}.nuances", default: []),
+          ai_prompt: I18n.t("#{i18n_key}.ai_prompt", default: nil),
           thresholds: config[:thresholds],
           problem_fields: config[:problem_fields]
         }

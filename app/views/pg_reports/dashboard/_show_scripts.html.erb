@@ -248,6 +248,58 @@
     });
   }
 
+  // AI Prompt builder — assembles a prompt from documentation + report data
+  const aiPromptInstruction = <%== @documentation[:ai_prompt].to_json %>;
+  const aiPromptWhat = <%== @documentation[:what].to_json %>;
+  const aiPromptHow = <%== @documentation[:how].to_json %>;
+  const aiPromptNuances = <%== (@documentation[:nuances] || []).to_json %>;
+
+  function buildAiPrompt() {
+    if (!currentReportData || !currentReportData.data) return null;
+
+    const rows = currentReportData.data.slice(0, 15);
+    const cols = currentReportData.columns || [];
+
+    // Build markdown table from report data
+    let table = '| ' + cols.join(' | ') + ' |\n';
+    table += '| ' + cols.map(() => '---').join(' | ') + ' |\n';
+    rows.forEach(row => {
+      const values = cols.map(c => {
+        const v = row[c];
+        return v == null ? '' : String(v).replace(/\|/g, '\\|').substring(0, 120);
+      });
+      table += '| ' + values.join(' | ') + ' |\n';
+    });
+    if (currentReportData.data.length > 15) {
+      table += `\n(${currentReportData.data.length - 15} more rows omitted)\n`;
+    }
+
+    // Assemble the prompt
+    let prompt = `## Problem\n\n${aiPromptWhat}\n\n${aiPromptHow}\n`;
+    prompt += `\n## What needs to be done\n\n${aiPromptInstruction}\n`;
+    prompt += `\n## Detected issues\n\n${table}`;
+    if (aiPromptNuances.length > 0) {
+      prompt += `\n## Important context\n\n`;
+      aiPromptNuances.forEach(n => { prompt += `- ${n}\n`; });
+    }
+    return prompt;
+  }
+
+  function copyAiPrompt(el) {
+    const prompt = buildAiPrompt();
+    if (!prompt) {
+      showToast('Run the report first', 'error');
+      return;
+    }
+
+    document.getElementById('dropdown-menu').classList.remove('show');
+    navigator.clipboard.writeText(prompt).then(() => {
+      showToast('AI prompt copied to clipboard');
+    }).catch(() => {
+      showToast('Failed to copy', 'error');
+    });
+  }
+
   // Check if a value exceeds threshold
   function checkThreshold(value, threshold, inverted = false) {
     if (!threshold || value === null || value === undefined) return null;
@@ -688,7 +740,7 @@
           `;
         }
 
-        // Show download and telegram buttons
+        // Show export and telegram buttons
         if (downloadDropdown) downloadDropdown.style.display = 'inline-block';
         if (telegramBtn) telegramBtn.style.display = 'inline-flex';
 

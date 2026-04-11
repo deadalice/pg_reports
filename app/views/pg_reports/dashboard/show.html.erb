@@ -20,15 +20,19 @@
         ▶ Run Report
       </button>
 
-      <!-- Download dropdown -->
+      <!-- Export dropdown -->
       <div class="dropdown" id="download-dropdown" style="display: none;">
         <button class="btn btn-secondary" onclick="toggleDropdown()">
-          ⬇ Download
+          ⬇ Export
         </button>
         <div class="dropdown-menu" id="dropdown-menu">
           <a href="#" onclick="downloadReport('txt'); return false;">📄 Text (.txt)</a>
           <a href="#" onclick="downloadReport('csv'); return false;">📊 CSV (.csv)</a>
           <a href="#" onclick="downloadReport('json'); return false;">📋 JSON (.json)</a>
+          <% if @documentation && @documentation[:ai_prompt].present? %>
+            <div class="dropdown-divider"></div>
+            <a href="#" id="ai-prompt-btn" onclick="copyAiPrompt(this); return false;"><span class="ai-icon">AI</span> Copy Prompt</a>
+          <% end %>
         </div>
       </div>
 
