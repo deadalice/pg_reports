@@ -578,3 +578,5 @@ The gem is available as open source under the terms of the [MIT License](https:/
 ## Acknowledgments
 
 Inspired by [rails-pg-extras](https://github.com/pawurb/rails-pg-extras) and built with ❤️ for the Rails community.
+
+The project's UI was built with the help of [Claude](https://www.anthropic.com/claude) by Anthropic.
