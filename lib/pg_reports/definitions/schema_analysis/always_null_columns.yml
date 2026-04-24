@@ -1,0 +1,31 @@
+# Columns where 100% of rows are NULL
+# Strong indicator the application no longer populates these fields
+
+report:
+  name: always_null_columns
+  module: schema_analysis
+  description: "Nullable columns that contain only NULL values"
+
+  sql:
+    category: schema_analysis
+    file: always_null_columns
+
+  title: "Always-NULL Columns"
+
+  columns:
+    - schema
+    - table_name
+    - column_name
+    - data_type
+    - null_pct
+    - column_default
+    - estimated_rows
+
+  parameters:
+    limit:
+      type: integer
+      default: 100
+      description: "Maximum number of results"
+
+  problem_explanations:
+    column_name: always_null_column

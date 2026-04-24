@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **4 new reports** focused on dead schema and write-amplification:
+  - `unused_columns` (Schema Analysis) — columns with `pg_stats.n_distinct = 1`, indicating no `UPDATE` has ever changed them since creation. Strong signal that the application code no longer references the column.
+  - `always_null_columns` (Schema Analysis) — nullable columns where ~100% of rows are NULL. Companion to `unused_columns` from a different angle.
+  - `update_hotspots` (Tables) — tables with high `updates_per_row` (same rows rewritten repeatedly) or low `hot_update_pct` (indexed columns being updated, defeating HOT). Includes refactor guidance: split hot/cold columns, event-log tables, write batching, fillfactor tuning.
+  - `unused_tables` (Tables) — tables with zero `seq_scan + idx_scan` since the last stats reset. Surfaces `db_stats_since` so you know how much history the verdict rests on.
+- New problem keys: `unused_column`, `always_null_column`, `hot_rows`, `low_hot_update`, `unused_table`.
+- Full i18n for all new reports (en/ru/uk).
+
+### Changed
+
+- `module_generator` now camelizes multi-word module names (`schema_analysis` → `SchemaAnalysis`) so YAML-defined reports can live under multi-word modules. Previously only single-word modules worked via auto-generation.
+- `NEW` badge moved off the seven 0.6.0 reports onto the four added in this version.
+
 ## [0.6.0] - 2026-04-11
 
 ### Added

@@ -17,7 +17,8 @@ module PgReports
     private
 
     def self.get_module(module_name)
-      PgReports::Modules.const_get(module_name.capitalize)
+      const_name = module_name.to_s.split("_").map(&:capitalize).join
+      PgReports::Modules.const_get(const_name)
     rescue NameError
       # Module doesn't exist, skip it
       # We don't auto-create modules to avoid conflicts

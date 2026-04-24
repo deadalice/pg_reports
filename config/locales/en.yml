@@ -263,6 +263,31 @@ en:
           - "High UPDATE activity creates dead tuples — monitor vacuum."
           - "HOT updates (Heap Only Tuple) are more efficient — indexes are not updated."
 
+      update_hotspots:
+        title: "Update Hotspots"
+        what: "Tables where the same rows are updated repeatedly, or where indexed columns are being hot-updated."
+        how: "Computes two ratios from pg_stat_user_tables: updates_per_row = n_tup_upd / n_live_tup (signal for write amplification on individual rows) and hot_update_pct = n_tup_hot_upd / n_tup_upd (low value means an indexed column is in the SET clause, defeating HOT)."
+        nuances:
+          - "updates_per_row >> 1 means individual rows are being rewritten many times — common with counters, status flags, last_seen_at, position trackers."
+          - "Refactor patterns for hot rows: move the volatile column to a sibling 1:1 'state' table; use an event/log table with periodic rollups; batch writes via a background buffer; debounce updates application-side."
+          - "Low hot_update_pct (e.g. <50%) means indexed columns are being updated. Either drop the index or move that column to a less-indexed table."
+          - "PostgreSQL does not track per-column UPDATE counts. To find which column is the culprit, parse pg_stat_statements for UPDATE queries on the table and look at SET clauses (queries are normalized but column names are preserved)."
+          - "Hot rows + low fillfactor (default 100) eliminates HOT optimization. ALTER TABLE ... SET (fillfactor=80) leaves room for in-place updates."
+          - "High n_dead_tup correlates with hot rows — autovacuum must keep up or bloat will grow fast."
+        ai_prompt: "Reduce write amplification on these PostgreSQL tables. For each: identify the columns most commonly updated by parsing pg_stat_statements UPDATE queries, propose a refactor (split hot/cold columns into a sibling table, switch to an append-only event table, batch writes), and generate the migration. If hot_update_pct is low, identify the indexed column being updated and recommend either dropping the index or moving the column."
+
+      unused_tables:
+        title: "Unused Tables"
+        what: "Tables with zero seq_scan and zero idx_scan since the last statistics reset — application code never reads them."
+        how: "Filters pg_stat_user_tables for seq_scan = 0 AND idx_scan = 0. Cross-references db_stats_since (pg_stat_database.stats_reset) so you know how much history the verdict is based on."
+        nuances:
+          - "Verify db_stats_since covers a representative window — at minimum a full week, ideally a full reporting/billing cycle. A recent stats_reset, restart, or PG upgrade invalidates the result."
+          - "Tables read only by replicas are NOT counted on the primary. Check replicas separately before dropping."
+          - "Tables touched only by COPY, pg_dump, or logical replication slots may still appear unused — these don't increment scan counters."
+          - "Foreign keys referencing the table can keep it 'in use' through cascades even without direct queries."
+          - "Safe sequence: rename → wait one full cycle → drop. Or move to a separate archive schema first."
+        ai_prompt: "Archive these unread PostgreSQL tables. For each: verify the table is not referenced by FKs, code, or scheduled jobs, then generate a Rails migration that either drops the table or moves it to an `archive` schema. Add a rollback that restores the table. Recommend resetting pg_stat_user_tables before final removal to confirm zero reads over a fresh window."
+
       # === CONNECTIONS ===
       active_connections:
         title: "Active Connections"
@@ -437,6 +462,31 @@ en:
         ai_prompt: "Improve PostgreSQL cache hit ratio. Suggest specific shared_buffers and effective_cache_size tuning for postgresql.conf based on the current stats. Recommend application-level caching for frequently accessed data."
 
       # === SCHEMA ANALYSIS ===
+      unused_columns:
+        title: "Unused Columns"
+        what: "Columns whose data has only ever held a single distinct value — strong sign nothing in the application updates them anymore."
+        how: "Reads pg_stats.n_distinct = 1 (only one value across all sampled rows) and joins with pg_attrdef to show the column default. Excludes primary keys and unique-index columns to avoid noise."
+        nuances:
+          - "n_distinct is a sample-based estimate — ANALYZE the table before trusting the result. Stale stats can produce false positives."
+          - "Tables under ~1000 rows are excluded because a single value across few rows is statistically meaningless."
+          - "False positives: feature flags, enum columns where only one value has shipped so far, columns defaulted in code with one valid option."
+          - "True positives: columns whose Ruby/ORM accessor was deleted but the migration to drop the column was never written; status fields replaced by a different mechanism but left in the schema."
+          - "PostgreSQL has no per-column write tracking, so this is a heuristic. Confirm by grepping the codebase for the column name before dropping."
+          - "Consider also `always_null_columns` — same diagnosis from a different angle."
+        ai_prompt: "Drop these unused PostgreSQL columns. For each column: search the application code for any reference to the column name (Ruby, SQL, fixtures, views), and only if zero references found generate a Rails migration that removes the column with a `safety_assured` block. Include the column type and default in the rollback."
+
+      always_null_columns:
+        title: "Always-NULL Columns"
+        what: "Nullable columns where 100% of rows are NULL — the application has stopped (or never started) writing them."
+        how: "Reads pg_stats.null_frac >= 0.999 (effectively all NULL) and excludes columns with a NOT NULL constraint. Joins pg_attrdef to surface any leftover column default."
+        nuances:
+          - "null_frac is sampled — run ANALYZE first if you doubt the value. Re-check after a representative workload window."
+          - "A column may be NULL because the writing code path is rarely hit (e.g. premium-only fields, opt-in features). Check before dropping."
+          - "If null_pct = 100 AND there is a non-NULL default, the default is unused — also worth removing alongside the column."
+          - "Some ORMs serialize empty strings as '' rather than NULL; this report won't catch always-empty columns. Add a separate report or query if you need that signal."
+          - "Compare with `unused_columns` — that report catches single-value columns; this one catches all-NULL columns. Together they cover the most common dead-column patterns."
+        ai_prompt: "Drop these always-NULL PostgreSQL columns. For each: confirm via codebase search that no writer references the column, then generate a Rails migration removing the column. If the rollback should restore data, note that there is none — the column was empty."
+
       missing_validations:
         title: "Missing Validations"
         what: "Unique indexes in the database without corresponding uniqueness validations in Rails models."
@@ -475,3 +525,8 @@ en:
       pool_saturation: "Connection pool is saturated. Risk of connection exhaustion and application errors."
       high_connection_churn: "High connection churn rate. Implement connection pooling to reduce overhead."
       too_many_short_connections: "Too many short-lived connections. Application should reuse connections via pooling."
+      unused_column: "Column has only one distinct value across all rows. Likely never updated since creation — candidate for removal."
+      always_null_column: "Column is 100% NULL. Application no longer writes to this field — candidate for removal."
+      hot_rows: "Same rows are updated repeatedly. Consider splitting hot/cold columns, batching writes, or using an event-log table."
+      low_hot_update: "HOT update rate is low — indexed columns are being updated. Drop the index or move the column to reduce write amplification."
+      unused_table: "Table has zero reads since the last stats reset. Candidate for archival or removal — verify the stats window first."

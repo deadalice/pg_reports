@@ -1,0 +1,30 @@
+# Tables never read since the last stats reset
+# Zero seq_scan and zero idx_scan -- code does not query them
+
+report:
+  name: unused_tables
+  module: tables
+  description: "Tables with zero read activity since the last statistics reset"
+
+  sql:
+    category: tables
+    file: unused_tables
+
+  title: "Unused Tables"
+
+  columns:
+    - schema
+    - table_name
+    - live_rows
+    - total_size_mb
+    - last_analyzed
+    - db_stats_since
+
+  parameters:
+    limit:
+      type: integer
+      default: 50
+      description: "Maximum number of results"
+
+  problem_explanations:
+    table_name: unused_table

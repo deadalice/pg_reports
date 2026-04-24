@@ -1,0 +1,32 @@
+# Tables with disproportionately heavy update activity
+# High updates_per_row signals same rows updated repeatedly; low hot_update_pct signals indexed columns are being updated
+
+report:
+  name: update_hotspots
+  module: tables
+  description: "Tables with high update-to-row ratio or poor HOT update efficiency"
+
+  sql:
+    category: tables
+    file: update_hotspots
+
+  title: "Update Hotspots"
+
+  columns:
+    - schema
+    - table_name
+    - live_rows
+    - updates
+    - updates_per_row
+    - hot_update_pct
+    - dead_rows
+
+  parameters:
+    limit:
+      type: integer
+      default: 30
+      description: "Maximum number of results"
+
+  problem_explanations:
+    updates_per_row: hot_rows
+    hot_update_pct: low_hot_update

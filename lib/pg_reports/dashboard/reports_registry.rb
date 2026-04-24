@@ -192,6 +192,27 @@ module PgReports
         missing_validations: {
           thresholds: {},
           problem_fields: []
+        },
+        unused_columns: {
+          thresholds: {},
+          problem_fields: ["column_name"]
+        },
+        always_null_columns: {
+          thresholds: {null_pct: {warning: 99, critical: 100}},
+          problem_fields: ["column_name", "null_pct"]
+        },
+
+        # === TABLES (extra) ===
+        update_hotspots: {
+          thresholds: {
+            updates_per_row: {warning: 10, critical: 100},
+            hot_update_pct: {warning: 50, critical: 20, inverted: true}
+          },
+          problem_fields: ["updates_per_row", "hot_update_pct"]
+        },
+        unused_tables: {
+          thresholds: {total_size_mb: {warning: 10, critical: 100}},
+          problem_fields: ["table_name"]
         }
       }.freeze
 
@@ -206,7 +227,7 @@ module PgReports
             expensive_queries: {name: "Expensive Queries", description: "Queries consuming most total time"},
             missing_index_queries: {name: "Missing Index Queries", description: "Queries potentially missing indexes"},
             low_cache_hit_queries: {name: "Low Cache Hit", description: "Queries with poor cache utilization"},
-            temp_file_queries: {name: "Temp File Queries", description: "Queries spilling to disk", new: true},
+            temp_file_queries: {name: "Temp File Queries", description: "Queries spilling to disk"},
             all_queries: {name: "All Queries", description: "All query statistics"}
           }
         },
@@ -219,11 +240,11 @@ module PgReports
             duplicate_indexes: {name: "Duplicate Indexes", description: "Redundant indexes"},
             invalid_indexes: {name: "Invalid Indexes", description: "Indexes that failed to build"},
             missing_indexes: {name: "Missing Indexes", description: "Tables potentially missing indexes"},
-            inefficient_indexes: {name: "Inefficient Indexes", description: "Indexes with high read-to-fetch ratio", new: true},
+            inefficient_indexes: {name: "Inefficient Indexes", description: "Indexes with high read-to-fetch ratio"},
             index_usage: {name: "Index Usage", description: "Index scan statistics"},
             bloated_indexes: {name: "Bloated Indexes", description: "Indexes with high bloat"},
-            fk_without_indexes: {name: "FK Without Indexes", description: "Foreign keys missing indexes", new: true},
-            index_correlation: {name: "Index Correlation", description: "Low physical correlation indexes", new: true},
+            fk_without_indexes: {name: "FK Without Indexes", description: "Foreign keys missing indexes"},
+            index_correlation: {name: "Index Correlation", description: "Low physical correlation indexes"},
             index_sizes: {name: "Index Sizes", description: "Index disk usage"}
           }
         },
@@ -238,8 +259,10 @@ module PgReports
             row_counts: {name: "Row Counts", description: "Table row counts"},
             cache_hit_ratios: {name: "Cache Hit Ratios", description: "Table cache statistics"},
             seq_scans: {name: "Sequential Scans", description: "Tables with high sequential scans"},
-            tables_without_pk: {name: "No Primary Key", description: "Tables missing primary keys", new: true},
-            recently_modified: {name: "Recently Modified", description: "Tables with recent activity"}
+            tables_without_pk: {name: "No Primary Key", description: "Tables missing primary keys"},
+            recently_modified: {name: "Recently Modified", description: "Tables with recent activity"},
+            update_hotspots: {name: "Update Hotspots", description: "Same rows or indexed columns updated repeatedly", new: true},
+            unused_tables: {name: "Unused Tables", description: "Tables never queried since the last stats reset", new: true}
           }
         },
         connections: {
@@ -268,8 +291,8 @@ module PgReports
             settings: {name: "Settings", description: "PostgreSQL configuration"},
             extensions: {name: "Extensions", description: "Installed extensions"},
             activity_overview: {name: "Activity Overview", description: "Current activity summary"},
-            wraparound_risk: {name: "Wraparound Risk", description: "Transaction ID wraparound proximity", new: true},
-            checkpoint_stats: {name: "Checkpoint Stats", description: "Checkpoint and bgwriter statistics", new: true},
+            wraparound_risk: {name: "Wraparound Risk", description: "Transaction ID wraparound proximity"},
+            checkpoint_stats: {name: "Checkpoint Stats", description: "Checkpoint and bgwriter statistics"},
             cache_stats: {name: "Cache Stats", description: "Database cache statistics"}
           }
         },
@@ -278,7 +301,9 @@ module PgReports
           icon: "🔍",
           color: "#06b6d4",
           reports: {
-            missing_validations: {name: "Missing Validations", description: "Unique indexes without model validations"}
+            missing_validations: {name: "Missing Validations", description: "Unique indexes without model validations"},
+            unused_columns: {name: "Unused Columns", description: "Columns that have only ever held a single value", new: true},
+            always_null_columns: {name: "Always-NULL Columns", description: "Nullable columns that contain only NULL", new: true}
           }
         }
       }.freeze

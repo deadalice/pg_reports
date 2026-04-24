@@ -1,0 +1,32 @@
+# Columns whose value has never changed since table creation
+# Detects dead fields that the application code no longer touches
+
+report:
+  name: unused_columns
+  module: schema_analysis
+  description: "Columns that appear to have never been updated (still hold a single value)"
+
+  sql:
+    category: schema_analysis
+    file: unused_columns
+
+  title: "Unused Columns"
+
+  columns:
+    - schema
+    - table_name
+    - column_name
+    - data_type
+    - sole_value
+    - column_default
+    - null_pct
+    - estimated_rows
+
+  parameters:
+    limit:
+      type: integer
+      default: 100
+      description: "Maximum number of results"
+
+  problem_explanations:
+    column_name: unused_column
