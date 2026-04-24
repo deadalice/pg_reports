@@ -498,3 +498,372 @@ ru:
       hot_rows: "Одни и те же строки обновляются многократно. Рассмотрите разделение горячих/холодных колонок, батчинг записи или event-log таблицу."
       low_hot_update: "Низкий процент HOT updates — обновляются индексированные колонки. Удалите индекс или вынесите колонку, чтобы снизить write amplification."
       unused_table: "Таблица не читалась с момента последнего сброса статистики. Кандидат на архивацию или удаление — сначала проверьте окно статистики."
+
+    # UI strings shown in the dashboard chrome (buttons, modals, toasts, etc.)
+    ui:
+      branding:
+        title: "PgReports"
+        subtitle: "Дашборд анализа PostgreSQL"
+        page_title: "PgReports — Дашборд"
+      navigation:
+        dashboard: "Дашборд"
+        back: "← Назад"
+      actions:
+        cancel: "Отмена"
+        retry: "Повторить"
+        copy: "📋 Копировать"
+        copy_query: "📋 Копировать запрос"
+        copy_code: "📋 Копировать код"
+        copy_to_clipboard_title: "Скопировать в буфер обмена"
+        copied_feedback: "✓ Скопировано!"
+        clear_all: "Очистить всё"
+        run_report: "▶ Запустить отчёт"
+        export: "⬇ Экспорт"
+        download_text: "📄 Текст (.txt)"
+        download_csv: "📊 CSV (.csv)"
+        download_json: "📋 JSON (.json)"
+        download: "📥 Скачать"
+        copy_ai_prompt: "Копировать промпт"
+        send_telegram: "📨 Telegram"
+        sending: "Отправка..."
+        reset_statistics: "🗑️ Сбросить статистику"
+        resetting: "Сброс..."
+        confirm_reset: "Да, сбросить"
+        create_extension: "⚡ Создать расширение"
+        creating: "Создание..."
+        ide_settings_button_title: "Настройки IDE"
+        explain_analyze: "📊 EXPLAIN ANALYZE"
+        execute_query: "▶ Выполнить запрос"
+        create_migration_file: "📁 Создать файл и открыть в IDE"
+        start_monitoring: "▶ Запустить мониторинг"
+        stop_monitoring: "⏹ Остановить мониторинг"
+        starting: "Запуск..."
+        stopping: "Остановка..."
+        load_history: "📜 Загрузить историю (50)"
+        loading: "Загрузка..."
+        running: "Выполнение..."
+        save_for_comparison: "📌 Сохранить для сравнения"
+        saved_marker: "📌 Сохранено"
+      status:
+        pg_stat_ready: "pg_stat_statements готов"
+        extension_installed: "Расширение установлено, не предзагружено"
+        preloaded: "Предзагружено, расширение не создано"
+        not_configured: "Не настроено"
+        monitoring_unavailable: "Live-мониторинг недоступен"
+      modals:
+        enable_pg_stat_title: "Включение pg_stat_statements"
+        enable_pg_stat_intro: "Чтобы включить pg_stat_statements, выполните следующие шаги:"
+        edit_postgresql_conf: "Отредактируйте postgresql.conf:"
+        restart_postgresql: "Перезапустите PostgreSQL:"
+        create_extension_step: "Создайте расширение:"
+        enable_button_note: "Или нажмите кнопку «Создать расширение» после перезапуска."
+        reset_stats_title: "⚠️ Сброс статистики"
+        reset_stats_confirm: "Вы уверены, что хотите сбросить статистику pg_stat_statements?"
+        reset_stats_warning: "Это действие очистит всю собранную статистику запросов и не может быть отменено."
+        ide_settings_title: "⚙️ Настройки IDE"
+        problem_detected_title: "⚠️ Обнаружена проблема"
+        query_analyzer_title: "📊 Анализатор запроса"
+        query_label: "Запрос:"
+        parameters_label: "Параметры:"
+        migration_title: "🗑️ Миграция удаления индекса"
+        migration_subtitle: "Сгенерированная миграция для удаления индекса:"
+        migration_warning: "Создание миграции сгенерирует файл миграции в вашем проекте. Запуск этой миграции удалит индекс из БД, что может значительно повлиять на производительность приложения."
+        migration_warning_dev_only: "Эту операцию следует выполнять только в локальном dev-окружении."
+        query_execution_disabled_title: "⚠️ Выполнение запросов отключено"
+        query_execution_disabled_intro: "Чтобы включить эту функцию, добавьте в конфигурацию:"
+      settings:
+        default_ide_label: "IDE по умолчанию для ссылок на исходники:"
+        ide_show_menu: "Показывать меню (по умолчанию)"
+        ide_vscode_wsl: "VS Code (WSL)"
+        ide_vscode: "VS Code"
+        ide_rubymine: "RubyMine"
+        ide_intellij: "IntelliJ IDEA"
+        ide_cursor_wsl: "Cursor (WSL)"
+        ide_cursor: "Cursor"
+      monitoring:
+        live_title: "Live-мониторинг"
+        update_interval: "Обновление каждые 5с"
+        toggle_title: "Переключить live-мониторинг"
+        query_monitor_title: "Монитор SQL-запросов"
+        session_label: "Сессия:"
+        queries_label: "Запросов:"
+        feed_empty: "Нажмите «Запустить мониторинг», чтобы начать захват SQL-запросов"
+        feed_no_queries: "Запросы пока не захвачены..."
+        unknown_source: "Источник неизвестен"
+        expand_collapse_title: "Развернуть / свернуть"
+      metrics:
+        connections_label: "Соединения"
+        tps_label: "TPS"
+        tps_unit: "тр/с"
+        commit_label: "commit:"
+        rollback_label: "rollback:"
+        cache_hit_label: "Cache hit"
+        cache_hit_detail: "блоки heap из кэша"
+        long_queries_label: "Долгие запросы"
+        queries_unit: "запросов"
+        long_running_threshold: "> 60с выполнения"
+        blocked_label: "Заблокировано"
+        processes_unit: "процессов"
+        waiting_for_locks: "ждут блокировок"
+        percent_used_suffix: "% использовано"
+      categories:
+        requires_pg_stat: "🔒 Требуется pg_stat_statements"
+        reports_count_suffix: "отчётов"
+      documentation:
+        toggle_title: "📖 Что показывает этот отчёт?"
+        what_section: "📋 Что"
+        why_section: "❓ Почему это важно"
+        nuances_section: "⚠️ Нюансы"
+        thresholds_section: "📊 Пороги"
+        threshold_warning_label: "⚠️ Warning:"
+        threshold_critical_label: "🔴 Critical:"
+        threshold_inverted_note: "(меньше — хуже)"
+      filters:
+        title: "🔍 Параметры фильтрации"
+        current_value: "сейчас"
+      saved:
+        title: "📌 Сохранено для сравнения"
+        saved_at_prefix: "▸ Сохранено:"
+        click_to_expand: "Нажмите, чтобы развернуть"
+        confirm_clear_all: "Удалить все сохранённые записи для этого отчёта?"
+        remove_title: "Удалить"
+      results:
+        title: "Результаты"
+        click_run_hint: "Нажмите «Запустить отчёт», чтобы получить данные"
+        empty_message: "Проблем не найдено. Всё хорошо!"
+        showing_first_of_total: "Показаны первые %{count} из %{total} строк"
+        no_rows_returned: "Нет строк"
+        rows_label: "Строк:"
+        execution_time_label: "Время выполнения:"
+        null_placeholder: "<null>"
+      sections:
+        recommendation: "💡 Рекомендация"
+        detected_issues: "⚠️ Обнаруженные проблемы"
+        execution_plan: "📊 План выполнения"
+        line_label: "Строка"
+        current_label: "Текущее:"
+        threshold_label: "Порог:"
+        threshold_inverted_long: "(инверсия: меньшие значения — хуже)"
+        warning_eq: "warning"
+        critical_eq: "critical"
+      levels:
+        critical: "🔴 Критично"
+        warning: "⚠️ Внимание"
+      errors:
+        error_prefix: "Ошибка:"
+        unable_fetch_metrics: "Не удалось получить статистику БД."
+        possible_causes: "Возможные причины:"
+        cause_permissions: "Недостаточно прав для доступа к БД"
+        cause_views: "Системные представления статистики недоступны"
+        cause_connection: "Проблемы с соединением"
+        fetch_metrics_failed: "Не удалось получить live-метрики"
+        fetch_metrics_check_perms: "Не удалось получить статистику БД. Проверьте права доступа."
+        insufficient_database_perms: "Недостаточно прав для доступа к системным представлениям статистики"
+        network_error_prefix: "Сетевая ошибка:"
+        copy_failed: "Не удалось скопировать"
+        run_report_first: "Сначала запустите отчёт"
+        run_report_failed: "Не удалось запустить отчёт"
+        report_not_found: "Отчёт не найден"
+        send_telegram_failed: "Не удалось отправить в Telegram"
+        reset_stats_failed: "Не удалось сбросить статистику"
+        start_monitoring_failed: "Не удалось запустить мониторинг"
+        stop_monitoring_failed: "Не удалось остановить мониторинг"
+        load_history_failed: "Не удалось загрузить историю:"
+        no_query_history: "История запросов не найдена"
+        decode_query_failed: "Не удалось декодировать запрос"
+        explain_analyze_failed: "Не удалось выполнить EXPLAIN ANALYZE"
+        execute_query_failed: "Не удалось выполнить запрос"
+        create_migration_failed: "Не удалось создать миграцию"
+        explain_disabled_toast: "⚠️ EXPLAIN ANALYZE отключен. Включите в конфигурации: config.allow_raw_query_execution = true"
+        execute_disabled_toast: "⚠️ Выполнение запросов отключено. Включите в конфигурации: config.allow_raw_query_execution = true"
+        query_monitoring_error: "Ошибка мониторинга запросов"
+        query_hash_required: "Требуется хэш запроса"
+        query_execution_disabled: "Выполнение запросов из дашборда отключено. Включите в конфигурации: 'config.allow_raw_query_execution = true'"
+        query_not_found_expired: "Запрос не найден или истёк срок действия. Обновите страницу."
+        security_violation_prefix: "Нарушение безопасности:"
+        trigger_variables_not_allowed: "Нельзя выполнить EXPLAIN ANALYZE для запросов с триггерными переменными (NEW, OLD). Они доступны только в контексте триггерных функций."
+        missing_parameter_values: "Укажите значения для всех плейсхолдеров параметров ($1, $2 и т.д.)"
+        migration_dev_only: "Создание миграций разрешено только в development-окружении"
+        filename_code_required: "Имя файла и код обязательны"
+        invalid_filename_format: "Неверный формат имени файла миграции"
+        migrations_dir_not_found: "Каталог миграций не найден"
+      success:
+        statistics_reset: "Статистика успешно сброшена"
+        report_generated: "Отчёт успешно сгенерирован"
+        ai_prompt_copied: "AI-промпт скопирован в буфер обмена"
+        explain_copied: "Вывод EXPLAIN скопирован в буфер обмена"
+        migration_copied: "Код миграции скопирован в буфер обмена"
+        migration_created: "Миграция успешно создана"
+        telegram_sent: "Отчёт отправлен в Telegram"
+        queries_loaded: "Загружено %{count} запросов из истории"
+        record_saved: "Запись сохранена для сравнения"
+        record_removed: "Запись удалена"
+        record_removed_saved: "Запись удалена из сохранённых"
+        all_saved_cleared: "Все сохранённые записи очищены"
+
+    # Category names (shown on the dashboard grid)
+    categories:
+      queries: "Запросы"
+      indexes: "Индексы"
+      tables: "Таблицы"
+      connections: "Соединения"
+      system: "Система"
+      schema_analysis: "Анализ схемы"
+
+    # Report names and short descriptions (shown on the dashboard listing)
+    reports:
+      slow_queries:
+        name: "Медленные запросы"
+        description: "Запросы с высоким средним временем выполнения"
+      heavy_queries:
+        name: "Частые запросы"
+        description: "Самые часто вызываемые запросы"
+      expensive_queries:
+        name: "Дорогие запросы"
+        description: "Запросы с наибольшим суммарным временем"
+      missing_index_queries:
+        name: "Без индексов"
+        description: "Запросы, которым возможно нужны индексы"
+      low_cache_hit_queries:
+        name: "Низкий cache hit"
+        description: "Запросы с плохой утилизацией кэша"
+      temp_file_queries:
+        name: "Сброс на диск"
+        description: "Запросы, сбрасывающие данные на диск"
+      all_queries:
+        name: "Все запросы"
+        description: "Полная статистика запросов"
+      unused_indexes:
+        name: "Неиспользуемые индексы"
+        description: "Индексы, редко или никогда не сканируемые"
+      duplicate_indexes:
+        name: "Дубликаты индексов"
+        description: "Избыточные индексы"
+      invalid_indexes:
+        name: "Невалидные индексы"
+        description: "Индексы, которые не удалось построить"
+      missing_indexes:
+        name: "Отсутствующие индексы"
+        description: "Таблицы, которым возможно нужны индексы"
+      inefficient_indexes:
+        name: "Неэффективные индексы"
+        description: "Индексы с высоким read-to-fetch ratio"
+      index_usage:
+        name: "Использование индексов"
+        description: "Статистика сканирования индексов"
+      bloated_indexes:
+        name: "Раздутые индексы"
+        description: "Индексы с высоким bloat"
+      fk_without_indexes:
+        name: "FK без индексов"
+        description: "Внешние ключи без поддерживающего индекса"
+      index_correlation:
+        name: "Корреляция индексов"
+        description: "Индексы с низкой физической корреляцией"
+      index_sizes:
+        name: "Размеры индексов"
+        description: "Использование диска индексами"
+      table_sizes:
+        name: "Размеры таблиц"
+        description: "Использование диска таблицами"
+      bloated_tables:
+        name: "Раздутые таблицы"
+        description: "Таблицы с высокой долей dead tuples"
+      vacuum_needed:
+        name: "Нужен VACUUM"
+        description: "Таблицы, которым требуется VACUUM"
+      row_counts:
+        name: "Количество строк"
+        description: "Число строк в таблицах"
+      cache_hit_ratios:
+        name: "Cache hit таблиц"
+        description: "Статистика кэша по таблицам"
+      seq_scans:
+        name: "Sequential scans"
+        description: "Таблицы с большим числом sequential scan"
+      tables_without_pk:
+        name: "Без первичного ключа"
+        description: "Таблицы без первичного ключа"
+      recently_modified:
+        name: "Недавно изменённые"
+        description: "Таблицы с недавней активностью"
+      update_hotspots:
+        name: "Горячие точки UPDATE"
+        description: "Одни и те же строки или индексированные колонки часто обновляются"
+      unused_tables:
+        name: "Неиспользуемые таблицы"
+        description: "Таблицы, не запрашиваемые с момента последнего сброса статистики"
+      active_connections:
+        name: "Активные соединения"
+        description: "Текущие подключения к БД"
+      connection_stats:
+        name: "Статистика соединений"
+        description: "Соединения по состоянию"
+      long_running_queries:
+        name: "Долгие запросы"
+        description: "Запросы, выполняющиеся долго"
+      blocking_queries:
+        name: "Блокирующие запросы"
+        description: "Запросы, блокирующие другие"
+      locks:
+        name: "Блокировки"
+        description: "Текущие блокировки в БД"
+      idle_connections:
+        name: "Idle соединения"
+        description: "Простаивающие соединения"
+      pool_usage:
+        name: "Использование пула"
+        description: "Утилизация пула соединений"
+      pool_wait_times:
+        name: "Время ожидания"
+        description: "Анализ ожидания ресурсов"
+      pool_saturation:
+        name: "Насыщение пула"
+        description: "Предупреждения о здоровье пула"
+      connection_churn:
+        name: "Churn соединений"
+        description: "Анализ жизненного цикла соединений"
+      database_sizes:
+        name: "Размеры баз данных"
+        description: "Размер всех баз"
+      settings:
+        name: "Настройки"
+        description: "Конфигурация PostgreSQL"
+      extensions:
+        name: "Расширения"
+        description: "Установленные расширения"
+      activity_overview:
+        name: "Обзор активности"
+        description: "Сводка текущей активности"
+      wraparound_risk:
+        name: "Риск wraparound"
+        description: "Близость к лимиту Transaction ID"
+      checkpoint_stats:
+        name: "Статистика checkpoint"
+        description: "Метрики чекпоинтов и bgwriter"
+      cache_stats:
+        name: "Статистика кэша"
+        description: "Статистика кэширования БД"
+      missing_validations:
+        name: "Отсутствующие валидации"
+        description: "Уникальные индексы без валидаций модели"
+      unused_columns:
+        name: "Неиспользуемые колонки"
+        description: "Колонки, имеющие лишь одно значение"
+      always_null_columns:
+        name: "Всегда NULL"
+        description: "Nullable-колонки, содержащие только NULL"
+
+    # Filter parameter labels and descriptions
+    parameters:
+      limit:
+        label: "Лимит"
+        description: "Максимальное число результатов"
+      min_calls:
+        label: "Мин. вызовов"
+        description: "Минимальное число вызовов запроса"
+      min_duration_seconds:
+        label: "Мин. длительность (сек)"
+        description: "Минимальная длительность запроса в секундах"
+      threshold_label: "%{field} — порог"
+      threshold_description: "Переопределить порог для %{field}"

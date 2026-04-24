@@ -124,8 +124,8 @@ module PgReports
         params[name] = {
           type: param_config["type"],
           default: param_config["default"],
-          description: param_config["description"],
-          label: name.to_s.titleize
+          description: I18n.t("pg_reports.parameters.#{name}.description", default: param_config["description"]),
+          label: I18n.t("pg_reports.parameters.#{name}.label", default: name.to_s.titleize)
         }
       end
 
@@ -138,8 +138,8 @@ module PgReports
           params["#{field_name}_threshold"] = {
             type: filter["cast"] || "integer",
             default: PgReports.config.public_send(config_key),
-            description: "Override threshold for #{field_name}",
-            label: "#{field_name.titleize} Threshold",
+            description: I18n.t("pg_reports.parameters.threshold_description", field: field_name),
+            label: I18n.t("pg_reports.parameters.threshold_label", field: field_name.titleize),
             current_config: PgReports.config.public_send(config_key),
             is_threshold: true
           }

@@ -498,3 +498,372 @@ uk:
       hot_rows: "Ті самі рядки оновлюються багаторазово. Розгляньте розділення гарячих/холодних колонок, батчинг запису або event-log таблицю."
       low_hot_update: "Низький відсоток HOT updates — оновлюються індексовані колонки. Видаліть індекс або винесіть колонку, щоб знизити write amplification."
       unused_table: "Таблиця не читалася з моменту останнього скидання статистики. Кандидат на архівацію або видалення — спочатку перевірте вікно статистики."
+
+    # UI strings shown in the dashboard chrome (buttons, modals, toasts, etc.)
+    ui:
+      branding:
+        title: "PgReports"
+        subtitle: "Дашборд аналізу PostgreSQL"
+        page_title: "PgReports — Дашборд"
+      navigation:
+        dashboard: "Дашборд"
+        back: "← Назад"
+      actions:
+        cancel: "Скасувати"
+        retry: "Повторити"
+        copy: "📋 Копіювати"
+        copy_query: "📋 Копіювати запит"
+        copy_code: "📋 Копіювати код"
+        copy_to_clipboard_title: "Скопіювати в буфер обміну"
+        copied_feedback: "✓ Скопійовано!"
+        clear_all: "Очистити все"
+        run_report: "▶ Запустити звіт"
+        export: "⬇ Експорт"
+        download_text: "📄 Текст (.txt)"
+        download_csv: "📊 CSV (.csv)"
+        download_json: "📋 JSON (.json)"
+        download: "📥 Завантажити"
+        copy_ai_prompt: "Копіювати промпт"
+        send_telegram: "📨 Telegram"
+        sending: "Надсилання..."
+        reset_statistics: "🗑️ Скинути статистику"
+        resetting: "Скидання..."
+        confirm_reset: "Так, скинути"
+        create_extension: "⚡ Створити розширення"
+        creating: "Створення..."
+        ide_settings_button_title: "Налаштування IDE"
+        explain_analyze: "📊 EXPLAIN ANALYZE"
+        execute_query: "▶ Виконати запит"
+        create_migration_file: "📁 Створити файл і відкрити в IDE"
+        start_monitoring: "▶ Запустити моніторинг"
+        stop_monitoring: "⏹ Зупинити моніторинг"
+        starting: "Запуск..."
+        stopping: "Зупинка..."
+        load_history: "📜 Завантажити історію (50)"
+        loading: "Завантаження..."
+        running: "Виконання..."
+        save_for_comparison: "📌 Зберегти для порівняння"
+        saved_marker: "📌 Збережено"
+      status:
+        pg_stat_ready: "pg_stat_statements готовий"
+        extension_installed: "Розширення встановлено, не передзавантажено"
+        preloaded: "Передзавантажено, розширення не створено"
+        not_configured: "Не налаштовано"
+        monitoring_unavailable: "Live-моніторинг недоступний"
+      modals:
+        enable_pg_stat_title: "Увімкнення pg_stat_statements"
+        enable_pg_stat_intro: "Щоб увімкнути pg_stat_statements, виконайте такі кроки:"
+        edit_postgresql_conf: "Відредагуйте postgresql.conf:"
+        restart_postgresql: "Перезапустіть PostgreSQL:"
+        create_extension_step: "Створіть розширення:"
+        enable_button_note: "Або натисніть кнопку «Створити розширення» після перезапуску."
+        reset_stats_title: "⚠️ Скидання статистики"
+        reset_stats_confirm: "Ви впевнені, що хочете скинути статистику pg_stat_statements?"
+        reset_stats_warning: "Ця дія очистить усю зібрану статистику запитів і не може бути скасована."
+        ide_settings_title: "⚙️ Налаштування IDE"
+        problem_detected_title: "⚠️ Виявлено проблему"
+        query_analyzer_title: "📊 Аналізатор запиту"
+        query_label: "Запит:"
+        parameters_label: "Параметри:"
+        migration_title: "🗑️ Міграція видалення індексу"
+        migration_subtitle: "Згенерована міграція для видалення індексу:"
+        migration_warning: "Створення міграції згенерує файл міграції у вашому проєкті. Запуск цієї міграції видалить індекс із БД, що може значно вплинути на продуктивність застосунку."
+        migration_warning_dev_only: "Цю операцію слід виконувати лише в локальному dev-середовищі."
+        query_execution_disabled_title: "⚠️ Виконання запитів вимкнено"
+        query_execution_disabled_intro: "Щоб увімкнути цю функцію, додайте до конфігурації:"
+      settings:
+        default_ide_label: "IDE за замовчуванням для посилань на джерела:"
+        ide_show_menu: "Показувати меню (за замовчуванням)"
+        ide_vscode_wsl: "VS Code (WSL)"
+        ide_vscode: "VS Code"
+        ide_rubymine: "RubyMine"
+        ide_intellij: "IntelliJ IDEA"
+        ide_cursor_wsl: "Cursor (WSL)"
+        ide_cursor: "Cursor"
+      monitoring:
+        live_title: "Live-моніторинг"
+        update_interval: "Оновлення кожні 5с"
+        toggle_title: "Перемкнути live-моніторинг"
+        query_monitor_title: "Монітор SQL-запитів"
+        session_label: "Сесія:"
+        queries_label: "Запитів:"
+        feed_empty: "Натисніть «Запустити моніторинг», щоб почати захоплення SQL-запитів"
+        feed_no_queries: "Запитів поки не захоплено..."
+        unknown_source: "Джерело невідоме"
+        expand_collapse_title: "Розгорнути / згорнути"
+      metrics:
+        connections_label: "З'єднання"
+        tps_label: "TPS"
+        tps_unit: "тр/с"
+        commit_label: "commit:"
+        rollback_label: "rollback:"
+        cache_hit_label: "Cache hit"
+        cache_hit_detail: "блоки heap із кешу"
+        long_queries_label: "Довгі запити"
+        queries_unit: "запитів"
+        long_running_threshold: "> 60с виконання"
+        blocked_label: "Заблоковано"
+        processes_unit: "процесів"
+        waiting_for_locks: "чекають блокувань"
+        percent_used_suffix: "% використано"
+      categories:
+        requires_pg_stat: "🔒 Потрібен pg_stat_statements"
+        reports_count_suffix: "звітів"
+      documentation:
+        toggle_title: "📖 Що показує цей звіт?"
+        what_section: "📋 Що"
+        why_section: "❓ Чому це важливо"
+        nuances_section: "⚠️ Нюанси"
+        thresholds_section: "📊 Пороги"
+        threshold_warning_label: "⚠️ Warning:"
+        threshold_critical_label: "🔴 Critical:"
+        threshold_inverted_note: "(менше — гірше)"
+      filters:
+        title: "🔍 Параметри фільтрації"
+        current_value: "зараз"
+      saved:
+        title: "📌 Збережено для порівняння"
+        saved_at_prefix: "▸ Збережено:"
+        click_to_expand: "Натисніть, щоб розгорнути"
+        confirm_clear_all: "Видалити всі збережені записи для цього звіту?"
+        remove_title: "Видалити"
+      results:
+        title: "Результати"
+        click_run_hint: "Натисніть «Запустити звіт», щоб отримати дані"
+        empty_message: "Проблем не знайдено. Усе добре!"
+        showing_first_of_total: "Показані перші %{count} з %{total} рядків"
+        no_rows_returned: "Рядків немає"
+        rows_label: "Рядків:"
+        execution_time_label: "Час виконання:"
+        null_placeholder: "<null>"
+      sections:
+        recommendation: "💡 Рекомендація"
+        detected_issues: "⚠️ Виявлені проблеми"
+        execution_plan: "📊 План виконання"
+        line_label: "Рядок"
+        current_label: "Поточне:"
+        threshold_label: "Поріг:"
+        threshold_inverted_long: "(інверсія: менші значення — гірше)"
+        warning_eq: "warning"
+        critical_eq: "critical"
+      levels:
+        critical: "🔴 Критично"
+        warning: "⚠️ Увага"
+      errors:
+        error_prefix: "Помилка:"
+        unable_fetch_metrics: "Не вдалося отримати статистику БД."
+        possible_causes: "Можливі причини:"
+        cause_permissions: "Недостатньо прав для доступу до БД"
+        cause_views: "Системні представлення статистики недоступні"
+        cause_connection: "Проблеми зі з'єднанням"
+        fetch_metrics_failed: "Не вдалося отримати live-метрики"
+        fetch_metrics_check_perms: "Не вдалося отримати статистику БД. Перевірте права доступу."
+        insufficient_database_perms: "Недостатньо прав для доступу до системних представлень статистики"
+        network_error_prefix: "Мережева помилка:"
+        copy_failed: "Не вдалося скопіювати"
+        run_report_first: "Спочатку запустіть звіт"
+        run_report_failed: "Не вдалося запустити звіт"
+        report_not_found: "Звіт не знайдено"
+        send_telegram_failed: "Не вдалося надіслати в Telegram"
+        reset_stats_failed: "Не вдалося скинути статистику"
+        start_monitoring_failed: "Не вдалося запустити моніторинг"
+        stop_monitoring_failed: "Не вдалося зупинити моніторинг"
+        load_history_failed: "Не вдалося завантажити історію:"
+        no_query_history: "Історію запитів не знайдено"
+        decode_query_failed: "Не вдалося декодувати запит"
+        explain_analyze_failed: "Не вдалося виконати EXPLAIN ANALYZE"
+        execute_query_failed: "Не вдалося виконати запит"
+        create_migration_failed: "Не вдалося створити міграцію"
+        explain_disabled_toast: "⚠️ EXPLAIN ANALYZE вимкнено. Увімкніть у конфігурації: config.allow_raw_query_execution = true"
+        execute_disabled_toast: "⚠️ Виконання запитів вимкнено. Увімкніть у конфігурації: config.allow_raw_query_execution = true"
+        query_monitoring_error: "Помилка моніторингу запитів"
+        query_hash_required: "Потрібен хеш запиту"
+        query_execution_disabled: "Виконання запитів із дашборду вимкнено. Увімкніть у конфігурації: 'config.allow_raw_query_execution = true'"
+        query_not_found_expired: "Запит не знайдено або термін дії минув. Оновіть сторінку."
+        security_violation_prefix: "Порушення безпеки:"
+        trigger_variables_not_allowed: "Не можна виконати EXPLAIN ANALYZE для запитів із тригерними змінними (NEW, OLD). Вони доступні лише в контексті тригерних функцій."
+        missing_parameter_values: "Вкажіть значення для всіх плейсхолдерів параметрів ($1, $2 тощо)"
+        migration_dev_only: "Створення міграцій дозволено лише в development-середовищі"
+        filename_code_required: "Ім'я файлу та код обов'язкові"
+        invalid_filename_format: "Невірний формат імені файлу міграції"
+        migrations_dir_not_found: "Каталог міграцій не знайдено"
+      success:
+        statistics_reset: "Статистику успішно скинуто"
+        report_generated: "Звіт успішно згенеровано"
+        ai_prompt_copied: "AI-промпт скопійовано в буфер обміну"
+        explain_copied: "Вивід EXPLAIN скопійовано в буфер обміну"
+        migration_copied: "Код міграції скопійовано в буфер обміну"
+        migration_created: "Міграцію успішно створено"
+        telegram_sent: "Звіт надіслано в Telegram"
+        queries_loaded: "Завантажено %{count} запитів з історії"
+        record_saved: "Запис збережено для порівняння"
+        record_removed: "Запис видалено"
+        record_removed_saved: "Запис видалено зі збережених"
+        all_saved_cleared: "Усі збережені записи очищено"
+
+    # Category names (shown on the dashboard grid)
+    categories:
+      queries: "Запити"
+      indexes: "Індекси"
+      tables: "Таблиці"
+      connections: "З'єднання"
+      system: "Система"
+      schema_analysis: "Аналіз схеми"
+
+    # Report names and short descriptions (shown on the dashboard listing)
+    reports:
+      slow_queries:
+        name: "Повільні запити"
+        description: "Запити з високим середнім часом виконання"
+      heavy_queries:
+        name: "Часті запити"
+        description: "Найчастіше викликані запити"
+      expensive_queries:
+        name: "Дорогі запити"
+        description: "Запити з найбільшим сумарним часом"
+      missing_index_queries:
+        name: "Без індексів"
+        description: "Запити, яким, можливо, потрібні індекси"
+      low_cache_hit_queries:
+        name: "Низький cache hit"
+        description: "Запити з поганою утилізацією кешу"
+      temp_file_queries:
+        name: "Скидання на диск"
+        description: "Запити, що скидають дані на диск"
+      all_queries:
+        name: "Усі запити"
+        description: "Повна статистика запитів"
+      unused_indexes:
+        name: "Невикористовувані індекси"
+        description: "Індекси, що рідко або ніколи не скануються"
+      duplicate_indexes:
+        name: "Дублікати індексів"
+        description: "Надлишкові індекси"
+      invalid_indexes:
+        name: "Невалідні індекси"
+        description: "Індекси, які не вдалося побудувати"
+      missing_indexes:
+        name: "Відсутні індекси"
+        description: "Таблиці, яким, можливо, потрібні індекси"
+      inefficient_indexes:
+        name: "Неефективні індекси"
+        description: "Індекси з високим read-to-fetch ratio"
+      index_usage:
+        name: "Використання індексів"
+        description: "Статистика сканування індексів"
+      bloated_indexes:
+        name: "Роздуті індекси"
+        description: "Індекси з високим bloat"
+      fk_without_indexes:
+        name: "FK без індексів"
+        description: "Зовнішні ключі без підтримуючого індексу"
+      index_correlation:
+        name: "Кореляція індексів"
+        description: "Індекси з низькою фізичною кореляцією"
+      index_sizes:
+        name: "Розміри індексів"
+        description: "Використання диска індексами"
+      table_sizes:
+        name: "Розміри таблиць"
+        description: "Використання диска таблицями"
+      bloated_tables:
+        name: "Роздуті таблиці"
+        description: "Таблиці з високою часткою dead tuples"
+      vacuum_needed:
+        name: "Потрібен VACUUM"
+        description: "Таблиці, яким потрібен VACUUM"
+      row_counts:
+        name: "Кількість рядків"
+        description: "Число рядків у таблицях"
+      cache_hit_ratios:
+        name: "Cache hit таблиць"
+        description: "Статистика кешу по таблицях"
+      seq_scans:
+        name: "Sequential scans"
+        description: "Таблиці з великою кількістю sequential scan"
+      tables_without_pk:
+        name: "Без первинного ключа"
+        description: "Таблиці без первинного ключа"
+      recently_modified:
+        name: "Нещодавно змінені"
+        description: "Таблиці з нещодавньою активністю"
+      update_hotspots:
+        name: "Гарячі точки UPDATE"
+        description: "Ті самі рядки або індексовані колонки часто оновлюються"
+      unused_tables:
+        name: "Невикористовувані таблиці"
+        description: "Таблиці, які не запитуються з моменту останнього скидання статистики"
+      active_connections:
+        name: "Активні з'єднання"
+        description: "Поточні підключення до БД"
+      connection_stats:
+        name: "Статистика з'єднань"
+        description: "З'єднання за станом"
+      long_running_queries:
+        name: "Довгі запити"
+        description: "Запити, що виконуються довго"
+      blocking_queries:
+        name: "Блокуючі запити"
+        description: "Запити, що блокують інші"
+      locks:
+        name: "Блокування"
+        description: "Поточні блокування в БД"
+      idle_connections:
+        name: "Idle з'єднання"
+        description: "З'єднання, що простоюють"
+      pool_usage:
+        name: "Використання пулу"
+        description: "Утилізація пулу з'єднань"
+      pool_wait_times:
+        name: "Час очікування"
+        description: "Аналіз очікування ресурсів"
+      pool_saturation:
+        name: "Насичення пулу"
+        description: "Попередження про здоров'я пулу"
+      connection_churn:
+        name: "Churn з'єднань"
+        description: "Аналіз життєвого циклу з'єднань"
+      database_sizes:
+        name: "Розміри баз даних"
+        description: "Розмір усіх баз"
+      settings:
+        name: "Налаштування"
+        description: "Конфігурація PostgreSQL"
+      extensions:
+        name: "Розширення"
+        description: "Встановлені розширення"
+      activity_overview:
+        name: "Огляд активності"
+        description: "Зведення поточної активності"
+      wraparound_risk:
+        name: "Ризик wraparound"
+        description: "Близькість до ліміту Transaction ID"
+      checkpoint_stats:
+        name: "Статистика checkpoint"
+        description: "Метрики чекпоінтів та bgwriter"
+      cache_stats:
+        name: "Статистика кешу"
+        description: "Статистика кешування БД"
+      missing_validations:
+        name: "Відсутні валідації"
+        description: "Унікальні індекси без валідацій моделі"
+      unused_columns:
+        name: "Невикористовувані колонки"
+        description: "Колонки, що мають лише одне значення"
+      always_null_columns:
+        name: "Завжди NULL"
+        description: "Nullable-колонки, що містять лише NULL"
+
+    # Filter parameter labels and descriptions
+    parameters:
+      limit:
+        label: "Ліміт"
+        description: "Максимальна кількість результатів"
+      min_calls:
+        label: "Мін. викликів"
+        description: "Мінімальна кількість викликів запиту"
+      min_duration_seconds:
+        label: "Мін. тривалість (сек)"
+        description: "Мінімальна тривалість запиту в секундах"
+      threshold_label: "%{field} — поріг"
+      threshold_description: "Перевизначити поріг для %{field}"

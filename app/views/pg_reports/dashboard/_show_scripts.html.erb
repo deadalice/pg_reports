@@ -233,7 +233,7 @@
   function copyToClipboard(text, btn) {
     navigator.clipboard.writeText(text).then(() => {
       const originalText = btn.textContent;
-      btn.textContent = '✓ Copied!';
+      btn.textContent = PG_REPORTS_I18N.actions.copied_feedback;
       btn.style.background = 'var(--accent-green)';
       btn.style.borderColor = 'var(--accent-green)';
       btn.style.color = 'white';
@@ -244,7 +244,7 @@
         btn.style.color = '';
       }, 1500);
     }).catch(() => {
-      showToast('Failed to copy', 'error');
+      showToast(PG_REPORTS_I18N.errors.copy_failed, 'error');
     });
   }
 
@@ -288,15 +288,15 @@
   function copyAiPrompt(el) {
     const prompt = buildAiPrompt();
     if (!prompt) {
-      showToast('Run the report first', 'error');
+      showToast(PG_REPORTS_I18N.errors.run_report_first, 'error');
       return;
     }
 
     document.getElementById('dropdown-menu').classList.remove('show');
     navigator.clipboard.writeText(prompt).then(() => {
-      showToast('AI prompt copied to clipboard');
+      showToast(PG_REPORTS_I18N.success.ai_prompt_copied);
     }).catch(() => {
-      showToast('Failed to copy', 'error');
+      showToast(PG_REPORTS_I18N.errors.copy_failed, 'error');
     });
   }
 
@@ -351,15 +351,15 @@
 
     for (const problem of problems) {
       const levelClass = problem.level === 'critical' ? 'critical' : 'warning';
-      const levelText = problem.level === 'critical' ? '🔴 Critical' : '⚠️ Warning';
+      const levelText = problem.level === 'critical' ? PG_REPORTS_I18N.levels.critical : PG_REPORTS_I18N.levels.warning;
 
       html += `
         <div class="problem-field">
           <span class="problem-field-label">${escapeHtml(problem.field)} (${levelText})</span>
           <div class="problem-field-value ${levelClass}">
-            Current: ${escapeHtml(String(problem.value))}
-            <br>Threshold: warning=${problem.threshold.warning}, critical=${problem.threshold.critical}
-            ${problem.threshold.inverted ? '<br><em>(inverted: lower values are worse)</em>' : ''}
+            ${PG_REPORTS_I18N.sections.current_label} ${escapeHtml(String(problem.value))}
+            <br>${PG_REPORTS_I18N.sections.threshold_label} ${PG_REPORTS_I18N.sections.warning_eq}=${problem.threshold.warning}, ${PG_REPORTS_I18N.sections.critical_eq}=${problem.threshold.critical}
+            ${problem.threshold.inverted ? '<br><em>' + PG_REPORTS_I18N.sections.threshold_inverted_long + '</em>' : ''}
           </div>
         </div>
       `;
@@ -372,7 +372,7 @@
     if (explanation) {
       html += `
         <div class="problem-explanation">
-          <h4>💡 Recommendation</h4>
+          <h4>${PG_REPORTS_I18N.sections.recommendation}</h4>
           <p>${escapeHtml(explanation)}</p>
         </div>
       `;
@@ -632,7 +632,7 @@
         <div class="row-detail-item${isLongText ? ' full-width' : ''}">
           <span class="row-detail-label">${escapeHtml(col)}</span>
           <div class="row-detail-value ${valueClass}">${escapeHtml(strValue)}</div>
-          ${isQuery ? `<button class="copy-btn" data-query="${escapeHtmlAttr(strValue)}" onclick="event.stopPropagation(); copyQueryFromButton(this)">📋 Copy Query</button>` : ''}
+          ${isQuery ? `<button class="copy-btn" data-query="${escapeHtmlAttr(strValue)}" onclick="event.stopPropagation(); copyQueryFromButton(this)">${PG_REPORTS_I18N.actions.copy_query}</button>` : ''}
         </div>
       `;
     });
@@ -684,7 +684,7 @@
 
     if (button) {
       button.disabled = true;
-      button.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;vertical-align:middle;"></span> Running...';
+      button.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;vertical-align:middle;"></span> ' + PG_REPORTS_I18N.actions.running;
     }
 
     if (loadingEl) loadingEl.style.display = 'flex';
@@ -761,18 +761,18 @@
           renderTableBody(data.data, data.columns, thresholds, problemFields);
         }
 
-        showToast('Report generated successfully');
+        showToast(PG_REPORTS_I18N.success.report_generated);
       } else {
-        showToast(data.error || 'Failed to run report', 'error');
+        showToast(data.error || PG_REPORTS_I18N.errors.run_report_failed, 'error');
       }
     } catch (error) {
       if (loadingEl) loadingEl.style.display = 'none';
-      showToast('Network error: ' + error.message, 'error');
+      showToast(PG_REPORTS_I18N.errors.network_error_prefix + ' ' + error.message, 'error');
     }
 
     if (button) {
       button.disabled = false;
-      button.innerHTML = '▶ Run Report';
+      button.innerHTML = PG_REPORTS_I18N.actions.run_report;
     }
   }
 
@@ -885,8 +885,8 @@
       // Remove
       saved.splice(existingIdx, 1);
       btn.classList.remove('saved');
-      btn.textContent = '📌 Save for Comparison';
-      showToast('Record removed from saved');
+      btn.textContent = PG_REPORTS_I18N.actions.save_for_comparison;
+      showToast(PG_REPORTS_I18N.success.record_removed_saved);
     } else {
       // Add
       saved.unshift({
@@ -895,8 +895,8 @@
         data: row
       });
       btn.classList.add('saved');
-      btn.textContent = '📌 Saved';
-      showToast('Record saved for comparison');
+      btn.textContent = PG_REPORTS_I18N.actions.saved_marker;
+      showToast(PG_REPORTS_I18N.success.record_saved);
     }
 
     saveSavedRecords(saved);
@@ -913,24 +913,24 @@
     const btn = document.querySelector(`.btn-save[onclick*="'${rowId}'"]`);
     if (btn) {
       btn.classList.remove('saved');
-      btn.textContent = '📌 Save for Comparison';
+      btn.textContent = PG_REPORTS_I18N.actions.save_for_comparison;
     }
 
-    showToast('Record removed');
+    showToast(PG_REPORTS_I18N.success.record_removed);
   }
 
   function clearAllSavedRecords() {
-    if (!confirm('Remove all saved records for this report?')) return;
+    if (!confirm(PG_REPORTS_I18N.saved.confirm_clear_all)) return;
     saveSavedRecords([]);
     renderSavedRecords();
 
     // Update all buttons in table
     document.querySelectorAll('.btn-save.saved').forEach(btn => {
       btn.classList.remove('saved');
-      btn.textContent = '📌 Save for Comparison';
+      btn.textContent = PG_REPORTS_I18N.actions.save_for_comparison;
     });
 
-    showToast('All saved records cleared');
+    showToast(PG_REPORTS_I18N.success.all_saved_cleared);
   }
 
   function renderSavedRecords() {
@@ -959,9 +959,9 @@
       html += `
         <div class="saved-record-card" id="saved-card-${idx}" onclick="toggleSavedRecordDetail(${idx}, event)">
           <div class="saved-record-header">
-            <span class="saved-record-time">▸ Saved: ${savedTime}</span>
-            <span class="saved-record-expand-hint">Click to expand</span>
-            <button class="saved-record-remove" onclick="event.stopPropagation(); removeSavedRecord('${record.id}')" title="Remove">×</button>
+            <span class="saved-record-time">${PG_REPORTS_I18N.saved.saved_at_prefix} ${savedTime}</span>
+            <span class="saved-record-expand-hint">${PG_REPORTS_I18N.saved.click_to_expand}</span>
+            <button class="saved-record-remove" onclick="event.stopPropagation(); removeSavedRecord('${record.id}')" title="${PG_REPORTS_I18N.saved.remove_title}">×</button>
           </div>
           <div class="saved-record-data">
       `;
@@ -1086,7 +1086,7 @@
       const query = decodeURIComponent(escape(atob(queryBase64)));
       runExplainAnalyze(query, queryHash);
     } catch (e) {
-      showToast('Failed to decode query', 'error');
+      showToast(PG_REPORTS_I18N.errors.decode_query_failed, 'error');
     }
   }
 
@@ -1207,7 +1207,7 @@
     // Show problems list
     if (data.problems && data.problems.length > 0) {
       html += '<div class="explain-problems">';
-      html += '<div class="explain-problems-header">⚠️ Detected Issues</div>';
+      html += '<div class="explain-problems-header">' + PG_REPORTS_I18N.sections.detected_issues + '</div>';
       html += '<div class="explain-problems-list">';
 
       data.problems.forEach(problem => {
@@ -1219,7 +1219,7 @@
         html += '<span class="explain-problem-icon">' + severityIcon + '</span>';
         html += '<span class="explain-problem-message">' + escapeHtml(problem.message) + '</span>';
         if (problem.line_number) {
-          html += '<span class="explain-problem-line">Line ' + problem.line_number + '</span>';
+          html += '<span class="explain-problem-line">' + PG_REPORTS_I18N.sections.line_label + ' ' + problem.line_number + '</span>';
         }
         html += '</div>';
         if (problem.details) {
@@ -1239,8 +1239,8 @@
     if (data.annotated_lines && data.annotated_lines.length > 0) {
       html += '<div class="explain-output">';
       html += '<div class="explain-output-header">';
-      html += '📊 Execution Plan';
-      html += '<button class="btn-copy-small" onclick="copyExplainOutput()" title="Copy to clipboard">📋 Copy</button>';
+      html += PG_REPORTS_I18N.sections.execution_plan;
+      html += '<button class="btn-copy-small" onclick="copyExplainOutput()" title="' + PG_REPORTS_I18N.actions.copy_to_clipboard_title + '">' + PG_REPORTS_I18N.actions.copy + '</button>';
       html += '</div>';
       html += '<div class="explain-lines">';
 
@@ -1324,9 +1324,9 @@
     const text = Array.from(lines).map(line => line.textContent).join('\n');
 
     navigator.clipboard.writeText(text).then(() => {
-      showToast('EXPLAIN output copied to clipboard');
+      showToast(PG_REPORTS_I18N.success.explain_copied);
     }).catch(() => {
-      showToast('Failed to copy', 'error');
+      showToast(PG_REPORTS_I18N.errors.copy_failed, 'error');
     });
   }
 
@@ -1337,11 +1337,10 @@
 
     // Security check
     if (!allowRawQueryExecution) {
-      const message = '⚠️ EXPLAIN ANALYZE отключен. Включите в конфигурации: config.allow_raw_query_execution = true';
-      showToast(message, 'error');
+      showToast(PG_REPORTS_I18N.errors.explain_disabled_toast, 'error');
       content.innerHTML = `<div class="error-message">
-        <strong>⚠️ Query execution is disabled</strong><br><br>
-        To enable this feature, add to your configuration:<br>
+        <strong>${PG_REPORTS_I18N.modals.query_execution_disabled_title}</strong><br><br>
+        ${PG_REPORTS_I18N.modals.query_execution_disabled_intro}<br>
         <code style="display: block; margin-top: 0.5rem; padding: 0.5rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
 PgReports.configure do |config|<br>
 &nbsp;&nbsp;config.allow_raw_query_execution = true<br>
@@ -1372,11 +1371,11 @@ end
       if (data.success) {
         content.innerHTML = renderExplainAnalysis(data);
       } else {
-        content.innerHTML = `<div class="error-message">${escapeHtml(data.error || 'Failed to run EXPLAIN ANALYZE')}</div>`;
+        content.innerHTML = `<div class="error-message">${escapeHtml(data.error || PG_REPORTS_I18N.errors.explain_analyze_failed)}</div>`;
       }
     } catch (error) {
       loading.style.display = 'none';
-      content.innerHTML = `<div class="error-message">Network error: ${escapeHtml(error.message)}</div>`;
+      content.innerHTML = `<div class="error-message">${PG_REPORTS_I18N.errors.network_error_prefix} ${escapeHtml(error.message)}</div>`;
     }
   }
 
@@ -1387,11 +1386,10 @@ end
 
     // Security check
     if (!allowRawQueryExecution) {
-      const message = '⚠️ Выполнение запросов отключено. Включите в конфигурации: config.allow_raw_query_execution = true';
-      showToast(message, 'error');
+      showToast(PG_REPORTS_I18N.errors.execute_disabled_toast, 'error');
       content.innerHTML = `<div class="error-message">
-        <strong>⚠️ Query execution is disabled</strong><br><br>
-        To enable this feature, add to your configuration:<br>
+        <strong>${PG_REPORTS_I18N.modals.query_execution_disabled_title}</strong><br><br>
+        ${PG_REPORTS_I18N.modals.query_execution_disabled_intro}<br>
         <code style="display: block; margin-top: 0.5rem; padding: 0.5rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
 PgReports.configure do |config|<br>
 &nbsp;&nbsp;config.allow_raw_query_execution = true<br>
@@ -1424,8 +1422,8 @@ end
 
         // Show info
         html += `<div class="query-results-info">
-          <span>Rows: <span class="count">${data.count}</span></span>
-          <span>Execution time: <span class="time">${data.execution_time} ms</span></span>
+          <span>${PG_REPORTS_I18N.results.rows_label} <span class="count">${data.count}</span></span>
+          <span>${PG_REPORTS_I18N.results.execution_time_label} <span class="time">${data.execution_time} ms</span></span>
         </div>`;
 
         if (data.rows && data.rows.length > 0) {
@@ -1445,7 +1443,7 @@ end
             html += '<tr>';
             data.columns.forEach(col => {
               const value = row[col];
-              const displayValue = value === null ? '<null>' : String(value);
+              const displayValue = value === null ? PG_REPORTS_I18N.results.null_placeholder : String(value);
               html += `<td title="${escapeHtmlAttr(displayValue)}">${escapeHtml(displayValue)}</td>`;
             });
             html += '</tr>';
@@ -1456,19 +1454,19 @@ end
           html += '</div>';
 
           if (data.truncated) {
-            html += `<p style="margin-top: 0.5rem; color: var(--text-muted); font-size: 0.75rem;">Showing first ${data.rows.length} of ${data.total_count} rows</p>`;
+            html += `<p style="margin-top: 0.5rem; color: var(--text-muted); font-size: 0.75rem;">${pgReportsFormat(PG_REPORTS_I18N.results.showing_first_of_total, { count: data.rows.length, total: data.total_count })}</p>`;
           }
         } else {
-          html += '<p style="margin-top: 1rem; color: var(--text-muted);">No rows returned</p>';
+          html += '<p style="margin-top: 1rem; color: var(--text-muted);">' + PG_REPORTS_I18N.results.no_rows_returned + '</p>';
         }
 
         content.innerHTML = html;
       } else {
-        content.innerHTML = `<div class="error-message">${escapeHtml(data.error || 'Failed to execute query')}</div>`;
+        content.innerHTML = `<div class="error-message">${escapeHtml(data.error || PG_REPORTS_I18N.errors.execute_query_failed)}</div>`;
       }
     } catch (error) {
       loading.style.display = 'none';
-      content.innerHTML = `<div class="error-message">Network error: ${escapeHtml(error.message)}</div>`;
+      content.innerHTML = `<div class="error-message">${PG_REPORTS_I18N.errors.network_error_prefix} ${escapeHtml(error.message)}</div>`;
     }
   }
 
@@ -1543,9 +1541,9 @@ end
   function copyMigrationCode() {
     if (!currentMigrationData) return;
     navigator.clipboard.writeText(currentMigrationData.code).then(() => {
-      showToast('Migration code copied to clipboard');
+      showToast(PG_REPORTS_I18N.success.migration_copied);
     }).catch(() => {
-      showToast('Failed to copy', 'error');
+      showToast(PG_REPORTS_I18N.errors.copy_failed, 'error');
     });
   }
 
@@ -1592,7 +1590,7 @@ end
       const data = await response.json();
 
       if (data.success) {
-        showToast('Migration file created');
+        showToast(PG_REPORTS_I18N.success.migration_created);
         closeMigrationModal();
 
         // Open in IDE if path provided
@@ -1607,10 +1605,10 @@ end
           }
         }
       } else {
-        showToast(data.error || 'Failed to create migration', 'error');
+        showToast(data.error || PG_REPORTS_I18N.errors.create_migration_failed, 'error');
       }
     } catch (error) {
-      showToast('Network error: ' + error.message, 'error');
+      showToast(PG_REPORTS_I18N.errors.network_error_prefix + ' ' + error.message, 'error');
     }
   }
 </script>

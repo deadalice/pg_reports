@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<%= I18n.locale %>">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="pg-reports-root" content="<%= request.script_name.presence || PgReports::Engine.routes.url_helpers.root_path %>">
-  <title>PgReports Dashboard</title>
+  <title><%= t("pg_reports.ui.branding.page_title") %></title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%234f46e5'/%3E%3Crect x='5' y='18' width='5' height='9' rx='1' fill='%23fff'/%3E%3Crect x='13.5' y='12' width='5' height='15' rx='1' fill='%23fff'/%3E%3Crect x='22' y='6' width='5' height='21' rx='1' fill='%23fff'/%3E%3C/svg%3E">
   <% if PgReports.config.load_external_fonts %>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -78,15 +78,35 @@
       font-size: 1rem;
     }
 
+    .logo-text {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      line-height: 1.15;
+    }
+
     .logo-text h1 {
       font-size: 1.1rem;
       font-weight: 600;
       color: var(--text-primary);
+      line-height: 1.15;
+      margin-top: -3px;
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
     }
 
-    .logo-text span {
+    .logo-version {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0.02em;
+    }
+
+    .logo-subtitle {
       font-size: 0.7rem;
       color: var(--text-muted);
+      line-height: 1.15;
     }
 
     .header-badge {
@@ -487,6 +507,36 @@
       width: 90%;
       max-height: 90vh;
       overflow: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-color) var(--bg-secondary);
+    }
+
+    .modal-content::-webkit-scrollbar,
+    .modal-body::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    .modal-content::-webkit-scrollbar-track,
+    .modal-body::-webkit-scrollbar-track {
+      background: var(--bg-secondary);
+      border-radius: 4px;
+    }
+
+    .modal-content::-webkit-scrollbar-thumb,
+    .modal-body::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 4px;
+    }
+
+    .modal-content::-webkit-scrollbar-thumb:hover,
+    .modal-body::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+
+    .modal-content::-webkit-scrollbar-corner,
+    .modal-body::-webkit-scrollbar-corner {
+      background: var(--bg-secondary);
     }
 
     .modal-large {
@@ -954,6 +1004,13 @@
 
   <script>
     const pgReportsRoot = document.querySelector('meta[name="pg-reports-root"]')?.content || '/pg_reports';
+    window.PG_REPORTS_I18N = <%= raw I18n.t("pg_reports.ui").to_json %>;
+
+    // Format strings with %{var} placeholders
+    window.pgReportsFormat = function(template, vars) {
+      if (!template) return '';
+      return template.replace(/%\{(\w+)\}/g, function(_, k) { return vars[k] != null ? vars[k] : ''; });
+    };
 
     function showToast(message, type = 'success') {
       const toast = document.getElementById('toast');
@@ -967,7 +1024,7 @@
     async function sendToTelegram(category, report, button) {
       if (button) {
         button.disabled = true;
-        button.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;vertical-align:middle;"></span> Sending...';
+        button.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;vertical-align:middle;"></span> ' + PG_REPORTS_I18N.actions.sending;
       }
 
       try {
@@ -982,17 +1039,17 @@
         const data = await response.json();
 
         if (data.success) {
-          showToast('Report sent to Telegram');
+          showToast(PG_REPORTS_I18N.success.telegram_sent);
         } else {
-          showToast(data.error || 'Failed to send to Telegram', 'error');
+          showToast(data.error || PG_REPORTS_I18N.errors.send_telegram_failed, 'error');
         }
       } catch (error) {
-        showToast('Network error: ' + error.message, 'error');
+        showToast(PG_REPORTS_I18N.errors.network_error_prefix + ' ' + error.message, 'error');
       }
 
       if (button) {
         button.disabled = false;
-        button.innerHTML = '📨 Telegram';
+        button.innerHTML = PG_REPORTS_I18N.actions.send_telegram;
       }
     }
   </script>

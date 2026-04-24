@@ -2,7 +2,7 @@
 
 <div class="report-page">
   <nav class="breadcrumb">
-    <%= link_to "Dashboard", root_path %>
+    <%= link_to t("pg_reports.ui.navigation.dashboard"), root_path %>
     <span>/</span>
     <span><%= @categories[@category][:name] %></span>
     <span>/</span>
@@ -17,40 +17,40 @@
 
     <div class="report-actions">
       <button class="btn btn-primary" onclick="runReport('<%= @category %>', '<%= @report_key %>', this)">
-        ▶ Run Report
+        <%= t("pg_reports.ui.actions.run_report") %>
       </button>
 
       <!-- Export dropdown -->
       <div class="dropdown" id="download-dropdown" style="display: none;">
         <button class="btn btn-secondary" onclick="toggleDropdown()">
-          ⬇ Export
+          <%= t("pg_reports.ui.actions.export") %>
         </button>
         <div class="dropdown-menu" id="dropdown-menu">
-          <a href="#" onclick="downloadReport('txt'); return false;">📄 Text (.txt)</a>
-          <a href="#" onclick="downloadReport('csv'); return false;">📊 CSV (.csv)</a>
-          <a href="#" onclick="downloadReport('json'); return false;">📋 JSON (.json)</a>
+          <a href="#" onclick="downloadReport('txt'); return false;"><%= t("pg_reports.ui.actions.download_text") %></a>
+          <a href="#" onclick="downloadReport('csv'); return false;"><%= t("pg_reports.ui.actions.download_csv") %></a>
+          <a href="#" onclick="downloadReport('json'); return false;"><%= t("pg_reports.ui.actions.download_json") %></a>
           <% if @documentation && @documentation[:ai_prompt].present? %>
             <div class="dropdown-divider"></div>
-            <a href="#" id="ai-prompt-btn" onclick="copyAiPrompt(this); return false;"><span class="ai-icon">AI</span> Copy Prompt</a>
+            <a href="#" id="ai-prompt-btn" onclick="copyAiPrompt(this); return false;"><span class="ai-icon">AI</span> <%= t("pg_reports.ui.actions.copy_ai_prompt") %></a>
           <% end %>
         </div>
       </div>
 
       <% if PgReports.config.telegram_configured? %>
         <button class="btn btn-telegram" onclick="sendToTelegram('<%= @category %>', '<%= @report_key %>', this)" id="telegram-btn" style="display: none;">
-          📨 Telegram
+          <%= t("pg_reports.ui.actions.send_telegram") %>
         </button>
       <% end %>
-      <button class="btn btn-icon" onclick="showIdeSettingsModal()" title="IDE Settings">
+      <button class="btn btn-icon" onclick="showIdeSettingsModal()" title="<%= t("pg_reports.ui.actions.ide_settings_button_title") %>">
         ⚙️
       </button>
-      <%= link_to "← Back", root_path, class: "btn btn-secondary" %>
+      <%= link_to t("pg_reports.ui.navigation.back"), root_path, class: "btn btn-secondary" %>
     </div>
   </div>
 
   <% if @error %>
     <div class="error-message">
-      <strong>Error:</strong> <%= @error %>
+      <strong><%= t("pg_reports.ui.errors.error_prefix") %></strong> <%= @error %>
     </div>
   <% end %>
 
@@ -60,26 +60,26 @@
       <details class="documentation-section">
         <summary class="documentation-toggle">
           <span class="toggle-icon">▶</span>
-          <span>📖 What does this report show?</span>
+          <span><%= t("pg_reports.ui.documentation.toggle_title") %></span>
         </summary>
         <div class="documentation-content">
           <% if @documentation[:what].present? %>
             <div class="doc-block">
-              <h4>📋 What</h4>
+              <h4><%= t("pg_reports.ui.documentation.what_section") %></h4>
               <p><%= @documentation[:what] %></p>
             </div>
           <% end %>
 
           <% if @documentation[:why].present? %>
             <div class="doc-block">
-              <h4>❓ Why It Matters</h4>
+              <h4><%= t("pg_reports.ui.documentation.why_section") %></h4>
               <p><%= @documentation[:why] %></p>
             </div>
           <% end %>
 
           <% if @documentation[:nuances].present? %>
             <div class="doc-block">
-              <h4>⚠️ Nuances</h4>
+              <h4><%= t("pg_reports.ui.documentation.nuances_section") %></h4>
               <ul class="nuances-list">
                 <% @documentation[:nuances].each do |nuance| %>
                   <li><%= nuance %></li>
@@ -90,15 +90,15 @@
 
           <% if @thresholds.present? %>
             <div class="thresholds-block">
-              <h4>📊 Thresholds</h4>
+              <h4><%= t("pg_reports.ui.documentation.thresholds_section") %></h4>
               <div class="thresholds-grid">
                 <% @thresholds.each do |field, values| %>
                   <div class="threshold-item">
                     <span class="threshold-field"><%= field %></span>
-                    <span class="threshold-warning">⚠️ Warning: <%= values[:warning] %></span>
-                    <span class="threshold-critical">🔴 Critical: <%= values[:critical] %></span>
+                    <span class="threshold-warning"><%= t("pg_reports.ui.documentation.threshold_warning_label") %> <%= values[:warning] %></span>
+                    <span class="threshold-critical"><%= t("pg_reports.ui.documentation.threshold_critical_label") %> <%= values[:critical] %></span>
                     <% if values[:inverted] %>
-                      <span class="threshold-note">(lower is worse)</span>
+                      <span class="threshold-note"><%= t("pg_reports.ui.documentation.threshold_inverted_note") %></span>
                     <% end %>
                   </div>
                 <% end %>
@@ -115,7 +115,7 @@
         <details class="filter-details">
           <summary class="filter-toggle">
             <span class="toggle-icon">▶</span>
-            <span>🔍 Параметры фильтрации</span>
+            <span><%= t("pg_reports.ui.filters.title") %></span>
           </summary>
           <div class="filter-content">
             <div class="filter-grid">
@@ -127,7 +127,7 @@
                       <span class="filter-description"><%= config[:description] %></span>
                     <% end %>
                     <% if config[:is_threshold] && config[:current_config] %>
-                      <span class="filter-current-value">(current: <%= config[:current_config] %>)</span>
+                      <span class="filter-current-value">(<%= t("pg_reports.ui.filters.current_value") %>: <%= config[:current_config] %>)</span>
                     <% end %>
                   </label>
                   <input
@@ -153,17 +153,17 @@
   <!-- Saved Records Section -->
   <div class="saved-records-section" id="saved-records-section" style="display: none;">
     <div class="saved-records-header">
-      <span class="saved-records-title">📌 Saved for Comparison</span>
-      <button class="btn btn-small btn-muted" onclick="clearAllSavedRecords()">Clear All</button>
+      <span class="saved-records-title"><%= t("pg_reports.ui.saved.title") %></span>
+      <button class="btn btn-small btn-muted" onclick="clearAllSavedRecords()"><%= t("pg_reports.ui.actions.clear_all") %></button>
     </div>
     <div class="saved-records-list" id="saved-records-list"></div>
   </div>
 
   <div class="results-container" id="results-container">
     <div class="results-header">
-      <span class="results-title">Results</span>
+      <span class="results-title"><%= t("pg_reports.ui.results.title") %></span>
       <div class="results-meta" id="results-meta">
-        <span>Click "Run Report" to fetch data</span>
+        <span><%= t("pg_reports.ui.results.click_run_hint") %></span>
       </div>
     </div>
 
@@ -173,7 +173,7 @@
 
     <div id="empty-state" class="empty-state" style="display: none;">
       <div class="empty-state-icon">✓</div>
-      <p>No issues found. Everything looks good!</p>
+      <p><%= t("pg_reports.ui.results.empty_message") %></p>
     </div>
 
     <div class="top-scroll-wrapper" id="top-scroll-wrapper" style="display: none;">

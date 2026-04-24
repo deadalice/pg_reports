@@ -2,39 +2,39 @@
 <div id="ide-settings-modal" class="modal" style="display: none;">
   <div class="modal-content modal-small">
     <div class="modal-header">
-      <h3>⚙️ IDE Settings</h3>
+      <h3><%= t("pg_reports.ui.modals.ide_settings_title") %></h3>
       <button class="modal-close" onclick="closeIdeSettingsModal()">&times;</button>
     </div>
     <div class="modal-body">
-      <p class="settings-label">Default IDE for source links:</p>
+      <p class="settings-label"><%= t("pg_reports.ui.settings.default_ide_label") %></p>
       <div class="ide-options">
         <label class="ide-option">
           <input type="radio" name="default-ide" value="" onchange="setDefaultIde('')">
-          <span>Show menu (default)</span>
+          <span><%= t("pg_reports.ui.settings.ide_show_menu") %></span>
         </label>
         <label class="ide-option">
           <input type="radio" name="default-ide" value="vscode-wsl" onchange="setDefaultIde('vscode-wsl')">
-          <span>VS Code (WSL)</span>
+          <span><%= t("pg_reports.ui.settings.ide_vscode_wsl") %></span>
         </label>
         <label class="ide-option">
           <input type="radio" name="default-ide" value="vscode" onchange="setDefaultIde('vscode')">
-          <span>VS Code</span>
+          <span><%= t("pg_reports.ui.settings.ide_vscode") %></span>
         </label>
         <label class="ide-option">
           <input type="radio" name="default-ide" value="rubymine" onchange="setDefaultIde('rubymine')">
-          <span>RubyMine</span>
+          <span><%= t("pg_reports.ui.settings.ide_rubymine") %></span>
         </label>
         <label class="ide-option">
           <input type="radio" name="default-ide" value="intellij" onchange="setDefaultIde('intellij')">
-          <span>IntelliJ IDEA</span>
+          <span><%= t("pg_reports.ui.settings.ide_intellij") %></span>
         </label>
         <label class="ide-option">
           <input type="radio" name="default-ide" value="cursor-wsl" onchange="setDefaultIde('cursor-wsl')">
-          <span>Cursor (WSL)</span>
+          <span><%= t("pg_reports.ui.settings.ide_cursor_wsl") %></span>
         </label>
         <label class="ide-option">
           <input type="radio" name="default-ide" value="cursor" onchange="setDefaultIde('cursor')">
-          <span>Cursor</span>
+          <span><%= t("pg_reports.ui.settings.ide_cursor") %></span>
         </label>
       </div>
     </div>
@@ -45,7 +45,7 @@
 <div id="problem-modal" class="problem-modal" style="display: none;">
   <div class="problem-modal-content">
     <div class="problem-modal-header">
-      <h3>⚠️ Problem Detected</h3>
+      <h3><%= t("pg_reports.ui.modals.problem_detected_title") %></h3>
       <button class="modal-close" onclick="closeProblemModal()">&times;</button>
     </div>
     <div class="problem-modal-body" id="problem-modal-body">
@@ -58,24 +58,24 @@
 <div id="explain-modal" class="modal" style="display: none;">
   <div class="modal-content modal-wide">
     <div class="modal-header">
-      <h3>📊 Query Analyzer</h3>
+      <h3><%= t("pg_reports.ui.modals.query_analyzer_title") %></h3>
       <button class="modal-close" onclick="closeExplainModal()">&times;</button>
     </div>
     <div class="modal-body" id="explain-modal-body">
       <div class="explain-query-section">
-        <label class="explain-label">Query:</label>
+        <label class="explain-label"><%= t("pg_reports.ui.modals.query_label") %></label>
         <pre class="explain-query" id="explain-query-display"></pre>
       </div>
       <div id="explain-params-section" class="explain-params-section" style="display: none;">
-        <label class="explain-label">Parameters:</label>
+        <label class="explain-label"><%= t("pg_reports.ui.modals.parameters_label") %></label>
         <div id="explain-params-inputs"></div>
       </div>
       <div class="explain-actions">
         <button class="btn btn-secondary" onclick="executeExplainAnalyze()" id="btn-explain">
-          📊 EXPLAIN ANALYZE
+          <%= t("pg_reports.ui.actions.explain_analyze") %>
         </button>
         <button class="btn btn-secondary" onclick="executeQuery()" id="btn-execute">
-          ▶ Execute Query
+          <%= t("pg_reports.ui.actions.execute_query") %>
         </button>
       </div>
       <div id="explain-loading" class="loading" style="display: none;">
@@ -90,22 +90,22 @@
 <div id="migration-modal" class="modal" style="display: none;">
   <div class="modal-content">
     <div class="modal-header">
-      <h3>🗑️ Drop Index Migration</h3>
+      <h3><%= t("pg_reports.ui.modals.migration_title") %></h3>
       <button class="modal-close" onclick="closeMigrationModal()">&times;</button>
     </div>
     <div class="modal-body" id="migration-modal-body">
       <div class="migration-warning" style="background: rgba(255, 152, 0, 0.1); border: 1px solid rgba(255, 152, 0, 0.3); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-        <p style="margin: 0 0 0.5rem 0; font-weight: 600; color: #ffb74d;">⚠️ Warning</p>
+        <p style="margin: 0 0 0.5rem 0; font-weight: 600; color: #ffb74d;"><%= t("pg_reports.ui.documentation.threshold_warning_label").chomp(":") %></p>
         <p style="margin: 0; color: #ffcc80; font-size: 0.875rem; line-height: 1.5;">
-          Creating a migration will generate a migration file in your project. Running this migration will drop the index from the database, which may significantly impact application performance.
-          <strong>This operation should only be performed in a local development environment.</strong>
+          <%= t("pg_reports.ui.modals.migration_warning") %>
+          <strong><%= t("pg_reports.ui.modals.migration_warning_dev_only") %></strong>
         </p>
       </div>
-      <p class="settings-label">Generated migration to remove the index:</p>
+      <p class="settings-label"><%= t("pg_reports.ui.modals.migration_subtitle") %></p>
       <div id="migration-code" class="migration-code"></div>
       <div class="migration-actions">
-        <button class="btn btn-secondary" onclick="copyMigrationCode()">📋 Copy Code</button>
-        <button class="btn btn-primary" id="create-migration-btn" onclick="createMigrationFile()">📁 Create File & Open in IDE</button>
+        <button class="btn btn-secondary" onclick="copyMigrationCode()"><%= t("pg_reports.ui.actions.copy_code") %></button>
+        <button class="btn btn-primary" id="create-migration-btn" onclick="createMigrationFile()"><%= t("pg_reports.ui.actions.create_migration_file") %></button>
       </div>
     </div>
   </div>

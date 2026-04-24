@@ -309,15 +309,41 @@ module PgReports
       }.freeze
 
       def self.all
-        REPORTS
+        REPORTS.each_with_object({}) do |(cat_key, cat), result|
+          result[cat_key] = localized_category(cat_key, cat)
+        end
       end
 
       def self.find(category, report)
-        REPORTS.dig(category.to_sym, :reports, report.to_sym)
+        rep = REPORTS.dig(category.to_sym, :reports, report.to_sym)
+        return nil unless rep
+
+        localized_report(report.to_sym, rep)
       end
 
       def self.category(category)
-        REPORTS[category.to_sym]
+        cat = REPORTS[category.to_sym]
+        return nil unless cat
+
+        localized_category(category.to_sym, cat)
+      end
+
+      # Build category hash with localized name and report names
+      def self.localized_category(cat_key, cat)
+        cat.merge(
+          name: I18n.t("pg_reports.categories.#{cat_key}", default: cat[:name]),
+          reports: cat[:reports].each_with_object({}) do |(rep_key, rep), reports|
+            reports[rep_key] = localized_report(rep_key, rep)
+          end
+        )
+      end
+
+      # Build report hash with localized name and description
+      def self.localized_report(rep_key, rep)
+        rep.merge(
+          name: I18n.t("pg_reports.reports.#{rep_key}.name", default: rep[:name]),
+          description: I18n.t("pg_reports.reports.#{rep_key}.description", default: rep[:description])
+        )
       end
 
       # Returns full documentation for a report including I18n translations

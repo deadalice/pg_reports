@@ -19,7 +19,7 @@ module PgReports
 
     def reset_statistics
       PgReports.reset_statistics!
-      render json: {success: true, message: "Statistics have been reset successfully"}
+      render json: {success: true, message: I18n.t("pg_reports.ui.success.statistics_reset")}
     rescue => e
       render json: {success: false, error: e.message}, status: :unprocessable_entity
     end
@@ -35,7 +35,7 @@ module PgReports
         if data[:connections][:total].nil? && data[:transactions][:total].nil?
           render json: {
             success: false,
-            error: "Unable to fetch database statistics. Check database permissions.",
+            error: I18n.t("pg_reports.ui.errors.fetch_metrics_check_perms"),
             available: false
           }, status: :service_unavailable
           return
@@ -50,7 +50,7 @@ module PgReports
       rescue PG::InsufficientPrivilege
         render json: {
           success: false,
-          error: "Insufficient database permissions to access statistics views",
+          error: I18n.t("pg_reports.ui.errors.insufficient_database_perms"),
           available: false
         }, status: :forbidden
       rescue => e
@@ -68,7 +68,7 @@ module PgReports
       @report_info = Dashboard::ReportsRegistry.find(@category, @report_key)
 
       if @report_info.nil?
-        redirect_to root_path, alert: "Report not found"
+        redirect_to root_path, alert: I18n.t("pg_reports.ui.errors.report_not_found")
         return
       end
 
@@ -138,7 +138,7 @@ module PgReports
         report.send_to_telegram
       end
 
-      render json: {success: true, message: "Report sent to Telegram"}
+      render json: {success: true, message: I18n.t("pg_reports.ui.success.telegram_sent")}
     rescue => e
       render json: {success: false, error: e.message}, status: :unprocessable_entity
     end
@@ -177,7 +177,7 @@ module PgReports
       query_params = params[:params] || {}
 
       if query_hash.blank?
-        render json: {success: false, error: "Query hash is required"}, status: :unprocessable_entity
+        render json: {success: false, error: I18n.t("pg_reports.ui.errors.query_hash_required")}, status: :unprocessable_entity
         return
       end
 
@@ -185,7 +185,7 @@ module PgReports
       unless PgReports.config.allow_raw_query_execution
         render json: {
           success: false,
-          error: "Query execution from dashboard is disabled. Enable it in configuration with 'config.allow_raw_query_execution = true'"
+          error: I18n.t("pg_reports.ui.errors.query_execution_disabled")
         }, status: :forbidden
         return
       end
@@ -195,11 +195,11 @@ module PgReports
         query = retrieve_query_by_hash(query_hash)
 
         if query.nil?
-          render json: {success: false, error: "Query not found or expired. Please refresh the page."}, status: :not_found
+          render json: {success: false, error: I18n.t("pg_reports.ui.errors.query_not_found_expired")}, status: :not_found
           return
         end
       rescue SecurityError => e
-        render json: {success: false, error: "Security violation: #{e.message}"}, status: :forbidden
+        render json: {success: false, error: "#{I18n.t("pg_reports.ui.errors.security_violation_prefix")} #{e.message}"}, status: :forbidden
         return
       end
 
@@ -207,7 +207,7 @@ module PgReports
       if query.match?(/\b(NEW|OLD)\./i)
         render json: {
           success: false,
-          error: "Cannot EXPLAIN ANALYZE queries with trigger variables (NEW, OLD). These are only available within trigger functions."
+          error: I18n.t("pg_reports.ui.errors.trigger_variables_not_allowed")
         }, status: :unprocessable_entity
         return
       end
@@ -219,7 +219,7 @@ module PgReports
       if final_query.match?(/\$\d+/)
         render json: {
           success: false,
-          error: "Please provide values for all parameter placeholders ($1, $2, etc.)"
+          error: I18n.t("pg_reports.ui.errors.missing_parameter_values")
         }, status: :unprocessable_entity
         return
       end
@@ -248,7 +248,7 @@ module PgReports
       query_params = params[:params] || {}
 
       if query_hash.blank?
-        render json: {success: false, error: "Query hash is required"}, status: :unprocessable_entity
+        render json: {success: false, error: I18n.t("pg_reports.ui.errors.query_hash_required")}, status: :unprocessable_entity
         return
       end
 
@@ -256,7 +256,7 @@ module PgReports
       unless PgReports.config.allow_raw_query_execution
         render json: {
           success: false,
-          error: "Query execution from dashboard is disabled. Enable it in configuration with 'config.allow_raw_query_execution = true'"
+          error: I18n.t("pg_reports.ui.errors.query_execution_disabled")
         }, status: :forbidden
         return
       end
@@ -266,11 +266,11 @@ module PgReports
         query = retrieve_query_by_hash(query_hash)
 
         if query.nil?
-          render json: {success: false, error: "Query not found or expired. Please refresh the page."}, status: :not_found
+          render json: {success: false, error: I18n.t("pg_reports.ui.errors.query_not_found_expired")}, status: :not_found
           return
         end
       rescue SecurityError => e
-        render json: {success: false, error: "Security violation: #{e.message}"}, status: :forbidden
+        render json: {success: false, error: "#{I18n.t("pg_reports.ui.errors.security_violation_prefix")} #{e.message}"}, status: :forbidden
         return
       end
 
@@ -281,7 +281,7 @@ module PgReports
       if final_query.match?(/\$\d+/)
         render json: {
           success: false,
-          error: "Please provide values for all parameter placeholders ($1, $2, etc.)"
+          error: I18n.t("pg_reports.ui.errors.missing_parameter_values")
         }, status: :unprocessable_entity
         return
       end
@@ -326,7 +326,7 @@ module PgReports
       unless Rails.env.development?
         render json: {
           success: false,
-          error: "Migration creation is only allowed in development environment"
+          error: I18n.t("pg_reports.ui.errors.migration_dev_only")
         }, status: :forbidden
         return
       end
@@ -335,28 +335,28 @@ module PgReports
       code = params[:code]
 
       if file_name.blank? || code.blank?
-        render json: {success: false, error: "File name and code are required"}, status: :unprocessable_entity
+        render json: {success: false, error: I18n.t("pg_reports.ui.errors.filename_code_required")}, status: :unprocessable_entity
         return
       end
 
       # Sanitize file name
       safe_file_name = file_name.gsub(/[^a-z0-9_.]/, "")
       unless safe_file_name.match?(/\A\d{14}_\w+\.rb\z/)
-        render json: {success: false, error: "Invalid migration file name format"}, status: :unprocessable_entity
+        render json: {success: false, error: I18n.t("pg_reports.ui.errors.invalid_filename_format")}, status: :unprocessable_entity
         return
       end
 
       # Find migrations directory
       migrations_path = Rails.root.join("db", "migrate")
       unless migrations_path.exist?
-        render json: {success: false, error: "Migrations directory not found"}, status: :unprocessable_entity
+        render json: {success: false, error: I18n.t("pg_reports.ui.errors.migrations_dir_not_found")}, status: :unprocessable_entity
         return
       end
 
       file_path = migrations_path.join(safe_file_name)
       File.write(file_path, code)
 
-      render json: {success: true, file_path: file_path.to_s, message: "Migration created successfully"}
+      render json: {success: true, file_path: file_path.to_s, message: I18n.t("pg_reports.ui.success.migration_created")}
     rescue => e
       render json: {success: false, error: e.message}, status: :unprocessable_entity
     end

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-04-24
+
 ### Added
 
 - **4 new reports** focused on dead schema and write-amplification:
@@ -16,6 +18,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `unused_tables` (Tables) — tables with zero `seq_scan + idx_scan` since the last stats reset. Surfaces `db_stats_since` so you know how much history the verdict rests on.
 - New problem keys: `unused_column`, `always_null_column`, `hot_rows`, `low_hot_update`, `unused_table`.
 - Full i18n for all new reports (en/ru/uk).
+- **Full UI localization (en/ru/uk).** All dashboard chrome — buttons, modals, toasts, status badges, metric labels, filter labels, error messages, monitoring panels — now reads from a new `pg_reports.ui.*` locale namespace (183 keys per language). Plus three sibling namespaces resolved at access time from `Dashboard::ReportsRegistry` and `ReportDefinition#filter_parameters`:
+  - `pg_reports.categories.*` — the 6 dashboard category names (Queries / Indexes / Tables / Connections / System / Schema Analysis).
+  - `pg_reports.reports.<name>.{name, description}` — short name and one-line description for all 47 reports shown in the dashboard listing.
+  - `pg_reports.parameters.<name>.{label, description}` plus `threshold_label`/`threshold_description` templates for filter inputs.
+  Previously only the per-report long-form documentation was translated; the surrounding UI was hardcoded English regardless of `I18n.locale`.
+  - Added `window.PG_REPORTS_I18N` injected by the layout (`I18n.t('pg_reports.ui').to_json`) so client-side JS strings (toasts, dynamically rendered HTML, EXPLAIN output, IDE menu, query monitor feed) all respect the active locale.
+  - `<html lang>` now reflects `I18n.locale` instead of being hardcoded to `en`.
+  - Controller-level error/success messages (`reset_statistics`, `live_metrics`, `explain_analyze`, `execute_query`, `create_migration`, etc.) now use `I18n.t`.
 
 ### Changed
 

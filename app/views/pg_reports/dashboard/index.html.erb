@@ -4,36 +4,39 @@
   <div class="logo">
     <div class="logo-icon">🐘</div>
     <div class="logo-text">
-      <h1>PgReports</h1>
-      <span>PostgreSQL Analysis Dashboard</span>
+      <h1>
+        <%= t("pg_reports.ui.branding.title") %>
+        <span class="logo-version">v<%= PgReports::VERSION %></span>
+      </h1>
+      <span class="logo-subtitle"><%= t("pg_reports.ui.branding.subtitle") %></span>
     </div>
   </div>
 
   <div class="header-actions">
     <% if @pg_stat_status[:ready] %>
       <button class="btn btn-small btn-muted" onclick="showResetConfirmModal()" id="reset-btn">
-        🗑️ Reset Statistics
+        <%= t("pg_reports.ui.actions.reset_statistics") %>
       </button>
     <% else %>
       <button class="btn btn-small btn-primary" onclick="enablePgStatStatements(this)" id="enable-btn">
-        ⚡ Create Extension
+        <%= t("pg_reports.ui.actions.create_extension") %>
       </button>
       <button class="btn-info" onclick="showPgStatInfo()">?</button>
     <% end %>
-    <button class="btn-info" onclick="showIdeSettingsModal()" title="IDE Settings">⚙️</button>
+    <button class="btn-info" onclick="showIdeSettingsModal()" title="<%= t("pg_reports.ui.actions.ide_settings_button_title") %>">⚙️</button>
     <div class="header-badge" id="pg-stat-badge">
       <% if @pg_stat_status[:ready] %>
         <span class="badge-dot"></span>
-        <span>pg_stat_statements ready</span>
+        <span><%= t("pg_reports.ui.status.pg_stat_ready") %></span>
       <% elsif @pg_stat_status[:extension_installed] %>
         <span class="badge-dot warning"></span>
-        <span>Extension installed, not preloaded</span>
+        <span><%= t("pg_reports.ui.status.extension_installed") %></span>
       <% elsif @pg_stat_status[:preloaded] %>
         <span class="badge-dot warning"></span>
-        <span>Preloaded, extension not created</span>
+        <span><%= t("pg_reports.ui.status.preloaded") %></span>
       <% else %>
         <span class="badge-dot error"></span>
-        <span>Not configured</span>
+        <span><%= t("pg_reports.ui.status.not_configured") %></span>
       <% end %>
     </div>
   </div>
@@ -43,25 +46,25 @@
 <div id="pg-stat-modal" class="modal" style="display: none;">
   <div class="modal-content">
     <div class="modal-header">
-      <h3>Enable pg_stat_statements</h3>
+      <h3><%= t("pg_reports.ui.modals.enable_pg_stat_title") %></h3>
       <button class="modal-close" onclick="closePgStatModal()">×</button>
     </div>
     <div class="modal-body">
-      <p>To enable pg_stat_statements, follow these steps:</p>
+      <p><%= t("pg_reports.ui.modals.enable_pg_stat_intro") %></p>
       <ol>
         <li>
-          <strong>Edit postgresql.conf:</strong>
+          <strong><%= t("pg_reports.ui.modals.edit_postgresql_conf") %></strong>
           <pre>shared_preload_libraries = 'pg_stat_statements'
 pg_stat_statements.track = all</pre>
         </li>
         <li>
-          <strong>Restart PostgreSQL:</strong>
+          <strong><%= t("pg_reports.ui.modals.restart_postgresql") %></strong>
           <pre>sudo systemctl restart postgresql</pre>
         </li>
         <li>
-          <strong>Create extension:</strong>
+          <strong><%= t("pg_reports.ui.modals.create_extension_step") %></strong>
           <pre>CREATE EXTENSION IF NOT EXISTS pg_stat_statements;</pre>
-          <p>Or click "Enable" button after restart.</p>
+          <p><%= t("pg_reports.ui.modals.enable_button_note") %></p>
         </li>
       </ol>
     </div>
@@ -72,15 +75,15 @@ pg_stat_statements.track = all</pre>
 <div id="reset-confirm-modal" class="modal" style="display: none;">
   <div class="modal-content modal-small">
     <div class="modal-header modal-header-danger">
-      <h3>⚠️ Reset Statistics</h3>
+      <h3><%= t("pg_reports.ui.modals.reset_stats_title") %></h3>
       <button class="modal-close" onclick="closeResetConfirmModal()">×</button>
     </div>
     <div class="modal-body">
-      <p class="warning-text">Are you sure you want to reset pg_stat_statements statistics?</p>
-      <p class="warning-subtext">This action will clear all collected query statistics and cannot be undone.</p>
+      <p class="warning-text"><%= t("pg_reports.ui.modals.reset_stats_confirm") %></p>
+      <p class="warning-subtext"><%= t("pg_reports.ui.modals.reset_stats_warning") %></p>
       <div class="modal-actions">
-        <button class="btn btn-secondary" onclick="closeResetConfirmModal()">Cancel</button>
-        <button class="btn btn-danger" onclick="resetStatistics()" id="confirm-reset-btn">Yes, Reset</button>
+        <button class="btn btn-secondary" onclick="closeResetConfirmModal()"><%= t("pg_reports.ui.actions.cancel") %></button>
+        <button class="btn btn-danger" onclick="resetStatistics()" id="confirm-reset-btn"><%= t("pg_reports.ui.actions.confirm_reset") %></button>
       </div>
     </div>
   </div>
@@ -90,39 +93,39 @@ pg_stat_statements.track = all</pre>
 <div id="ide-settings-modal" class="modal" style="display: none;">
   <div class="modal-content modal-small">
     <div class="modal-header">
-      <h3>⚙️ IDE Settings</h3>
+      <h3><%= t("pg_reports.ui.modals.ide_settings_title") %></h3>
       <button class="modal-close" onclick="closeIdeSettingsModal()">&times;</button>
     </div>
     <div class="modal-body">
-      <p class="settings-label">Default IDE for source links:</p>
+      <p class="settings-label"><%= t("pg_reports.ui.settings.default_ide_label") %></p>
       <div class="ide-options">
         <label class="ide-option">
           <input type="radio" name="default-ide" value="" onchange="setDefaultIde('')">
-          <span>Show menu (default)</span>
+          <span><%= t("pg_reports.ui.settings.ide_show_menu") %></span>
         </label>
         <label class="ide-option">
           <input type="radio" name="default-ide" value="vscode-wsl" onchange="setDefaultIde('vscode-wsl')">
-          <span>VS Code (WSL)</span>
+          <span><%= t("pg_reports.ui.settings.ide_vscode_wsl") %></span>
         </label>
         <label class="ide-option">
           <input type="radio" name="default-ide" value="vscode" onchange="setDefaultIde('vscode')">
-          <span>VS Code</span>
+          <span><%= t("pg_reports.ui.settings.ide_vscode") %></span>
         </label>
         <label class="ide-option">
           <input type="radio" name="default-ide" value="rubymine" onchange="setDefaultIde('rubymine')">
-          <span>RubyMine</span>
+          <span><%= t("pg_reports.ui.settings.ide_rubymine") %></span>
         </label>
         <label class="ide-option">
           <input type="radio" name="default-ide" value="intellij" onchange="setDefaultIde('intellij')">
-          <span>IntelliJ IDEA</span>
+          <span><%= t("pg_reports.ui.settings.ide_intellij") %></span>
         </label>
         <label class="ide-option">
           <input type="radio" name="default-ide" value="cursor-wsl" onchange="setDefaultIde('cursor-wsl')">
-          <span>Cursor (WSL)</span>
+          <span><%= t("pg_reports.ui.settings.ide_cursor_wsl") %></span>
         </label>
         <label class="ide-option">
           <input type="radio" name="default-ide" value="cursor" onchange="setDefaultIde('cursor')">
-          <span>Cursor</span>
+          <span><%= t("pg_reports.ui.settings.ide_cursor") %></span>
         </label>
       </div>
     </div>
@@ -134,14 +137,14 @@ pg_stat_statements.track = all</pre>
   <div class="live-monitoring-header">
     <div class="live-monitoring-title">
       <span class="live-indicator"></span>
-      <span>Live Monitoring</span>
+      <span><%= t("pg_reports.ui.monitoring.live_title") %></span>
       <span class="database-badge">
-        Database: <strong><%= @current_database %></strong>
+        <strong><%= @current_database %></strong>
       </span>
     </div>
     <div class="live-monitoring-controls">
-      <span class="live-monitoring-interval">Updates every 5s</span>
-      <button class="btn-toggle-live" onclick="toggleLiveMonitoring()" title="Toggle live monitoring">
+      <span class="live-monitoring-interval"><%= t("pg_reports.ui.monitoring.update_interval") %></span>
+      <button class="btn-toggle-live" onclick="toggleLiveMonitoring()" title="<%= t("pg_reports.ui.monitoring.toggle_title") %>">
         <span id="toggle-icon">⏸</span>
       </button>
     </div>
@@ -152,7 +155,7 @@ pg_stat_statements.track = all</pre>
     <div class="live-metric-card" data-metric="connections">
       <div class="metric-header">
         <span class="metric-icon" style="background: rgba(107, 159, 232, 0.12); color: var(--accent-blue);">🔗</span>
-        <span class="metric-name">Connections</span>
+        <span class="metric-name"><%= t("pg_reports.ui.metrics.connections_label") %></span>
       </div>
       <div class="metric-body">
         <div class="metric-value">
@@ -160,7 +163,7 @@ pg_stat_statements.track = all</pre>
           <span class="metric-unit">/ <span id="metric-connections-max">-</span></span>
         </div>
         <div class="metric-detail">
-          <span id="metric-connections-pct">-</span>% used
+          <span id="metric-connections-pct">-</span><%= t("pg_reports.ui.metrics.percent_used_suffix") %>
         </div>
         <div class="metric-sparkline">
           <svg id="sparkline-connections" viewBox="0 0 100 30" preserveAspectRatio="none"></svg>
@@ -173,15 +176,15 @@ pg_stat_statements.track = all</pre>
     <div class="live-metric-card" data-metric="tps">
       <div class="metric-header">
         <span class="metric-icon" style="background: rgba(95, 184, 154, 0.12); color: var(--accent-green);">⚡</span>
-        <span class="metric-name">TPS</span>
+        <span class="metric-name"><%= t("pg_reports.ui.metrics.tps_label") %></span>
       </div>
       <div class="metric-body">
         <div class="metric-value">
           <span id="metric-tps-value">-</span>
-          <span class="metric-unit">tx/s</span>
+          <span class="metric-unit"><%= t("pg_reports.ui.metrics.tps_unit") %></span>
         </div>
         <div class="metric-detail">
-          commit: <span id="metric-tps-commit">-</span> / rollback: <span id="metric-tps-rollback">-</span>
+          <%= t("pg_reports.ui.metrics.commit_label") %> <span id="metric-tps-commit">-</span> / <%= t("pg_reports.ui.metrics.rollback_label") %> <span id="metric-tps-rollback">-</span>
         </div>
         <div class="metric-sparkline">
           <svg id="sparkline-tps" viewBox="0 0 100 30" preserveAspectRatio="none"></svg>
@@ -194,14 +197,14 @@ pg_stat_statements.track = all</pre>
     <div class="live-metric-card" data-metric="cache">
       <div class="metric-header">
         <span class="metric-icon" style="background: rgba(157, 140, 214, 0.12); color: var(--accent-purple);">💾</span>
-        <span class="metric-name">Cache Hit</span>
+        <span class="metric-name"><%= t("pg_reports.ui.metrics.cache_hit_label") %></span>
       </div>
       <div class="metric-body">
         <div class="metric-value">
           <span id="metric-cache-value">-</span>
           <span class="metric-unit">%</span>
         </div>
-        <div class="metric-detail">heap blocks from cache</div>
+        <div class="metric-detail"><%= t("pg_reports.ui.metrics.cache_hit_detail") %></div>
         <div class="metric-sparkline">
           <svg id="sparkline-cache" viewBox="0 0 100 30" preserveAspectRatio="none"></svg>
         </div>
@@ -213,14 +216,14 @@ pg_stat_statements.track = all</pre>
     <div class="live-metric-card" data-metric="longrunning">
       <div class="metric-header">
         <span class="metric-icon" style="background: rgba(212, 160, 86, 0.12); color: var(--accent-amber);">🐢</span>
-        <span class="metric-name">Long Queries</span>
+        <span class="metric-name"><%= t("pg_reports.ui.metrics.long_queries_label") %></span>
       </div>
       <div class="metric-body">
         <div class="metric-value">
           <span id="metric-longrunning-value">-</span>
-          <span class="metric-unit">queries</span>
+          <span class="metric-unit"><%= t("pg_reports.ui.metrics.queries_unit") %></span>
         </div>
-        <div class="metric-detail">&gt; 60s runtime</div>
+        <div class="metric-detail"><%= t("pg_reports.ui.metrics.long_running_threshold") %></div>
         <div class="metric-sparkline">
           <svg id="sparkline-longrunning" viewBox="0 0 100 30" preserveAspectRatio="none"></svg>
         </div>
@@ -232,14 +235,14 @@ pg_stat_statements.track = all</pre>
     <div class="live-metric-card" data-metric="blocked">
       <div class="metric-header">
         <span class="metric-icon" style="background: rgba(217, 112, 132, 0.12); color: var(--accent-rose);">🔒</span>
-        <span class="metric-name">Blocked</span>
+        <span class="metric-name"><%= t("pg_reports.ui.metrics.blocked_label") %></span>
       </div>
       <div class="metric-body">
         <div class="metric-value">
           <span id="metric-blocked-value">-</span>
-          <span class="metric-unit">processes</span>
+          <span class="metric-unit"><%= t("pg_reports.ui.metrics.processes_unit") %></span>
         </div>
-        <div class="metric-detail">waiting for locks</div>
+        <div class="metric-detail"><%= t("pg_reports.ui.metrics.waiting_for_locks") %></div>
         <div class="metric-sparkline">
           <svg id="sparkline-blocked" viewBox="0 0 100 30" preserveAspectRatio="none"></svg>
         </div>
@@ -254,40 +257,40 @@ pg_stat_statements.track = all</pre>
   <div class="query-monitoring-header">
     <div class="query-monitoring-title">
       <span class="monitoring-indicator" id="monitor-indicator"></span>
-      <span>SQL Query Monitor</span>
+      <span><%= t("pg_reports.ui.monitoring.query_monitor_title") %></span>
       <span class="session-badge" id="session-badge" style="display: none;">
-        Session: <strong id="session-id"></strong>
+        <%= t("pg_reports.ui.monitoring.session_label") %> <strong id="session-id"></strong>
       </span>
     </div>
     <div class="query-monitoring-controls">
       <button class="btn btn-small btn-primary" onclick="startQueryMonitoring(this)" id="start-monitor-btn">
-        ▶ Start Monitoring
+        <%= t("pg_reports.ui.actions.start_monitoring") %>
       </button>
       <button class="btn btn-small btn-danger" onclick="stopQueryMonitoring(this)" id="stop-monitor-btn" style="display: none;">
-        ⏹ Stop Monitoring
+        <%= t("pg_reports.ui.actions.stop_monitoring") %>
       </button>
       <button class="btn btn-small btn-secondary" onclick="loadQueryHistory(this)" id="load-history-btn">
-        📜 Load History (50)
+        <%= t("pg_reports.ui.actions.load_history") %>
       </button>
       <div class="download-dropdown" id="monitor-download-dropdown" style="display: none;">
         <button class="btn btn-small btn-secondary" onclick="toggleMonitorDownloadMenu(event)">
-          📥 Download
+          <%= t("pg_reports.ui.actions.download") %>
         </button>
         <div class="download-menu" id="monitor-download-menu" style="display: none;">
-          <a href="#" onclick="downloadQueryMonitor('txt'); return false;">📄 Text (.txt)</a>
-          <a href="#" onclick="downloadQueryMonitor('csv'); return false;">📊 CSV (.csv)</a>
-          <a href="#" onclick="downloadQueryMonitor('json'); return false;">📋 JSON (.json)</a>
+          <a href="#" onclick="downloadQueryMonitor('txt'); return false;"><%= t("pg_reports.ui.actions.download_text") %></a>
+          <a href="#" onclick="downloadQueryMonitor('csv'); return false;"><%= t("pg_reports.ui.actions.download_csv") %></a>
+          <a href="#" onclick="downloadQueryMonitor('json'); return false;"><%= t("pg_reports.ui.actions.download_json") %></a>
         </div>
       </div>
       <span class="query-monitoring-count">
-        Queries: <strong id="query-count">0</strong>
+        <%= t("pg_reports.ui.monitoring.queries_label") %> <strong id="query-count">0</strong>
       </span>
     </div>
   </div>
 
   <div class="query-feed" id="query-feed">
     <div class="query-feed-empty">
-      Click "Start Monitoring" to begin capturing SQL queries
+      <%= t("pg_reports.ui.monitoring.feed_empty") %>
     </div>
   </div>
 </div>
@@ -297,7 +300,7 @@ pg_stat_statements.track = all</pre>
     <div class="category-card<%= ' disabled' if category_key == :queries && !@pg_stat_status[:ready] %>">
       <% if category_key == :queries && !@pg_stat_status[:ready] %>
         <div class="category-warning">
-          <span>🔒</span> Requires pg_stat_statements
+          <%= t("pg_reports.ui.categories.requires_pg_stat") %>
         </div>
       <% end %>
       <div class="category-header">
@@ -305,7 +308,7 @@ pg_stat_statements.track = all</pre>
           <%= category[:icon] %>
         </div>
         <span class="category-title"><%= category[:name] %></span>
-        <span class="category-count"><%= category[:reports].size %> reports</span>
+        <span class="category-count"><%= category[:reports].size %> <%= t("pg_reports.ui.categories.reports_count_suffix") %></span>
       </div>
 
       <div class="reports-list">
@@ -865,7 +868,7 @@ pg_stat_statements.track = all</pre>
   async function resetStatistics() {
     const button = document.getElementById('confirm-reset-btn');
     button.disabled = true;
-    button.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></span> Resetting...';
+    button.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></span> ' + PG_REPORTS_I18N.actions.resetting;
 
     try {
       const response = await fetch(`${pgReportsRoot}/reset_statistics`, {
@@ -882,20 +885,20 @@ pg_stat_statements.track = all</pre>
         closeResetConfirmModal();
         showToast(data.message);
       } else {
-        showToast(data.error || 'Failed to reset statistics', 'error');
+        showToast(data.error || PG_REPORTS_I18N.errors.reset_stats_failed, 'error');
         button.disabled = false;
-        button.innerHTML = 'Yes, Reset';
+        button.innerHTML = PG_REPORTS_I18N.actions.confirm_reset;
       }
     } catch (error) {
-      showToast('Network error: ' + error.message, 'error');
+      showToast(PG_REPORTS_I18N.errors.network_error_prefix + ' ' + error.message, 'error');
       button.disabled = false;
-      button.innerHTML = 'Yes, Reset';
+      button.innerHTML = PG_REPORTS_I18N.actions.confirm_reset;
     }
   }
 
   async function enablePgStatStatements(button) {
     button.disabled = true;
-    button.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></span> Creating...';
+    button.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></span> ' + PG_REPORTS_I18N.actions.creating;
 
     try {
       const response = await fetch(`${pgReportsRoot}/enable_pg_stat_statements`, {
@@ -918,12 +921,12 @@ pg_stat_statements.track = all</pre>
           showPgStatInfo();
         }
         button.disabled = false;
-        button.innerHTML = '⚡ Create Extension';
+        button.innerHTML = PG_REPORTS_I18N.actions.create_extension;
       }
     } catch (error) {
-      showToast('Network error: ' + error.message, 'error');
+      showToast(PG_REPORTS_I18N.errors.network_error_prefix + ' ' + error.message, 'error');
       button.disabled = false;
-      button.innerHTML = '⚡ Create Extension';
+      button.innerHTML = PG_REPORTS_I18N.actions.create_extension;
     }
   }
 
@@ -991,19 +994,19 @@ pg_stat_statements.track = all</pre>
       <div class="live-monitoring-header">
         <div class="live-monitoring-title">
           <span class="badge-dot error"></span>
-          <span>Live Monitoring Unavailable</span>
+          <span>${PG_REPORTS_I18N.status.monitoring_unavailable}</span>
         </div>
       </div>
       <div style="padding: 2rem; text-align: center; color: var(--text-muted);">
-        <p style="margin-bottom: 1rem;">Unable to fetch database statistics.</p>
-        <p style="font-size: 0.875rem;">This may be due to:</p>
+        <p style="margin-bottom: 1rem;">${PG_REPORTS_I18N.errors.unable_fetch_metrics}</p>
+        <p style="font-size: 0.875rem;">${PG_REPORTS_I18N.errors.possible_causes}</p>
         <ul style="list-style: none; padding: 0; margin: 1rem 0; font-size: 0.875rem;">
-          <li>• Insufficient database permissions</li>
-          <li>• Database statistics views not accessible</li>
-          <li>• Connection issues</li>
+          <li>• ${PG_REPORTS_I18N.errors.cause_permissions}</li>
+          <li>• ${PG_REPORTS_I18N.errors.cause_views}</li>
+          <li>• ${PG_REPORTS_I18N.errors.cause_connection}</li>
         </ul>
         <button class="btn btn-small btn-primary" onclick="location.reload()" style="margin-top: 1rem;">
-          Retry
+          ${PG_REPORTS_I18N.actions.retry}
         </button>
       </div>
     `;
@@ -1071,7 +1074,7 @@ pg_stat_statements.track = all</pre>
           showMetricsUnavailableMessage();
         } else if (consecutiveErrors === 1) {
           // Show toast on first error
-          showToast(data.error || 'Failed to fetch live metrics', 'error');
+          showToast(data.error || PG_REPORTS_I18N.errors.fetch_metrics_failed, 'error');
         }
         return false;
       }
@@ -1084,7 +1087,7 @@ pg_stat_statements.track = all</pre>
         stopPolling();
         showMetricsUnavailableMessage();
       } else if (consecutiveErrors === 1) {
-        showToast('Network error: ' + error.message, 'error');
+        showToast(PG_REPORTS_I18N.errors.network_error_prefix + ' ' + error.message, 'error');
       }
       return false;
     }
@@ -1253,37 +1256,37 @@ pg_stat_statements.track = all</pre>
 
     // VSCode (WSL Remote format)
     urls.push({
-      name: 'VS Code (WSL)',
+      name: PG_REPORTS_I18N.settings.ide_vscode_wsl,
       url: `vscode://vscode-remote/wsl+${wslDistro}${absolutePath}:${line}`
     });
 
     // VSCode (direct path)
     urls.push({
-      name: 'VS Code',
+      name: PG_REPORTS_I18N.settings.ide_vscode,
       url: `vscode://file${absolutePath}:${line}`
     });
 
     // RubyMine
     urls.push({
-      name: 'RubyMine',
+      name: PG_REPORTS_I18N.settings.ide_rubymine,
       url: `rubymine://open?file=${absolutePath}&line=${line}`
     });
 
     // IntelliJ
     urls.push({
-      name: 'IntelliJ',
+      name: PG_REPORTS_I18N.settings.ide_intellij,
       url: `idea://open?file=${absolutePath}&line=${line}`
     });
 
     // Cursor (WSL Remote format)
     urls.push({
-      name: 'Cursor (WSL)',
+      name: PG_REPORTS_I18N.settings.ide_cursor_wsl,
       url: `cursor://vscode-remote/wsl+${wslDistro}${absolutePath}:${line}`
     });
 
     // Cursor (direct path)
     urls.push({
-      name: 'Cursor',
+      name: PG_REPORTS_I18N.settings.ide_cursor,
       url: `cursor://file${absolutePath}:${line}`
     });
 
@@ -1419,7 +1422,7 @@ pg_stat_statements.track = all</pre>
 
   async function loadQueryHistory(button) {
     button.disabled = true;
-    button.innerHTML = '<span class="spinner"></span> Loading...';
+    button.innerHTML = '<span class="spinner"></span> ' + PG_REPORTS_I18N.actions.loading;
 
     try {
       const response = await fetch(
@@ -1429,22 +1432,22 @@ pg_stat_statements.track = all</pre>
 
       if (data.success && data.queries && data.queries.length > 0) {
         renderQueryFeed(data.queries);
-        showToast(`Loaded ${data.queries.length} queries from history`);
+        showToast(pgReportsFormat(PG_REPORTS_I18N.success.queries_loaded, { count: data.queries.length }));
       } else {
-        showToast('No query history found', 'error');
+        showToast(PG_REPORTS_I18N.errors.no_query_history, 'error');
       }
     } catch (error) {
       console.error('Failed to load query history:', error);
-      showToast('Failed to load history: ' + error.message, 'error');
+      showToast(PG_REPORTS_I18N.errors.load_history_failed + ' ' + error.message, 'error');
     } finally {
       button.disabled = false;
-      button.innerHTML = '📜 Load History (50)';
+      button.innerHTML = PG_REPORTS_I18N.actions.load_history;
     }
   }
 
   async function startQueryMonitoring(button) {
     button.disabled = true;
-    button.innerHTML = '<span class="spinner"></span> Starting...';
+    button.innerHTML = '<span class="spinner"></span> ' + PG_REPORTS_I18N.actions.starting;
 
     try {
       const response = await fetch(`${pgReportsRoot}/query_monitor/start`, {
@@ -1464,20 +1467,20 @@ pg_stat_statements.track = all</pre>
         startQueryMonitorPolling();
         showToast(data.message);
       } else {
-        showToast(data.message || 'Failed to start monitoring', 'error');
+        showToast(data.message || PG_REPORTS_I18N.errors.start_monitoring_failed, 'error');
         button.disabled = false;
-        button.innerHTML = '▶ Start Monitoring';
+        button.innerHTML = PG_REPORTS_I18N.actions.start_monitoring;
       }
     } catch (error) {
-      showToast('Network error: ' + error.message, 'error');
+      showToast(PG_REPORTS_I18N.errors.network_error_prefix + ' ' + error.message, 'error');
       button.disabled = false;
-      button.innerHTML = '▶ Start Monitoring';
+      button.innerHTML = PG_REPORTS_I18N.actions.start_monitoring;
     }
   }
 
   async function stopQueryMonitoring(button) {
     button.disabled = true;
-    button.innerHTML = '<span class="spinner"></span> Stopping...';
+    button.innerHTML = '<span class="spinner"></span> ' + PG_REPORTS_I18N.actions.stopping;
 
     try {
       const response = await fetch(`${pgReportsRoot}/query_monitor/stop`, {
@@ -1498,14 +1501,14 @@ pg_stat_statements.track = all</pre>
         updateQueryMonitorUI(false);
         showToast(data.message);
       } else {
-        showToast(data.message || 'Failed to stop monitoring', 'error');
+        showToast(data.message || PG_REPORTS_I18N.errors.stop_monitoring_failed, 'error');
         button.disabled = false;
-        button.innerHTML = '⏹ Stop Monitoring';
+        button.innerHTML = PG_REPORTS_I18N.actions.stop_monitoring;
       }
     } catch (error) {
-      showToast('Network error: ' + error.message, 'error');
+      showToast(PG_REPORTS_I18N.errors.network_error_prefix + ' ' + error.message, 'error');
       button.disabled = false;
-      button.innerHTML = '⏹ Stop Monitoring';
+      button.innerHTML = PG_REPORTS_I18N.actions.stop_monitoring;
     }
   }
 
@@ -1527,7 +1530,7 @@ pg_stat_statements.track = all</pre>
       startBtn.style.display = 'none';
       stopBtn.style.display = 'inline-block';
       stopBtn.disabled = false;
-      stopBtn.innerHTML = '⏹ Stop Monitoring';
+      stopBtn.innerHTML = PG_REPORTS_I18N.actions.stop_monitoring;
       loadHistoryBtn.style.display = 'none';  // Hide when monitoring active
       sessionBadge.style.display = 'inline-block';
       sessionIdEl.textContent = currentSessionId ? currentSessionId.substring(0, 8) : '';
@@ -1536,7 +1539,7 @@ pg_stat_statements.track = all</pre>
       indicator.classList.remove('active');
       startBtn.style.display = 'inline-block';
       startBtn.disabled = false;
-      startBtn.innerHTML = '▶ Start Monitoring';
+      startBtn.innerHTML = PG_REPORTS_I18N.actions.start_monitoring;
       stopBtn.style.display = 'none';
       loadHistoryBtn.style.display = 'inline-block';  // Show when monitoring stopped
       sessionBadge.style.display = 'none';
@@ -1547,7 +1550,7 @@ pg_stat_statements.track = all</pre>
 
       // Only clear feed if no queries captured
       if (!hasQueries) {
-        feed.innerHTML = '<div class="query-feed-empty">Click "Start Monitoring" to begin capturing SQL queries</div>';
+        feed.innerHTML = '<div class="query-feed-empty">' + PG_REPORTS_I18N.monitoring.feed_empty + '</div>';
       }
     }
   }
@@ -1614,7 +1617,7 @@ pg_stat_statements.track = all</pre>
         renderQueryFeed(data.queries);
       } else if (!data.success) {
         // Server returned an error (e.g., "Monitoring not active")
-        const errorMsg = data.message || data.error || 'Query monitoring error';
+        const errorMsg = data.message || data.error || PG_REPORTS_I18N.errors.query_monitoring_error;
         showToast(errorMsg, 'error');
 
         // Stop polling and update UI since monitoring is not active
@@ -1625,7 +1628,7 @@ pg_stat_statements.track = all</pre>
       }
     } catch (error) {
       console.error('Failed to fetch query feed:', error);
-      showToast('Network error: ' + error.message, 'error');
+      showToast(PG_REPORTS_I18N.errors.network_error_prefix + ' ' + error.message, 'error');
     }
   }
 
@@ -1633,7 +1636,7 @@ pg_stat_statements.track = all</pre>
     const feed = document.getElementById('query-feed');
 
     if (queries.length === 0) {
-      feed.innerHTML = '<div class="query-feed-empty">No queries captured yet...</div>';
+      feed.innerHTML = '<div class="query-feed-empty">' + PG_REPORTS_I18N.monitoring.feed_no_queries + '</div>';
       queryCount = 0;
       document.getElementById('query-count').textContent = '0';
       return;
@@ -1653,7 +1656,7 @@ pg_stat_statements.track = all</pre>
     const timestamp = new Date(query.timestamp).toLocaleTimeString();
     const queryId = `query-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    let sourceInfo = 'Unknown source';
+    let sourceInfo = PG_REPORTS_I18N.monitoring.unknown_source;
     if (query.source_location && query.source_location.file) {
       const file = query.source_location.file;
       const line = query.source_location.line;
@@ -1677,7 +1680,7 @@ pg_stat_statements.track = all</pre>
             <span class="query-duration ${durationClass}">${duration.toFixed(2)}ms</span>
             <span class="query-source">${sourceInfo}</span>
           </div>
-          <button class="query-expand-btn" onclick="toggleQueryExpand('${queryId}')" title="Expand/Collapse">
+          <button class="query-expand-btn" onclick="toggleQueryExpand('${queryId}')" title="${PG_REPORTS_I18N.monitoring.expand_collapse_title}">
             <span id="${queryId}-icon">▼</span>
           </button>
         </div>

@@ -530,3 +530,372 @@ en:
       hot_rows: "Same rows are updated repeatedly. Consider splitting hot/cold columns, batching writes, or using an event-log table."
       low_hot_update: "HOT update rate is low — indexed columns are being updated. Drop the index or move the column to reduce write amplification."
       unused_table: "Table has zero reads since the last stats reset. Candidate for archival or removal — verify the stats window first."
+
+    # UI strings shown in the dashboard chrome (buttons, modals, toasts, etc.)
+    ui:
+      branding:
+        title: "PgReports"
+        subtitle: "PostgreSQL Analysis Dashboard"
+        page_title: "PgReports Dashboard"
+      navigation:
+        dashboard: "Dashboard"
+        back: "← Back"
+      actions:
+        cancel: "Cancel"
+        retry: "Retry"
+        copy: "📋 Copy"
+        copy_query: "📋 Copy Query"
+        copy_code: "📋 Copy Code"
+        copy_to_clipboard_title: "Copy to clipboard"
+        copied_feedback: "✓ Copied!"
+        clear_all: "Clear All"
+        run_report: "▶ Run Report"
+        export: "⬇ Export"
+        download_text: "📄 Text (.txt)"
+        download_csv: "📊 CSV (.csv)"
+        download_json: "📋 JSON (.json)"
+        download: "📥 Download"
+        copy_ai_prompt: "Copy Prompt"
+        send_telegram: "📨 Telegram"
+        sending: "Sending..."
+        reset_statistics: "🗑️ Reset Statistics"
+        resetting: "Resetting..."
+        confirm_reset: "Yes, Reset"
+        create_extension: "⚡ Create Extension"
+        creating: "Creating..."
+        ide_settings_button_title: "IDE Settings"
+        explain_analyze: "📊 EXPLAIN ANALYZE"
+        execute_query: "▶ Execute Query"
+        create_migration_file: "📁 Create File & Open in IDE"
+        start_monitoring: "▶ Start Monitoring"
+        stop_monitoring: "⏹ Stop Monitoring"
+        starting: "Starting..."
+        stopping: "Stopping..."
+        load_history: "📜 Load History (50)"
+        loading: "Loading..."
+        running: "Running..."
+        save_for_comparison: "📌 Save for Comparison"
+        saved_marker: "📌 Saved"
+      status:
+        pg_stat_ready: "pg_stat_statements ready"
+        extension_installed: "Extension installed, not preloaded"
+        preloaded: "Preloaded, extension not created"
+        not_configured: "Not configured"
+        monitoring_unavailable: "Live Monitoring Unavailable"
+      modals:
+        enable_pg_stat_title: "Enable pg_stat_statements"
+        enable_pg_stat_intro: "To enable pg_stat_statements, follow these steps:"
+        edit_postgresql_conf: "Edit postgresql.conf:"
+        restart_postgresql: "Restart PostgreSQL:"
+        create_extension_step: "Create extension:"
+        enable_button_note: "Or click \"Enable\" button after restart."
+        reset_stats_title: "⚠️ Reset Statistics"
+        reset_stats_confirm: "Are you sure you want to reset pg_stat_statements statistics?"
+        reset_stats_warning: "This action will clear all collected query statistics and cannot be undone."
+        ide_settings_title: "⚙️ IDE Settings"
+        problem_detected_title: "⚠️ Problem Detected"
+        query_analyzer_title: "📊 Query Analyzer"
+        query_label: "Query:"
+        parameters_label: "Parameters:"
+        migration_title: "🗑️ Drop Index Migration"
+        migration_subtitle: "Generated migration to remove the index:"
+        migration_warning: "Creating a migration will generate a migration file in your project. Running this migration will drop the index from the database, which may significantly impact application performance."
+        migration_warning_dev_only: "This operation should only be performed in a local development environment."
+        query_execution_disabled_title: "⚠️ Query execution is disabled"
+        query_execution_disabled_intro: "To enable this feature, add to your configuration:"
+      settings:
+        default_ide_label: "Default IDE for source links:"
+        ide_show_menu: "Show menu (default)"
+        ide_vscode_wsl: "VS Code (WSL)"
+        ide_vscode: "VS Code"
+        ide_rubymine: "RubyMine"
+        ide_intellij: "IntelliJ IDEA"
+        ide_cursor_wsl: "Cursor (WSL)"
+        ide_cursor: "Cursor"
+      monitoring:
+        live_title: "Live Monitoring"
+        update_interval: "Updates every 5s"
+        toggle_title: "Toggle live monitoring"
+        query_monitor_title: "SQL Query Monitor"
+        session_label: "Session:"
+        queries_label: "Queries:"
+        feed_empty: "Click \"Start Monitoring\" to begin capturing SQL queries"
+        feed_no_queries: "No queries captured yet..."
+        unknown_source: "Unknown source"
+        expand_collapse_title: "Expand/Collapse"
+      metrics:
+        connections_label: "Connections"
+        tps_label: "TPS"
+        tps_unit: "tx/s"
+        commit_label: "commit:"
+        rollback_label: "rollback:"
+        cache_hit_label: "Cache Hit"
+        cache_hit_detail: "heap blocks from cache"
+        long_queries_label: "Long Queries"
+        queries_unit: "queries"
+        long_running_threshold: "> 60s runtime"
+        blocked_label: "Blocked"
+        processes_unit: "processes"
+        waiting_for_locks: "waiting for locks"
+        percent_used_suffix: "% used"
+      categories:
+        requires_pg_stat: "🔒 Requires pg_stat_statements"
+        reports_count_suffix: "reports"
+      documentation:
+        toggle_title: "📖 What does this report show?"
+        what_section: "📋 What"
+        why_section: "❓ Why It Matters"
+        nuances_section: "⚠️ Nuances"
+        thresholds_section: "📊 Thresholds"
+        threshold_warning_label: "⚠️ Warning:"
+        threshold_critical_label: "🔴 Critical:"
+        threshold_inverted_note: "(lower is worse)"
+      filters:
+        title: "🔍 Filter Parameters"
+        current_value: "current"
+      saved:
+        title: "📌 Saved for Comparison"
+        saved_at_prefix: "▸ Saved:"
+        click_to_expand: "Click to expand"
+        confirm_clear_all: "Remove all saved records for this report?"
+        remove_title: "Remove"
+      results:
+        title: "Results"
+        click_run_hint: "Click \"Run Report\" to fetch data"
+        empty_message: "No issues found. Everything looks good!"
+        showing_first_of_total: "Showing first %{count} of %{total} rows"
+        no_rows_returned: "No rows returned"
+        rows_label: "Rows:"
+        execution_time_label: "Execution time:"
+        null_placeholder: "<null>"
+      sections:
+        recommendation: "💡 Recommendation"
+        detected_issues: "⚠️ Detected Issues"
+        execution_plan: "📊 Execution Plan"
+        line_label: "Line"
+        current_label: "Current:"
+        threshold_label: "Threshold:"
+        threshold_inverted_long: "(inverted: lower values are worse)"
+        warning_eq: "warning"
+        critical_eq: "critical"
+      levels:
+        critical: "🔴 Critical"
+        warning: "⚠️ Warning"
+      errors:
+        error_prefix: "Error:"
+        unable_fetch_metrics: "Unable to fetch database statistics."
+        possible_causes: "This may be due to:"
+        cause_permissions: "Insufficient database permissions"
+        cause_views: "Database statistics views not accessible"
+        cause_connection: "Connection issues"
+        fetch_metrics_failed: "Failed to fetch live metrics"
+        fetch_metrics_check_perms: "Unable to fetch database statistics. Check database permissions."
+        insufficient_database_perms: "Insufficient database permissions to access statistics views"
+        network_error_prefix: "Network error:"
+        copy_failed: "Failed to copy"
+        run_report_first: "Run the report first"
+        run_report_failed: "Failed to run report"
+        report_not_found: "Report not found"
+        send_telegram_failed: "Failed to send to Telegram"
+        reset_stats_failed: "Failed to reset statistics"
+        start_monitoring_failed: "Failed to start monitoring"
+        stop_monitoring_failed: "Failed to stop monitoring"
+        load_history_failed: "Failed to load history:"
+        no_query_history: "No query history found"
+        decode_query_failed: "Failed to decode query"
+        explain_analyze_failed: "Failed to run EXPLAIN ANALYZE"
+        execute_query_failed: "Failed to execute query"
+        create_migration_failed: "Failed to create migration"
+        explain_disabled_toast: "⚠️ EXPLAIN ANALYZE is disabled. Enable in configuration: config.allow_raw_query_execution = true"
+        execute_disabled_toast: "⚠️ Query execution is disabled. Enable in configuration: config.allow_raw_query_execution = true"
+        query_monitoring_error: "Query monitoring error"
+        query_hash_required: "Query hash is required"
+        query_execution_disabled: "Query execution from dashboard is disabled. Enable it in configuration with 'config.allow_raw_query_execution = true'"
+        query_not_found_expired: "Query not found or expired. Please refresh the page."
+        security_violation_prefix: "Security violation:"
+        trigger_variables_not_allowed: "Cannot EXPLAIN ANALYZE queries with trigger variables (NEW, OLD). These are only available within trigger functions."
+        missing_parameter_values: "Please provide values for all parameter placeholders ($1, $2, etc.)"
+        migration_dev_only: "Migration creation is only allowed in development environment"
+        filename_code_required: "File name and code are required"
+        invalid_filename_format: "Invalid migration file name format"
+        migrations_dir_not_found: "Migrations directory not found"
+      success:
+        statistics_reset: "Statistics have been reset successfully"
+        report_generated: "Report generated successfully"
+        ai_prompt_copied: "AI prompt copied to clipboard"
+        explain_copied: "EXPLAIN output copied to clipboard"
+        migration_copied: "Migration code copied to clipboard"
+        migration_created: "Migration created successfully"
+        telegram_sent: "Report sent to Telegram"
+        queries_loaded: "Loaded %{count} queries from history"
+        record_saved: "Record saved for comparison"
+        record_removed: "Record removed"
+        record_removed_saved: "Record removed from saved"
+        all_saved_cleared: "All saved records cleared"
+
+    # Category names (shown on the dashboard grid)
+    categories:
+      queries: "Queries"
+      indexes: "Indexes"
+      tables: "Tables"
+      connections: "Connections"
+      system: "System"
+      schema_analysis: "Schema Analysis"
+
+    # Report names and short descriptions (shown on the dashboard listing)
+    reports:
+      slow_queries:
+        name: "Slow Queries"
+        description: "Queries with high mean execution time"
+      heavy_queries:
+        name: "Heavy Queries"
+        description: "Most frequently called queries"
+      expensive_queries:
+        name: "Expensive Queries"
+        description: "Queries consuming most total time"
+      missing_index_queries:
+        name: "Missing Index Queries"
+        description: "Queries potentially missing indexes"
+      low_cache_hit_queries:
+        name: "Low Cache Hit"
+        description: "Queries with poor cache utilization"
+      temp_file_queries:
+        name: "Temp File Queries"
+        description: "Queries spilling to disk"
+      all_queries:
+        name: "All Queries"
+        description: "All query statistics"
+      unused_indexes:
+        name: "Unused Indexes"
+        description: "Indexes rarely or never scanned"
+      duplicate_indexes:
+        name: "Duplicate Indexes"
+        description: "Redundant indexes"
+      invalid_indexes:
+        name: "Invalid Indexes"
+        description: "Indexes that failed to build"
+      missing_indexes:
+        name: "Missing Indexes"
+        description: "Tables potentially missing indexes"
+      inefficient_indexes:
+        name: "Inefficient Indexes"
+        description: "Indexes with high read-to-fetch ratio"
+      index_usage:
+        name: "Index Usage"
+        description: "Index scan statistics"
+      bloated_indexes:
+        name: "Bloated Indexes"
+        description: "Indexes with high bloat"
+      fk_without_indexes:
+        name: "FK Without Indexes"
+        description: "Foreign keys missing indexes"
+      index_correlation:
+        name: "Index Correlation"
+        description: "Low physical correlation indexes"
+      index_sizes:
+        name: "Index Sizes"
+        description: "Index disk usage"
+      table_sizes:
+        name: "Table Sizes"
+        description: "Table disk usage"
+      bloated_tables:
+        name: "Bloated Tables"
+        description: "Tables with high dead tuple ratio"
+      vacuum_needed:
+        name: "Vacuum Needed"
+        description: "Tables needing vacuum"
+      row_counts:
+        name: "Row Counts"
+        description: "Table row counts"
+      cache_hit_ratios:
+        name: "Cache Hit Ratios"
+        description: "Table cache statistics"
+      seq_scans:
+        name: "Sequential Scans"
+        description: "Tables with high sequential scans"
+      tables_without_pk:
+        name: "No Primary Key"
+        description: "Tables missing primary keys"
+      recently_modified:
+        name: "Recently Modified"
+        description: "Tables with recent activity"
+      update_hotspots:
+        name: "Update Hotspots"
+        description: "Same rows or indexed columns updated repeatedly"
+      unused_tables:
+        name: "Unused Tables"
+        description: "Tables never queried since the last stats reset"
+      active_connections:
+        name: "Active Connections"
+        description: "Current database connections"
+      connection_stats:
+        name: "Connection Stats"
+        description: "Connection statistics by state"
+      long_running_queries:
+        name: "Long Running"
+        description: "Queries running for extended period"
+      blocking_queries:
+        name: "Blocking Queries"
+        description: "Queries blocking others"
+      locks:
+        name: "Locks"
+        description: "Current database locks"
+      idle_connections:
+        name: "Idle Connections"
+        description: "Idle connections"
+      pool_usage:
+        name: "Pool Usage"
+        description: "Connection pool utilization"
+      pool_wait_times:
+        name: "Wait Times"
+        description: "Resource wait analysis"
+      pool_saturation:
+        name: "Pool Saturation"
+        description: "Pool health warnings"
+      connection_churn:
+        name: "Connection Churn"
+        description: "Connection lifecycle analysis"
+      database_sizes:
+        name: "Database Sizes"
+        description: "Size of all databases"
+      settings:
+        name: "Settings"
+        description: "PostgreSQL configuration"
+      extensions:
+        name: "Extensions"
+        description: "Installed extensions"
+      activity_overview:
+        name: "Activity Overview"
+        description: "Current activity summary"
+      wraparound_risk:
+        name: "Wraparound Risk"
+        description: "Transaction ID wraparound proximity"
+      checkpoint_stats:
+        name: "Checkpoint Stats"
+        description: "Checkpoint and bgwriter statistics"
+      cache_stats:
+        name: "Cache Stats"
+        description: "Database cache statistics"
+      missing_validations:
+        name: "Missing Validations"
+        description: "Unique indexes without model validations"
+      unused_columns:
+        name: "Unused Columns"
+        description: "Columns that have only ever held a single value"
+      always_null_columns:
+        name: "Always-NULL Columns"
+        description: "Nullable columns that contain only NULL"
+
+    # Filter parameter labels and descriptions
+    parameters:
+      limit:
+        label: "Limit"
+        description: "Maximum number of results"
+      min_calls:
+        label: "Min Calls"
+        description: "Minimum number of query calls"
+      min_duration_seconds:
+        label: "Min Duration (seconds)"
+        description: "Minimum query duration in seconds"
+      threshold_label: "%{field} Threshold"
+      threshold_description: "Override threshold for %{field}"
