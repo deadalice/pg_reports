@@ -139,7 +139,7 @@ module PgReports
       # Checkpoint stats — uses version-specific SQL because PostgreSQL 17+
       # moved checkpoint columns from pg_stat_bgwriter to pg_stat_checkpointer
       def checkpoint_stats(limit: 10)
-        sql_file = pg_version >= 170_000 ? :checkpoint_stats : :checkpoint_stats_legacy
+        sql_file = (pg_version >= 170_000) ? :checkpoint_stats : :checkpoint_stats_legacy
         data = executor.execute_from_file(:system, sql_file)
         data = data.first(limit) if limit
 
@@ -147,8 +147,8 @@ module PgReports
           title: "Checkpoint Statistics",
           data: data,
           columns: %w[checkpoints_timed checkpoints_requested checkpoint_write_time_sec
-                      checkpoint_sync_time_sec buffers_checkpoint buffers_clean
-                      bgwriter_stops buffers_alloc requested_pct stats_reset]
+            checkpoint_sync_time_sec buffers_checkpoint buffers_clean
+            bgwriter_stops buffers_alloc requested_pct stats_reset]
         )
       end
 

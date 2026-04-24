@@ -125,7 +125,7 @@ module PgReports
         if column_names.size > 1
           # For composite indexes, we need to check if there's a validation with scope
           primary_column = column_names.first.to_sym
-          scope_columns = column_names[1..-1].map(&:to_sym)
+          scope_columns = column_names[1..].map(&:to_sym)
 
           has_composite = uniqueness_validators.any? do |validator|
             validator.attributes.include?(primary_column) &&
@@ -145,7 +145,7 @@ module PgReports
           "validates :#{column_names.first}, uniqueness: true"
         else
           primary = column_names.first
-          scopes = column_names[1..-1]
+          scopes = column_names[1..]
           "validates :#{primary}, uniqueness: { scope: #{scopes.inspect} }"
         end
       end

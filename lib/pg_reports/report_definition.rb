@@ -120,33 +120,29 @@ module PgReports
       params = {}
 
       # Parameters from parameters section
-      if config["parameters"]
-        config["parameters"].each do |name, param_config|
-          params[name] = {
-            type: param_config["type"],
-            default: param_config["default"],
-            description: param_config["description"],
-            label: name.to_s.titleize
-          }
-        end
+      config["parameters"]&.each do |name, param_config|
+        params[name] = {
+          type: param_config["type"],
+          default: param_config["default"],
+          description: param_config["description"],
+          label: name.to_s.titleize
+        }
       end
 
       # Add threshold parameters from filters (config-based)
-      if config["filters"]
-        config["filters"].each do |filter|
-          if filter["value"]["source"] == "config"
-            config_key = filter["value"]["key"]
-            field_name = filter["field"]
+      config["filters"]&.each do |filter|
+        if filter["value"]["source"] == "config"
+          config_key = filter["value"]["key"]
+          field_name = filter["field"]
 
-            params["#{field_name}_threshold"] = {
-              type: filter["cast"] || "integer",
-              default: PgReports.config.public_send(config_key),
-              description: "Override threshold for #{field_name}",
-              label: "#{field_name.titleize} Threshold",
-              current_config: PgReports.config.public_send(config_key),
-              is_threshold: true
-            }
-          end
+          params["#{field_name}_threshold"] = {
+            type: filter["cast"] || "integer",
+            default: PgReports.config.public_send(config_key),
+            description: "Override threshold for #{field_name}",
+            label: "#{field_name.titleize} Threshold",
+            current_config: PgReports.config.public_send(config_key),
+            is_threshold: true
+          }
         end
       end
 

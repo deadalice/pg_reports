@@ -5,9 +5,9 @@ module PgReports
   # Called once at boot (Ruby/Rails) and lazily on first DB access (PostgreSQL).
   module Compatibility
     # Keep in sync with gemspec constraints
-    MINIMUM_RUBY_VERSION     = "2.7"
-    MINIMUM_RAILS_VERSION    = "5.0"
-    MINIMUM_PG_VERSION       = 12_00_00  # server_version_num format
+    MINIMUM_RUBY_VERSION = "2.7"
+    MINIMUM_RAILS_VERSION = "5.0"
+    MINIMUM_PG_VERSION = 12_00_00  # server_version_num format
     MINIMUM_PG_VERSION_LABEL = "12"
 
     class << self

@@ -6,6 +6,7 @@ gemspec
 
 group :development, :test do
   gem "debug"
+  gem "standard"
 end
 
 group :test do

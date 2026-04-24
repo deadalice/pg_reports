@@ -27,13 +27,9 @@ module PgReports
       ensure_subscription_if_enabled
     end
 
-    def enabled
-      @enabled
-    end
+    attr_reader :enabled
 
-    def session_id
-      @session_id
-    end
+    attr_reader :session_id
 
     def start
       @mutex.synchronize do

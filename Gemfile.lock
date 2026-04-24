@@ -49,7 +49,7 @@ GEM
       uri (>= 0.13.1)
     ast (2.4.3)
     base64 (0.3.0)
-    bigdecimal (4.1.1)
+    bigdecimal (4.1.2)
     builder (3.3.0)
     concurrent-ruby (1.3.6)
     connection_pool (3.0.2)
@@ -65,7 +65,7 @@ GEM
       reline (>= 0.3.8)
     diff-lcs (1.6.2)
     drb (2.2.3)
-    erb (6.0.2)
+    erb (6.0.4)
     erubi (1.13.1)
     factory_bot (6.5.6)
       activesupport (>= 6.1.0)
@@ -75,19 +75,19 @@ GEM
     i18n (1.14.8)
       concurrent-ruby (~> 1.0)
     io-console (0.8.2)
-    irb (1.17.0)
+    irb (1.18.0)
       pp (>= 0.6.0)
       prism (>= 1.3.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
-    json (2.19.3)
+    json (2.19.4)
     language_server-protocol (3.17.0.5)
     lint_roller (1.1.0)
     logger (1.7.0)
     loofah (2.25.1)
       crass (~> 1.0.2)
       nokogiri (>= 1.12.0)
-    minitest (6.0.3)
+    minitest (6.0.5)
       drb (~> 2.0)
       prism (~> 1.5)
     nokogiri (1.19.2-x86_64-linux-gnu)
@@ -130,7 +130,7 @@ GEM
       tsort (>= 0.2)
       zeitwerk (~> 2.6)
     rainbow (3.1.1)
-    rake (13.3.1)
+    rake (13.4.2)
     rdoc (7.2.0)
       erb
       psych (>= 4.0.0)
@@ -198,7 +198,7 @@ GEM
     unicode-emoji (4.2.0)
     uri (1.1.1)
     useragent (0.16.11)
-    yard (0.9.39)
+    yard (0.9.43)
     zeitwerk (2.7.5)
 
 PLATFORMS
@@ -210,7 +210,7 @@ DEPENDENCIES
   factory_bot_rails
   pg_reports!
   rspec-rails (~> 6.0)
-  standard (~> 1.30)
+  standard
   yard (~> 0.9)
 
 BUNDLED WITH
