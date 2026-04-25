@@ -29,161 +29,119 @@ A comprehensive PostgreSQL monitoring and analysis library for Rails application
 
 ## Installation
 
-Add to your Gemfile:
-
 ```ruby
+# Gemfile
 gem "pg_reports"
-
-# Optional: for Telegram support
-gem "telegram-bot-ruby"
+gem "telegram-bot-ruby"  # optional, for Telegram delivery
 ```
-
-Run:
 
 ```bash
 bundle install
 ```
 
-## Quick Start
-
-### Mount the Dashboard
-
-Add to your `config/routes.rb`:
+Mount the dashboard:
 
 ```ruby
+# config/routes.rb
 Rails.application.routes.draw do
-  # Mount in development only (recommended)
   if Rails.env.development?
     mount PgReports::Engine, at: "/pg_reports"
   end
 
-  # Or with authentication
-  authenticate :user, ->(u) { u.admin? } do
-    mount PgReports::Engine, at: "/pg_reports"
-  end
+  # Or with authentication:
+  # authenticate :user, ->(u) { u.admin? } do
+  #   mount PgReports::Engine, at: "/pg_reports"
+  # end
 end
 ```
 
-Visit `http://localhost:3000/pg_reports` to access the dashboard.
+Visit `http://localhost:3000/pg_reports`.
 
-### Use in Console or Code
+For query analysis, also enable `pg_stat_statements` — see [setup](#pg_stat_statements-setup) below.
+
+## Usage
 
 ```ruby
-# Get slow queries
+# In console or code
 PgReports.slow_queries.display
+PgReports.unused_indexes.each { |row| puts row["index_name"] }
 
-# Get unused indexes
-report = PgReports.unused_indexes
-report.each { |row| puts row["index_name"] }
+# Export
+report = PgReports.expensive_queries
+report.to_text
+report.to_csv
+report.to_a
 
-# Export to different formats
-report.to_text   # Plain text
-report.to_csv    # CSV
-report.to_a      # Array of hashes
-
-# Send to Telegram
-PgReports.expensive_queries.send_to_telegram
-
-# Health report
-PgReports.health_report.display
+# Telegram
+PgReports.slow_queries.send_to_telegram
 ```
+
+**[Full list of reports →](docs/reports.md)**
 
 ## Configuration
-
-Create an initializer `config/initializers/pg_reports.rb`:
-
-```ruby
-PgReports.configure do |config|
-  # Telegram (optional)
-  config.telegram_bot_token = ENV["PG_REPORTS_TELEGRAM_TOKEN"]
-  config.telegram_chat_id = ENV["PG_REPORTS_TELEGRAM_CHAT_ID"]
-
-  # Query thresholds
-  config.slow_query_threshold_ms = 100        # Queries slower than this
-  config.heavy_query_threshold_calls = 1000   # Queries with more calls
-  config.expensive_query_threshold_ms = 10000 # Total time threshold
-
-  # Index thresholds
-  config.unused_index_threshold_scans = 50    # Index with fewer scans
-
-  # Table thresholds
-  config.bloat_threshold_percent = 20         # Tables with more bloat
-  config.dead_rows_threshold = 10000          # Dead rows needing vacuum
-
-  # Output settings
-  config.max_query_length = 200               # Truncate queries in text output
-
-  # Dashboard authentication (optional)
-  config.dashboard_auth = -> { 
-    authenticate_or_request_with_http_basic do |user, pass|
-      user == "admin" && pass == "secret"
-    end
-  }
-
-  # External fonts (Google Fonts)
-  # Default: false (no external requests)
-  config.load_external_fonts = ENV["PG_REPORTS_LOAD_EXTERNAL_FONTS"] == "true"
-  # or simply:
-  # config.load_external_fonts = true
-
-end
-```
-
-### Query Execution Security
-
-⚠️ **Security Warning**: By default, the dashboard **does not allow** executing raw SQL queries via "Execute Query" and "EXPLAIN ANALYZE" buttons. This prevents accidental or malicious query execution in production environments.
-
-To enable query execution (only in secure environments):
-
-```ruby
-PgReports.configure do |config|
-  # Enable query execution from dashboard (default: false)
-  config.allow_raw_query_execution = true
-end
-```
-
-Or via environment variable:
-
-```bash
-export PG_REPORTS_ALLOW_RAW_QUERY_EXECUTION=true
-```
-
-**Recommended setup** (only enable in development/staging):
 
 ```ruby
 # config/initializers/pg_reports.rb
 PgReports.configure do |config|
-  # Only allow query execution in development/staging
-  config.allow_raw_query_execution = Rails.env.development? || Rails.env.staging?
+  # Telegram (optional)
+  config.telegram_bot_token = ENV["PG_REPORTS_TELEGRAM_TOKEN"]
+  config.telegram_chat_id   = ENV["PG_REPORTS_TELEGRAM_CHAT_ID"]
 
-  # Combine with authentication for additional security
+  # Thresholds
+  config.slow_query_threshold_ms      = 100
+  config.heavy_query_threshold_calls  = 1000
+  config.expensive_query_threshold_ms = 10_000
+  config.unused_index_threshold_scans = 50
+  config.bloat_threshold_percent      = 20
+  config.dead_rows_threshold          = 10_000
+
+  # Output
+  config.max_query_length = 200
+
+  # Auth (optional)
   config.dashboard_auth = -> {
     authenticate_or_request_with_http_basic do |user, pass|
       user == ENV["PG_REPORTS_USER"] && pass == ENV["PG_REPORTS_PASSWORD"]
     end
   }
+
+  # Google Fonts (default: false — no external requests)
+  config.load_external_fonts = false
 end
 ```
 
-When disabled:
-- API endpoints `/execute_query` and `/explain_analyze` return 403 Forbidden
-- UI buttons are disabled with explanation tooltips
-- Existing safety measures (SELECT/SHOW only, automatic LIMIT) still apply when enabled
+<details>
+<summary><strong>Locale (EN / RU / UK)</strong></summary>
 
-## Query Source Tracking
+PgReports follows your application's `I18n.locale`. Set it the way you set it for the rest of the app — there's no PgReports-specific knob. The dashboard supports `en`, `ru`, and `uk` out of the box.
 
-PgReports automatically parses query annotations to show **where queries originated**. Works with:
+</details>
 
-### Marginalia (recommended)
+<details>
+<summary><strong>Raw query execution (EXPLAIN ANALYZE / Execute Query)</strong></summary>
 
-If you use [marginalia](https://github.com/basecamp/marginalia), PgReports will automatically parse and display controller/action info in the **source** column.
+⚠️ Disabled by default. The dashboard's "Execute Query" and "EXPLAIN ANALYZE" buttons require this opt-in.
 
 ```ruby
-# Gemfile
-gem 'marginalia'
+PgReports.configure do |config|
+  config.allow_raw_query_execution = Rails.env.development? || Rails.env.staging?
+end
 ```
 
-### Rails 7+ Query Logs
+</details>
+
+<details>
+<summary><strong>Query source tracking (Marginalia / Rails query logs)</strong></summary>
+
+PgReports parses query annotations to show **where queries originated**.
+
+[Marginalia](https://github.com/basecamp/marginalia):
+
+```ruby
+gem "marginalia"
+```
+
+Rails 7+ query logs:
 
 ```ruby
 # config/application.rb
@@ -191,105 +149,25 @@ config.active_record.query_log_tags_enabled = true
 config.active_record.query_log_tags = [:controller, :action]
 ```
 
-## Available Reports
+Either form is auto-detected; controller/action and file:line appear in the **source** column on report rows.
 
-### Queries (requires pg_stat_statements)
+</details>
 
-| Method | Description |
-|--------|-------------|
-| `slow_queries` | Queries with high mean execution time |
-| `heavy_queries` | Most frequently called queries |
-| `expensive_queries` | Queries consuming most total time |
-| `missing_index_queries` | Queries potentially missing indexes |
-| `low_cache_hit_queries` | Queries with poor cache utilization |
-| `temp_file_queries` | 🆕 Queries spilling to disk via temporary files |
-| `all_queries` | All query statistics |
-| `reset_statistics!` | Reset pg_stat_statements data |
-
-### Indexes
-
-| Method | Description |
-|--------|-------------|
-| `unused_indexes` | Indexes rarely or never scanned |
-| `duplicate_indexes` | Redundant indexes |
-| `invalid_indexes` | Indexes that failed to build |
-| `missing_indexes` | Tables potentially missing indexes |
-| `inefficient_indexes` | 🆕 Indexes with high read-to-fetch ratio (misaligned column order) |
-| `fk_without_indexes` | 🆕 Foreign keys missing indexes on child table |
-| `index_correlation` | 🆕 Low physical correlation causing random I/O |
-| `index_usage` | Index scan statistics |
-| `bloated_indexes` | Indexes with high bloat |
-| `index_sizes` | Index disk usage |
-
-### Tables
-
-| Method | Description |
-|--------|-------------|
-| `table_sizes` | Table disk usage |
-| `bloated_tables` | Tables with high dead tuple ratio |
-| `vacuum_needed` | Tables needing vacuum |
-| `row_counts` | Table row counts |
-| `cache_hit_ratios` | Table cache statistics |
-| `seq_scans` | Tables with high sequential scans |
-| `tables_without_pk` | 🆕 Tables missing primary keys |
-| `recently_modified` | Tables with recent activity |
-
-### Connections
-
-| Method | Description |
-|--------|-------------|
-| `active_connections` | Current database connections |
-| `connection_stats` | Connection statistics by state |
-| `long_running_queries` | Queries running for extended period |
-| `blocking_queries` | Queries blocking others |
-| `locks` | Current database locks |
-| `idle_connections` | Idle connections |
-| `pool_usage` | Connection pool utilization analysis |
-| `pool_wait_times` | Resource wait time analysis |
-| `pool_saturation` | Pool health warnings with recommendations |
-| `connection_churn` | Connection lifecycle and churn rate analysis |
-| `kill_connection(pid)` | Terminate a backend process |
-| `cancel_query(pid)` | Cancel a running query |
-
-### System
-
-| Method | Description |
-|--------|-------------|
-| `database_sizes` | Size of all databases |
-| `settings` | PostgreSQL configuration |
-| `extensions` | Installed extensions |
-| `activity_overview` | Current activity summary |
-| `wraparound_risk` | 🆕 Transaction ID wraparound proximity |
-| `checkpoint_stats` | 🆕 Checkpoint and bgwriter statistics (PG 12–18+) |
-| `cache_stats` | Database cache statistics |
-| `pg_stat_statements_available?` | Check if extension is ready |
-| `enable_pg_stat_statements!` | Create the extension |
-
-## pg_stat_statements Setup
-
-For query analysis, you need to enable `pg_stat_statements`:
+## pg_stat_statements setup
 
 1. Edit `postgresql.conf`:
    ```
    shared_preload_libraries = 'pg_stat_statements'
    pg_stat_statements.track = all
    ```
+2. Restart PostgreSQL: `sudo systemctl restart postgresql`
+3. Create the extension (via dashboard button or `PgReports.enable_pg_stat_statements!`).
 
-2. Restart PostgreSQL:
-   ```bash
-   sudo systemctl restart postgresql
-   ```
+> PgReports does **not** require the `pg_read_all_settings` role — extension availability is detected directly. Works with CloudnativePG, managed databases, and other restricted environments.
 
-3. Create extension (via dashboard or console):
-   ```ruby
-   PgReports.enable_pg_stat_statements!
-   ```
+## Report object
 
-> **Note**: PgReports does **not** require the `pg_read_all_settings` role. It detects `pg_stat_statements` availability by directly querying the extension, making it compatible with CloudnativePG, managed databases, and other environments with restricted permissions.
-
-## Report Object
-
-Every method returns a `PgReports::Report` object:
+Every method returns a `PgReports::Report`:
 
 ```ruby
 report = PgReports.slow_queries
@@ -319,247 +197,114 @@ report.map { |row| row["query"] }
 report.select { |row| row["calls"] > 100 }
 ```
 
-## Web Dashboard
+## Dashboard features
 
-The dashboard provides:
+The dashboard provides one-click execution, sortable columns, expandable rows, filter parameters, multi-format export, Telegram delivery, and pg_stat_statements management.
 
-- 📊 Overview of all report categories with descriptions
-- ⚡ One-click report execution
-- 🔍 Filter parameters - adjust thresholds and limits on the fly
-- 🔍 Expandable rows for full query text
-- 📋 Copy query to clipboard
-- 📥 Download in multiple formats (TXT, CSV, JSON)
-- 📨 Send to Telegram
-- 🔧 pg_stat_statements management
-- 🔄 Sortable columns - click headers to sort ascending/descending
-- 📌 Save records for comparison - track before/after optimization results
-- 📊 EXPLAIN ANALYZE - run query plans directly from the dashboard
-- 🗑️ Migration generator - create Rails migrations to drop unused indexes
-- 🔗 IDE integration - click source locations to open in your IDE
+<details>
+<summary><strong>EXPLAIN ANALYZE — query plan analyzer</strong></summary>
 
-### IDE Integration
+Expand a row with a query, click **📊 EXPLAIN ANALYZE**. Shows:
 
-Click on source locations in reports to open the file directly in your IDE. Supported IDEs:
+- **Status indicator** (🟢🟡🔴) — overall query health
+- **Key metrics** — planning/execution time, cost, rows
+- **Detected problems** — sequential scans on large tables, high-cost ops, sorts spilling to disk, slow sorts (>1s), inaccurate row estimates (>10× off), slow execution
+- **Recommendations** for each issue
+- **Color-coded plan** — node types tinted by performance impact (green: efficient, blue: normal, yellow: potential issue)
+- **Line annotations** highlighting problems on specific plan lines
 
-- **VS Code (WSL)** - for Windows Subsystem for Linux
-- **VS Code** - direct path for native Linux/macOS
-- **RubyMine**
-- **IntelliJ IDEA**
-- **Cursor (WSL)** - for Windows Subsystem for Linux
-- **Cursor**
+Queries from `pg_stat_statements` with parameter placeholders (`$1`, `$2`) prompt for parameter values before analysis.
 
-Use the ⚙️ button to set your default IDE and skip the selection menu.
+Requires `config.allow_raw_query_execution = true`.
 
-### Filter Parameters
+</details>
 
-Each report page includes a collapsible "Параметры фильтрации" (Filter Parameters) section where you can:
+<details>
+<summary><strong>SQL Query Monitor — real-time query capture</strong></summary>
 
-1. **Adjust thresholds** - Override default thresholds (e.g., slow query threshold, unused index scans)
-2. **Change limits** - Set the maximum number of results to display
-3. **Real-time refresh** - Reports automatically refresh when you change parameters
+Live capture of all SQL executed by your Rails app. Click **▶ Start Monitoring**, run any operation, watch the queries appear with:
 
-Parameters show their current configured values and allow you to experiment with different thresholds without changing your configuration file.
+- SQL with syntax highlighting
+- Duration (color-coded: 🟢 <10ms, 🟡 <100ms, 🔴 >100ms)
+- Source location with click-to-IDE
+- Timestamp
 
-### Save Records for Comparison
-
-When optimizing queries, you can save records to compare before/after results:
-
-1. Expand a row and click "📌 Save for Comparison"
-2. Saved records appear above the results table
-3. Click saved records to expand and see all details
-4. Clear all or remove individual saved records
-
-Records are stored in browser localStorage per report type.
-
-### EXPLAIN ANALYZE
-
-The advanced query analyzer provides intelligent problem detection and recommendations:
-
-1. Expand a row with a query
-2. Click "📊 EXPLAIN ANALYZE"
-3. View the color-coded execution plan with:
-   - **🟢🟡🔴 Status indicator** - Overall query health assessment
-   - **📈 Key metrics** - Planning/Execution time, Cost, Rows
-   - **⚠️ Detected problems** - Sequential scans, high costs, slow sorts, estimation errors
-   - **💡 Recommendations** - Actionable advice for each issue
-   - **🎨 Colored plan** - Node types color-coded by performance impact:
-     - 🟢 Green: Efficient operations (Index Scan, Hash Join)
-     - 🔵 Blue: Normal operations (Bitmap Scan, HashAggregate)
-     - 🟡 Yellow: Potential issues (Seq Scan, Sort, Materialize)
-   - **Line-by-line annotations** - Problems highlighted on specific plan lines
-
-**Problem Detection:**
-- Sequential scans on large tables (> 1000 rows)
-- High-cost operations (> 10,000 cost units)
-- Sorts spilling to disk
-- Slow sort operations (> 1s)
-- Inaccurate row estimates (> 10x off)
-- Slow execution/planning times
-
-> Note: Queries with parameter placeholders ($1, $2) from pg_stat_statements require parameter input before analysis.
-
-### SQL Query Monitoring
-
-Monitor all SQL queries executed in your Rails application in real-time:
-
-1. Visit the dashboard at `/pg_reports`
-2. Click **"▶ Start Monitoring"** button in the SQL Query Monitor panel
-3. Execute operations in your application (web requests, console commands, background jobs)
-4. View captured queries in the dashboard with:
-   - **SQL text** - Formatted with syntax highlighting
-   - **Execution duration** - Color-coded: 🟢 green (< 10ms), 🟡 yellow (< 100ms), 🔴 red (> 100ms)
-   - **Source location** - File:line with click-to-open in IDE
-   - **Timestamp** - When the query was executed
-5. Click **"⏹ Stop Monitoring"** when done
-
-**Features:**
-- Uses Rails' built-in **ActiveSupport::Notifications** (`sql.active_record` events)
-- Global monitoring session (shared by all dashboard users)
-- Automatically filters internal queries (SCHEMA, CACHE, pg_reports' own queries)
-- Keeps last N queries in memory (configurable, default 100)
-- 2-second auto-refresh while monitoring is active
-- Session-based tracking with unique IDs
-- Logged to `log/pg_reports.log` in JSON Lines format
-
-**Configuration:**
+Built on `ActiveSupport::Notifications` (`sql.active_record`). Filters internal queries (SCHEMA / CACHE / pg_reports' own). Logged to `log/pg_reports.log` (JSON Lines). Configurable buffer size and backtrace filter:
 
 ```ruby
 PgReports.configure do |config|
-  # Query monitoring
   config.query_monitor_log_file = Rails.root.join("log", "custom_monitor.log")
-  config.query_monitor_max_queries = 200  # Keep last 200 queries (default: 100)
-
-  # Custom backtrace filtering to show only application code
-  config.query_monitor_backtrace_filter = ->(location) {
-    !location.path.match?(%r{/(gems|ruby|railties)/})
-  }
+  config.query_monitor_max_queries = 200
+  config.query_monitor_backtrace_filter = ->(loc) { !loc.path.match?(%r{/(gems|ruby|railties)/}) }
 end
 ```
 
-**Log Format:**
+Use cases: debugging N+1, identifying slow queries during feature development, tracking down unexpected queries, teaching ActiveRecord behavior.
 
-The log file uses JSON Lines format (one JSON object per line):
+</details>
 
-```json
-{"type":"session_start","session_id":"550e8400-e29b-41d4-a716-446655440000","timestamp":"2024-02-07T10:30:00Z"}
-{"type":"query","session_id":"550e8400-e29b-41d4-a716-446655440000","sql":"SELECT * FROM users WHERE id = 1","duration_ms":2.34,"name":"User Load","source_location":{"file":"app/controllers/users_controller.rb","line":15,"method":"show"},"timestamp":"2024-02-07T10:30:01Z"}
-{"type":"session_end","session_id":"550e8400-e29b-41d4-a716-446655440000","timestamp":"2024-02-07T10:35:00Z"}
-```
+<details>
+<summary><strong>Connection pool analytics</strong></summary>
 
-**Use Cases:**
-- 🐛 Debug N+1 query problems during development
-- 🐌 Identify slow queries in real-time
-- 🔍 Track down source of unexpected queries
-- 📊 Monitor query patterns during feature development
-- 📚 Teaching tool for understanding ActiveRecord behavior
+Four specialized reports under the **Connections** category:
 
-### Migration Generator
-
-For unused or invalid indexes, generate Rails migrations:
-
-1. Go to Indexes → Unused Indexes
-2. Expand a row and click "🗑️ Generate Migration"
-3. Copy the code or create the file directly
-4. The file opens automatically in your configured IDE
-
-### Connection Pool Analytics
-
-Monitor your connection pool health with specialized reports:
-
-**Pool Usage** - Real-time utilization metrics:
-- Total, active, idle connections per database
-- Pool utilization percentage with 🟢🟡🔴 indicators
-- Idle in transaction connections (resource waste)
-- Available connection capacity
-
-**Wait Times** - Identify resource bottlenecks:
-- Queries waiting for locks, I/O, or network
-- Wait event types (ClientRead, Lock, IO)
-- Wait duration with severity thresholds
-- Helps diagnose contention issues
-
-**Pool Saturation** - Health warnings with actionable recommendations:
-- Overall pool metrics with status indicators
-- Automatic severity assessment (Normal/Elevated/Warning/Critical)
-- Context-aware recommendations for each metric
-- Detects approaching exhaustion, high idle transactions
-
-**Connection Churn** - Lifecycle analysis:
-- Connection age distribution by application
-- Short-lived connection detection (< 10 seconds)
-- Churn rate percentage calculation
-- Identifies missing/misconfigured connection pooling
+- **Pool Usage** — total/active/idle per database, utilization %, idle-in-transaction count, available capacity
+- **Wait Times** — queries waiting on locks/IO/network with wait event types and severity
+- **Pool Saturation** — auto-classified (Normal / Elevated / Warning / Critical) with context-aware recommendations
+- **Connection Churn** — age distribution by application, short-lived (<10s) detection, churn-rate calculation, missing-pooling diagnosis
 
 ```ruby
-# Console usage
 PgReports.pool_usage.display
 PgReports.pool_saturation.display
 PgReports.connection_churn.display
 ```
 
-### Authentication
+</details>
 
-```ruby
-PgReports.configure do |config|
-  # HTTP Basic Auth
-  config.dashboard_auth = -> {
-    authenticate_or_request_with_http_basic do |user, pass|
-      user == ENV["ADMIN_USER"] && pass == ENV["ADMIN_PASS"]
-    end
-  }
+<details>
+<summary><strong>IDE integration & migration generator</strong></summary>
 
-  # Or use Devise
-  config.dashboard_auth = -> {
-    redirect_to main_app.root_path unless current_user&.admin?
-  }
-end
-```
+Click any source location (file:line) in a report to open it in your IDE. Supported: VS Code, VS Code (WSL), RubyMine, IntelliJ IDEA, Cursor, Cursor (WSL). Use the ⚙️ button to set your default and skip the menu.
 
-### External Fonts
+For unused or invalid indexes, the dashboard generates a Rails migration: expand the row → **🗑️ Generate Migration** → copy the code or create the file directly (opens in your default IDE).
 
-By default, PgReports does **not** load external fonts.
+</details>
 
-```ruby
-PgReports.configure do |config|
-  # Enable loading Google Fonts (optional)
-  config.load_external_fonts = true
-end
-```
+<details>
+<summary><strong>Save records for comparison</strong></summary>
 
-## Telegram Integration
+When optimizing queries, click **📌 Save for Comparison** on any expanded row. Saved records persist in browser localStorage per report type and appear above the results table for before/after comparison.
 
-1. Create a bot via [@BotFather](https://t.me/BotFather)
-2. Get your chat ID (add [@userinfobot](https://t.me/userinfobot) to get it)
-3. Configure:
+</details>
+
+<details>
+<summary><strong>AI prompt export</strong></summary>
+
+The Export dropdown includes **Copy Prompt** (visible on actionable reports). It assembles a ready-to-paste prompt with problem description, fix instructions, and the actual report data — formatted for Claude Code, Cursor, Codex, or any code-aware AI assistant.
+
+</details>
+
+## Telegram
 
 ```ruby
 PgReports.configure do |config|
   config.telegram_bot_token = "123456:ABC-DEF..."
-  config.telegram_chat_id = "-1001234567890"
+  config.telegram_chat_id   = "-1001234567890"
 end
-```
 
-4. Send reports:
-
-```ruby
 PgReports.slow_queries.send_to_telegram
 PgReports.health_report.send_to_telegram_as_file
 ```
 
+Get a bot token from [@BotFather](https://t.me/BotFather) and your chat ID from [@userinfobot](https://t.me/userinfobot).
+
 ## Development
 
 ```bash
-# Clone the repo
 git clone https://github.com/yourusername/pg_reports
 cd pg_reports
-
-# Install dependencies
 bundle install
-
-# Run tests
 bundle exec rspec
-
-# Run linter
 bundle exec rubocop
 ```
 
@@ -567,16 +312,14 @@ bundle exec rubocop
 
 1. Fork it
 2. Create your feature branch (`git checkout -b feature/my-feature`)
-3. Commit your changes (`git commit -am 'Add my feature'`)
-4. Push to the branch (`git push origin feature/my-feature`)
+3. Commit your changes
+4. Push to the branch
 5. Create a Pull Request
 
 ## License
 
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+MIT. See [LICENSE.txt](LICENSE.txt).
 
 ## Acknowledgments
 
-Inspired by [rails-pg-extras](https://github.com/pawurb/rails-pg-extras) and built with ❤️ for the Rails community.
-
-The project's UI was built with the help of [Claude](https://www.anthropic.com/claude) by Anthropic.
+Inspired by [rails-pg-extras](https://github.com/pawurb/rails-pg-extras). UI built with [Claude](https://www.anthropic.com/claude) by Anthropic.
