@@ -456,6 +456,51 @@ uk:
           - "Деякі ORM серіалізують порожні рядки як '' замість NULL; цей звіт їх не зловить. Якщо потрібен такий сигнал — окремий звіт."
           - "Порівняйте з `unused_columns` — він ловить колонки з одним значенням, цей — все-NULL. Разом покривають основні патерни мертвих колонок."
 
+      polymorphic_without_index:
+        title: "Polymorphic без індексу"
+        what: "Поліморфні `belongs_to`-асоціації, у яких пара `(*_type, *_id)` не покрита складеним індексом."
+        how: "Обходить `ActiveRecord::Base.descendants`, збирає `belongs_to`-рефлексії з `polymorphic: true` та перевіряє `pg_index` на наявність індексу, що покриває обидві колонки."
+        nuances:
+          - "PostgreSQL не зможе використати два одиночні індекси так само ефективно, як один складений для `WHERE x_type = ? AND x_id = ?` — це базовий патерн завантаження поліморфної асоціації."
+          - "Підказка `coverage` уточнює прогалину: \"neither indexed\" / \"only id indexed\" / \"only type indexed\" / \"type and id indexed separately\". Останні два — часткові рішення, не повні."
+          - "На маленьких таблицях нешкідливо; на великих (Comment, Note, Activity, AuditLog) кожен запит до асоціації перетворюється на seq scan."
+          - "Запропонована міграція використовує порядок `(type, id)` — у type зазвичай нижча cardinality, індекс звужується швидше."
+          - "Перед обходом моделей виконується `eager_load!`, щоб у dev результат був повним."
+
+      counter_cache_issues:
+        title: "Проблеми counter_cache"
+        what: "`belongs_to ..., counter_cache: ...` декларації, у яких цільова колонка відсутня в батьківській таблиці."
+        how: "Обходить усі моделі, знаходить `belongs_to` з опцією `counter_cache`, розв'язує ім'я очікуваної колонки (`<child_table>_count` для `counter_cache: true` або явний символ/рядок) та перевіряє колонки батька."
+        nuances:
+          - "Відсутня колонка = counter мовчки зламаний: записи нікуди не йдуть, `parent.<assoc>_count` повертає nil, будь-який код, що читає cached-значення, отримує stale або нуль."
+          - "Зворотний напрямок (колонка `*_count` без декларації `counter_cache`) навмисно не флагується — занадто багато false positives для вручну підтримуваних лічильників."
+          - "Батьківський клас розв'язується через `assoc.klass`; якщо клас відсутній або не завантажується — рядок пропускається."
+          - "Ім'я за замовчуванням для `counter_cache: true`: на батька додається колонка з іменем за таблицею **дочірньої** моделі в множині + `_count`. Приклад: `Comment belongs_to :user, counter_cache: true` → `users.comments_count`."
+          - "Перед обходом моделей виконується `eager_load!`, щоб у dev результат був повним."
+
+      soft_delete_without_scope:
+        title: "Soft delete без scope"
+        what: "Таблиці з колонкою `deleted_at` / `discarded_at` / `archived_at`, у моделі яких немає scope, що фільтрує soft-deleted рядки."
+        how: "Для кожної таблиці перевіряється наявність канонічних імен soft-delete колонок. Якщо є — знаходиться модель і перевіряється `acts_as_paranoid` (paranoia), `discard_column` (discard) або `default_scope`, чий згенерований SQL посилається на колонку."
+        nuances:
+          - "Без default scope будь-який звичайний `Model.where(...)` повертає soft-deleted рядки. Це тихо протікає у звіти, індекси, пошук, експорти."
+          - "Якщо команда свідомо відмовилася від default scope (надаючи перевагу явним `kept`/`with_deleted`), звіт дасть по рядку на кожну таку модель — це intentional, можна ігнорувати."
+          - "Метод детекції default_scope: будує `model.all.to_sql` та шукає ім'я колонки. Ловить `default_scope { where(deleted_at: nil) }` і еквіваленти, але пропускає scope з concerns, які ще не завантажені."
+          - "Таблиці без моделі рапортуються окремо зі статусом `no_model` — зазвичай означає, що таблиця використовується лише raw SQL і потребує ручного рев'ю."
+          - "Перед обходом моделей виконується `eager_load!`, щоб у dev результат був повним."
+
+      orphan_tables:
+        title: "Orphan-таблиці"
+        what: "Таблиці БД без відповідного Rails-класу моделі."
+        how: "Перелічує всі таблиці з `pg_class` (за винятком `schema_migrations` та `ar_internal_metadata`) і намагається знайти модель за звичайними naming conventions. Таблиці, що не знаходять моделі, потрапляють у звіт."
+        nuances:
+          - "Три класифікації: `join_table_candidate` (рівно дві `*_id` колонки і більше нічого — імовірно, легітимна HABTM-таблиця), `join_model_without_class` (кілька FK + додаткові поля — імовірно, мала бути моделлю join'а), `legacy` (усе інше)."
+          - "`join_table_candidate` зазвичай intentional — Rails не вимагає моделі для HABTM. Переглянути та ігнорувати."
+          - "`legacy` — найцікавіші рядки: таблиці, створені до того, як додали модель; перейменовані-але-не-видалені; створені повз Rails іншим сервісом; що належать видаленій фічі."
+          - "Звірте з `unused_tables` (категорія Таблиці) — таблиця одночасно orphan І з нулем читань = сильний кандидат на видалення."
+          - "False positives: namespaced-моделі (`Admin::User` → `admin_users`), STI-підкласи на одній базовій таблиці, моделі в engines, що не eager-loadяться."
+          - "Row count приблизний (n_live_tup з pg_stat_user_tables) — нещодавно записані таблиці можуть показувати 0 до наступного ANALYZE."
+
       missing_validations:
         title: "Відсутні валідації"
         what: "Унікальні індекси в базі даних без відповідних валідацій uniqueness в Rails-моделях."
@@ -498,6 +543,10 @@ uk:
       hot_rows: "Ті самі рядки оновлюються багаторазово. Розгляньте розділення гарячих/холодних колонок, батчинг запису або event-log таблицю."
       low_hot_update: "Низький відсоток HOT updates — оновлюються індексовані колонки. Видаліть індекс або винесіть колонку, щоб знизити write amplification."
       unused_table: "Таблиця не читалася з моменту останнього скидання статистики. Кандидат на архівацію або видалення — спочатку перевірте вікно статистики."
+      polymorphic_no_index: "Поліморфна асоціація без складеного індексу (type, id). Зі зростанням таблиці запити будуть seq-scan'ити."
+      counter_cache_missing_column: "Колонка counter_cache відсутня в батьківській таблиці. Counter мовчки зламаний — записи нікуди не йдуть."
+      soft_delete_unprotected: "Soft-delete колонка без scope, що фільтрує її. Звичайні запити повертають видалені рядки."
+      orphan_table_legacy: "Таблиця без Rails-моделі. Скоріше за все, legacy — перевірте перед видаленням."
 
     # UI strings shown in the dashboard chrome (buttons, modals, toasts, etc.)
     ui:
@@ -853,6 +902,18 @@ uk:
       always_null_columns:
         name: "Завжди NULL"
         description: "Nullable-колонки, що містять лише NULL"
+      polymorphic_without_index:
+        name: "Polymorphic без індексу"
+        description: "Поліморфні асоціації без складеного індексу"
+      counter_cache_issues:
+        name: "Проблеми counter_cache"
+        description: "counter_cache декларації без цільової колонки"
+      soft_delete_without_scope:
+        name: "Soft delete без scope"
+        description: "Soft-delete колонки без scope, що фільтрує їх"
+      orphan_tables:
+        name: "Orphan-таблиці"
+        description: "Таблиці БД без відповідної Rails-моделі"
 
     # Filter parameter labels and descriptions
     parameters:

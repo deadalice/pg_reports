@@ -201,6 +201,22 @@ module PgReports
           thresholds: {null_pct: {warning: 99, critical: 100}},
           problem_fields: ["column_name", "null_pct"]
         },
+        polymorphic_without_index: {
+          thresholds: {},
+          problem_fields: ["coverage"]
+        },
+        counter_cache_issues: {
+          thresholds: {},
+          problem_fields: ["issue", "expected_column"]
+        },
+        soft_delete_without_scope: {
+          thresholds: {},
+          problem_fields: ["status", "soft_delete_column"]
+        },
+        orphan_tables: {
+          thresholds: {},
+          problem_fields: ["classification"]
+        },
 
         # === TABLES (extra) ===
         update_hotspots: {
@@ -303,7 +319,11 @@ module PgReports
           reports: {
             missing_validations: {name: "Missing Validations", description: "Unique indexes without model validations"},
             unused_columns: {name: "Unused Columns", description: "Columns that have only ever held a single value", new: true},
-            always_null_columns: {name: "Always-NULL Columns", description: "Nullable columns that contain only NULL", new: true}
+            always_null_columns: {name: "Always-NULL Columns", description: "Nullable columns that contain only NULL", new: true},
+            polymorphic_without_index: {name: "Polymorphic Without Index", description: "Polymorphic associations missing composite index", new: true},
+            counter_cache_issues: {name: "Counter Cache Issues", description: "counter_cache declarations whose target column is missing", new: true},
+            soft_delete_without_scope: {name: "Soft Delete Without Scope", description: "Soft-delete columns with no model scope filtering them", new: true},
+            orphan_tables: {name: "Orphan Tables", description: "DB tables without a corresponding Rails model", new: true}
           }
         }
       }.freeze

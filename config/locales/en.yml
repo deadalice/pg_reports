@@ -487,6 +487,54 @@ en:
           - "Compare with `unused_columns` — that report catches single-value columns; this one catches all-NULL columns. Together they cover the most common dead-column patterns."
         ai_prompt: "Drop these always-NULL PostgreSQL columns. For each: confirm via codebase search that no writer references the column, then generate a Rails migration removing the column. If the rollback should restore data, note that there is none — the column was empty."
 
+      polymorphic_without_index:
+        title: "Polymorphic Without Index"
+        what: "Polymorphic `belongs_to` associations whose `(*_type, *_id)` pair has no composite index."
+        how: "Walks `ActiveRecord::Base.descendants`, collects `belongs_to` reflections with `polymorphic: true`, and checks `pg_index` for an index covering both the type and id columns."
+        nuances:
+          - "PostgreSQL cannot use two single-column indexes as efficiently as one composite index for `WHERE x_type = ? AND x_id = ?` lookups — this is the canonical fetch pattern for polymorphic associations."
+          - "Coverage hint clarifies the gap: \"neither indexed\" / \"only id indexed\" / \"only type indexed\" / \"type and id indexed separately\". The last two are partial fixes, not full ones."
+          - "On small association tables this is harmless; on large ones (Comment, Note, Activity, AuditLog) it turns every association load into a seq scan."
+          - "The suggested migration uses the `(type, id)` order — type usually has lower cardinality so the index tree narrows faster."
+          - "Eager-loads the application before walking models so dev environments produce a complete result."
+        ai_prompt: "Add composite indexes for these polymorphic associations. For each: generate a Rails migration with `add_index :<table>, [:<x>_type, :<x>_id]` using `algorithm: :concurrently` for large tables. Verify the existing single-column indexes (if any) can be dropped after the composite is in place."
+
+      counter_cache_issues:
+        title: "Counter Cache Issues"
+        what: "`belongs_to ..., counter_cache: ...` declarations whose target column is missing on the parent table."
+        how: "Walks all models, finds `belongs_to` with a `counter_cache` option, resolves the expected column name (`<child_table>_count` for `counter_cache: true`, or the explicit symbol/string), and checks the parent's columns."
+        nuances:
+          - "Missing column = the counter is silently broken: writes go nowhere, `parent.<assoc>_count` returns nil, and any code reading the cached value gets stale or zero."
+          - "Reverse direction (a `*_count` column with no `counter_cache` declaration pointing at it) is intentionally not flagged — too many false positives from manually maintained counters."
+          - "Resolves the parent class via `assoc.klass`; if the class is missing or fails to load, the row is skipped."
+          - "Default name for `counter_cache: true`: parent gets a column named after the **child** table pluralized + `_count`. Example: `Comment belongs_to :user, counter_cache: true` → `users.comments_count`."
+          - "Eager-loads the application before walking models so dev environments produce a complete result."
+        ai_prompt: "Fix these broken counter caches. For each row: generate a Rails migration that adds the missing column with `default: 0, null: false`, then a backfill task that runs `Parent.find_each { |p| Parent.reset_counters(p.id, :<assoc>) }`. Run the backfill before deploying any code that reads the counter."
+
+      soft_delete_without_scope:
+        title: "Soft Delete Without Scope"
+        what: "Tables with a `deleted_at` / `discarded_at` / `archived_at` column whose model has no scope filtering soft-deleted rows."
+        how: "For each table, checks if any of the canonical soft-delete column names exist. If so, finds the model and checks for `acts_as_paranoid` (paranoia gem), `discard_column` (discard gem), or a `default_scope` whose generated SQL references the column."
+        nuances:
+          - "Without a default scope, every plain `Model.where(...)` query returns soft-deleted rows. This silently leaks 'deleted' data into reports, indexes, search results, and exports."
+          - "If the team has decided **against** a default scope (because they prefer explicit `kept`/`with_deleted` calls everywhere), this report will produce one row per such model — those are intentional and can be ignored."
+          - "Detection method for default_scope: builds `model.all.to_sql` and looks for the column name. Catches `default_scope { where(deleted_at: nil) }` and equivalents but misses scopes added at runtime via concerns that aren't loaded yet."
+          - "Tables without a Rails model are reported separately with status `no_model` — usually means the table is queried only by raw SQL and needs manual review."
+          - "Eager-loads the application before walking models so dev environments produce a complete result."
+        ai_prompt: "Add soft-delete scopes to these Rails models. For each: add `default_scope { where(<column>: nil) }` and a `with_deleted` unscoped helper, OR adopt the `discard` gem (`include Discard::Model; self.discard_column = :<column>`). Verify no production code path expects to see soft-deleted rows by default."
+
+      orphan_tables:
+        title: "Orphan Tables"
+        what: "Database tables with no corresponding Rails model class."
+        how: "Lists all tables from `pg_class` (excluding `schema_migrations` and `ar_internal_metadata`) and tries common naming conventions to find a model. Tables that resolve to nothing are reported."
+        nuances:
+          - "Three classifications: `join_table_candidate` (exactly two `*_id` columns and nothing else — likely a legitimate HABTM table), `join_model_without_class` (multiple FK columns plus extra fields — was probably meant to be a join model), and `legacy` (everything else)."
+          - "`join_table_candidate` is usually intentional — Rails doesn't require a model for HABTM. Skim and ignore."
+          - "`legacy` rows are the interesting ones: tables created before the Rails model was added, renamed-but-not-dropped, created out-of-band by another service, or owned by a removed feature."
+          - "Cross-reference with `unused_tables` (Tables category) — a table that's both orphan AND has zero reads is a strong drop candidate."
+          - "False positives: namespaced models (`Admin::User` → `admin_users`), STI subclasses sharing a base table, models declared inside engines that aren't eager-loaded."
+          - "Row count is approximate (n_live_tup from pg_stat_user_tables) — newly written tables may show 0 until the next ANALYZE."
+
       missing_validations:
         title: "Missing Validations"
         what: "Unique indexes in the database without corresponding uniqueness validations in Rails models."
@@ -530,6 +578,10 @@ en:
       hot_rows: "Same rows are updated repeatedly. Consider splitting hot/cold columns, batching writes, or using an event-log table."
       low_hot_update: "HOT update rate is low — indexed columns are being updated. Drop the index or move the column to reduce write amplification."
       unused_table: "Table has zero reads since the last stats reset. Candidate for archival or removal — verify the stats window first."
+      polymorphic_no_index: "Polymorphic association lacks a composite (type, id) index. Lookups will seq-scan as the table grows."
+      counter_cache_missing_column: "Counter cache column is missing on the parent table. The counter is silently broken — writes go nowhere."
+      soft_delete_unprotected: "Soft-delete column has no model scope filtering it. Plain queries return deleted rows."
+      orphan_table_legacy: "Table has no Rails model. Likely legacy — verify before dropping."
 
     # UI strings shown in the dashboard chrome (buttons, modals, toasts, etc.)
     ui:
@@ -885,6 +937,18 @@ en:
       always_null_columns:
         name: "Always-NULL Columns"
         description: "Nullable columns that contain only NULL"
+      polymorphic_without_index:
+        name: "Polymorphic Without Index"
+        description: "Polymorphic associations missing composite index"
+      counter_cache_issues:
+        name: "Counter Cache Issues"
+        description: "counter_cache declarations whose target column is missing"
+      soft_delete_without_scope:
+        name: "Soft Delete Without Scope"
+        description: "Soft-delete columns with no model scope filtering them"
+      orphan_tables:
+        name: "Orphan Tables"
+        description: "DB tables without a corresponding Rails model"
 
     # Filter parameter labels and descriptions
     parameters:

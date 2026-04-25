@@ -11,12 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **4 new reports** focused on dead schema and write-amplification:
+- **8 new reports** — 4 dead-schema/write-amplification reports plus 4 Rails-schema-consistency reports:
   - `unused_columns` (Schema Analysis) — columns with `pg_stats.n_distinct = 1`, indicating no `UPDATE` has ever changed them since creation. Strong signal that the application code no longer references the column.
   - `always_null_columns` (Schema Analysis) — nullable columns where ~100% of rows are NULL. Companion to `unused_columns` from a different angle.
   - `update_hotspots` (Tables) — tables with high `updates_per_row` (same rows rewritten repeatedly) or low `hot_update_pct` (indexed columns being updated, defeating HOT). Includes refactor guidance: split hot/cold columns, event-log tables, write batching, fillfactor tuning.
   - `unused_tables` (Tables) — tables with zero `seq_scan + idx_scan` since the last stats reset. Surfaces `db_stats_since` so you know how much history the verdict rests on.
-- New problem keys: `unused_column`, `always_null_column`, `hot_rows`, `low_hot_update`, `unused_table`.
+  - `polymorphic_without_index` (Schema Analysis) — polymorphic `belongs_to` associations whose `(*_type, *_id)` pair has no composite index. With table growth, association loads turn into seq scans.
+  - `counter_cache_issues` (Schema Analysis) — `belongs_to ..., counter_cache: ...` declarations whose target column is missing on the parent. Counter is silently broken — writes go nowhere, reads return nil/zero.
+  - `soft_delete_without_scope` (Schema Analysis) — tables with a `deleted_at` / `discarded_at` / `archived_at` column whose model has no scope filtering soft-deleted rows. Plain queries leak deleted data into reports, indexes, exports.
+  - `orphan_tables` (Schema Analysis) — DB tables with no corresponding Rails model class. Classified as `join_table_candidate` (likely legitimate HABTM), `join_model_without_class` (probably should be a model), or `legacy` (the interesting ones).
+- New problem keys: `unused_column`, `always_null_column`, `hot_rows`, `low_hot_update`, `unused_table`, `polymorphic_no_index`, `counter_cache_missing_column`, `soft_delete_unprotected`, `orphan_table_legacy`.
 - Full i18n for all new reports (en/ru/uk).
 - **Full UI localization (en/ru/uk).** All dashboard chrome — buttons, modals, toasts, status badges, metric labels, filter labels, error messages, monitoring panels — now reads from a new `pg_reports.ui.*` locale namespace (183 keys per language). Plus three sibling namespaces resolved at access time from `Dashboard::ReportsRegistry` and `ReportDefinition#filter_parameters`:
   - `pg_reports.categories.*` — the 6 dashboard category names (Queries / Indexes / Tables / Connections / System / Schema Analysis).
