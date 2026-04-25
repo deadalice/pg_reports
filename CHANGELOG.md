@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-04-25
+
+### Added
+
+- **Native Rails QueryLogs source_location support** — `AnnotationParser` now recognizes the `source_location` tag emitted by `ActiveRecord::QueryLogs` and splits it into separate `:file` / `:line` fields for the dashboard's source column. Values are URL-decoded first, since Rails CGI-escapes tag values (so `%2F.../%3A19` becomes `/.../foo.rb:19`).
+
+### Fixed
+
+- **`counter_cache_issues` crashed/misreported on Rails 7.1+ Hash form.** `belongs_to :user, counter_cache: :col` is internally normalized to `{active: true, column: :col}` on Rails 7.1+, but the helper only handled `true` / Symbol / String — so the column came out as `Hash#inspect` (`{active: true, column: "usage_count"}`) and the suggested migration was malformed. `counter_cache_column_name` now handles all four forms (Boolean, Symbol, String, Hash with `:column` key, Hash without `:column`).
+- **`polymorphic_without_index` crashed with `NoMethodError: undefined method '&' for an instance of String`** when a table had an expression index (e.g. `CREATE INDEX ON x (LOWER(email))`). PostgreSQL returns `IndexDefinition#columns` as a String for expression indexes, not an Array. Both the polymorphic check and `coverage_label` now filter out non-array indexes.
+
+### Changed
+
+- **README simplified** — full reports listing moved to [docs/reports.md](docs/reports.md), long sections (EXPLAIN ANALYZE, SQL Query Monitor, Connection pool analytics, IDE integration, Telegram delivery, raw query execution, source tracking) collapsed into `<details>` blocks. From 582 lines to ~340.
+- **Query source tracking** documentation now leads with native `ActiveRecord::QueryLogs` (Rails 7.0+) including a `source_location` lambda example. Marginalia mentioned only as the option for Rails < 7.0.
+
 ## [0.6.1] - 2026-04-24
 
 ### Added

@@ -32,6 +32,26 @@ RSpec.describe PgReports::AnnotationParser do
       expect(result[:action]).to eq("show")
     end
 
+    it "splits source_location from Rails QueryLogs into :file and :line" do
+      query = "/*controller='users',action='show',source_location='app/controllers/users_controller.rb:42'*/ SELECT * FROM users"
+
+      result = described_class.parse(query)
+
+      expect(result[:file]).to eq("app/controllers/users_controller.rb")
+      expect(result[:line]).to eq("42")
+      expect(result[:controller]).to eq("users")
+    end
+
+    it "URL-decodes source_location values (Rails QueryLogs uses CGI.escape)" do
+      # Real-world output from Rails: slashes are %2F, colons are %3A
+      query = "/*action='index',controller='dashboard',source_location='%2Fhome%2Fdeadalice%2Fpg_reports%2Flib%2Fpg_reports%2Fexecutor.rb%3A19'*/ SELECT 1"
+
+      result = described_class.parse(query)
+
+      expect(result[:file]).to eq("/home/deadalice/pg_reports/lib/pg_reports/executor.rb")
+      expect(result[:line]).to eq("19")
+    end
+
     it "returns empty hash for queries without annotations" do
       query = "SELECT * FROM users"
 

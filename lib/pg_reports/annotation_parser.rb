@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 
+require "cgi"
+
 module PgReports
   # Parses SQL query comments to extract source location and metadata
   # Supports:
   # - Marginalia format: /*application:myapp,controller:users,action:index*/
-  # - Rails QueryLogs: /*action='index',controller='users'*/
+  # - Rails QueryLogs: /*action='index',controller='users',source_location='app/foo.rb:42'*/
   #
   module AnnotationParser
     class << self
@@ -29,6 +31,16 @@ module PgReports
           else
             parsed = parse_comment(comment)
             result.merge!(parsed)
+          end
+        end
+
+        # Rails QueryLogs custom tag — Rails URL-encodes tag values (CGI.escape) to keep
+        # SQL comments safe, so "/" → "%2F" and ":" → "%3A". Decode then split into :file/:line.
+        if result[:source_location] && !result[:file]
+          decoded = CGI.unescape(result[:source_location].to_s)
+          if (match = decoded.match(%r{^(.+):(\d+)$}))
+            result[:file] = match[1]
+            result[:line] = match[2]
           end
         end
 

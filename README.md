@@ -131,17 +131,11 @@ end
 </details>
 
 <details>
-<summary><strong>Query source tracking (Marginalia / Rails query logs)</strong></summary>
+<summary><strong>Query source tracking (Rails query logs)</strong></summary>
 
-PgReports parses query annotations to show **where queries originated**.
+PgReports parses query annotations to show **where queries originated**. On Rails 7.0+ use the built-in `ActiveRecord::QueryLogs` (no extra gem needed). On older Rails, install [Marginalia](https://github.com/basecamp/marginalia) — PgReports auto-detects both formats.
 
-[Marginalia](https://github.com/basecamp/marginalia):
-
-```ruby
-gem "marginalia"
-```
-
-Rails 7+ query logs:
+Minimal setup — adds controller/action:
 
 ```ruby
 # config/application.rb
@@ -149,7 +143,28 @@ config.active_record.query_log_tags_enabled = true
 config.active_record.query_log_tags = [:controller, :action]
 ```
 
-Either form is auto-detected; controller/action and file:line appear in the **source** column on report rows.
+To also surface **file path and line number** (so source links jump to the actual call site, not just the controller), add a custom `source_location` lambda that walks `caller_locations` and skips gem/framework frames:
+
+```ruby
+# config/application.rb
+config.active_record.query_log_tags_enabled = true
+config.active_record.query_log_tags = [
+  :controller,
+  :action,
+  :job,
+  {
+    source_location: -> {
+      ignore = %r{/(gems|active_record|active_support|active_model|railties|
+                    action_controller|action_view|action_pack|action_dispatch|
+                    rack|core_ext|relation|associations|scoping|connection_adapters)/}x
+      loc = caller_locations.find { |l| !l.path.match?(ignore) }
+      "#{loc.path}:#{loc.lineno}" if loc
+    }
+  }
+]
+```
+
+PgReports recognizes the `source_location` tag and splits it into file and line for the **source** column.
 
 </details>
 
@@ -284,7 +299,10 @@ The Export dropdown includes **Copy Prompt** (visible on actionable reports). It
 
 </details>
 
-## Telegram
+<details>
+<summary><strong>Telegram delivery</strong></summary>
+
+Get a bot token from [@BotFather](https://t.me/BotFather) and your chat ID from [@userinfobot](https://t.me/userinfobot), then:
 
 ```ruby
 PgReports.configure do |config|
@@ -296,7 +314,9 @@ PgReports.slow_queries.send_to_telegram
 PgReports.health_report.send_to_telegram_as_file
 ```
 
-Get a bot token from [@BotFather](https://t.me/BotFather) and your chat ID from [@userinfobot](https://t.me/userinfobot).
+Reports under ~50 rows go as a message; larger ones are sent as a file attachment.
+
+</details>
 
 ## Development
 
