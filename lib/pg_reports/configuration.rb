@@ -42,6 +42,11 @@ module PgReports
     # Security settings
     attr_accessor :allow_raw_query_execution    # Allow execute_query and explain_analyze from dashboard
 
+    # Grafana / Prometheus exporter settings
+    attr_accessor :grafana_favorites            # Reports exposed at /metrics (Array of keys or Hash with per-report opts)
+    attr_accessor :grafana_metrics_token        # Bearer token required to access /metrics (nil = no auth)
+    attr_accessor :grafana_cache_ttl            # Default cache TTL for collected reports, seconds
+
     def initialize
       # Telegram
       @telegram_bot_token = ENV.fetch("PG_REPORTS_TELEGRAM_TOKEN", nil)
@@ -87,6 +92,11 @@ module PgReports
       @allow_raw_query_execution = ActiveModel::Type::Boolean.new.cast(
         ENV.fetch("PG_REPORTS_ALLOW_RAW_QUERY_EXECUTION", false)
       )
+
+      # Grafana / Prometheus exporter
+      @grafana_favorites = []
+      @grafana_metrics_token = ENV.fetch("PG_REPORTS_METRICS_TOKEN", nil)
+      @grafana_cache_ttl = 60
     end
 
     def connection

@@ -3,42 +3,43 @@
 module PgReports
   # Generates module methods dynamically from YAML report definitions
   class ModuleGenerator
-    def self.generate!
-      ReportLoader.load_all.each do |module_name, reports|
-        module_class = get_module(module_name)
-        next unless module_class
+    class << self
+      def generate!
+        ReportLoader.load_all.each do |module_name, reports|
+          module_class = get_module(module_name)
+          next unless module_class
 
-        reports.each do |report_name, definition|
-          define_report_method(module_class, report_name, definition)
+          reports.each do |report_name, definition|
+            define_report_method(module_class, report_name, definition)
+          end
         end
       end
-    end
 
-    private
+      private
 
-    def self.get_module(module_name)
-      const_name = module_name.to_s.split("_").map(&:capitalize).join
-      PgReports::Modules.const_get(const_name)
-    rescue NameError
-      # Module doesn't exist, skip it
-      # We don't auto-create modules to avoid conflicts
-      nil
-    end
+      def get_module(module_name)
+        const_name = module_name.to_s.split("_").map(&:capitalize).join
+        PgReports::Modules.const_get(const_name)
+      rescue NameError
+        # Module doesn't exist, skip it
+        # We don't auto-create modules to avoid conflicts
+        nil
+      end
 
-    def self.define_report_method(module_class, report_name, definition)
-      params_config = definition.config["parameters"] || {}
+      def define_report_method(module_class, report_name, definition)
+        params_config = definition.config["parameters"] || {}
 
-      # Extract default parameter values
-      defaults = params_config.transform_values { |v| v["default"] }
+        # Extract default parameter values
+        defaults = params_config.transform_values { |v| v["default"] }
 
-      # Define the method on the module
-      # We capture the definition in a local variable to avoid closure issues
-      captured_definition = definition
-      captured_defaults = defaults
+        # Capture definition + defaults so the singleton method closes over them
+        captured_definition = definition
+        captured_defaults = defaults
 
-      module_class.define_singleton_method(report_name) do |**params|
-        merged_params = captured_defaults.merge(params)
-        captured_definition.generate_report(**merged_params)
+        module_class.define_singleton_method(report_name) do |**params|
+          merged_params = captured_defaults.merge(params)
+          captured_definition.generate_report(**merged_params)
+        end
       end
     end
   end

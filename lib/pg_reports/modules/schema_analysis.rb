@@ -112,7 +112,7 @@ module PgReports
           counter_belongs_to(model).each do |assoc|
             counter_col = counter_cache_column_name(model, assoc)
             parent = parent_class_for(assoc)
-            next unless parent && parent.table_exists?
+            next unless parent&.table_exists?
 
             unless parent.column_names.include?(counter_col)
               results << {

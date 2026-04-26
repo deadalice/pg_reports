@@ -109,6 +109,34 @@ RSpec.describe PgReports::Configuration do
     end
   end
 
+  describe "Grafana exporter configuration" do
+    it "defaults grafana_favorites to an empty array" do
+      expect(config.grafana_favorites).to eq([])
+    end
+
+    it "defaults grafana_cache_ttl to 60 seconds" do
+      expect(config.grafana_cache_ttl).to eq(60)
+    end
+
+    it "allows setting favorites as an array" do
+      config.grafana_favorites = [:slow_queries, :unused_indexes]
+      expect(config.grafana_favorites).to eq([:slow_queries, :unused_indexes])
+    end
+
+    it "allows setting favorites as a hash with per-report opts" do
+      config.grafana_favorites = {slow_queries: {limit: 20}}
+      expect(config.grafana_favorites).to eq({slow_queries: {limit: 20}})
+    end
+
+    it "reads PG_REPORTS_METRICS_TOKEN from ENV" do
+      ENV["PG_REPORTS_METRICS_TOKEN"] = "secret-token"
+      new_config = described_class.new
+      expect(new_config.grafana_metrics_token).to eq("secret-token")
+    ensure
+      ENV.delete("PG_REPORTS_METRICS_TOKEN")
+    end
+  end
+
   describe "#telegram_configured?" do
     it "returns false when token is missing" do
       config.telegram_bot_token = nil

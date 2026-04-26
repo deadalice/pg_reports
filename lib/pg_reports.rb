@@ -33,6 +33,10 @@ require_relative "pg_reports/modules/schema_analysis"
 # Dashboard
 require_relative "pg_reports/dashboard/reports_registry"
 
+# Grafana / Prometheus exporter
+require_relative "pg_reports/grafana/exporter"
+require_relative "pg_reports/grafana/dashboard_builder"
+
 # Rails Engine
 require_relative "pg_reports/engine" if defined?(Rails::Engine)
 

@@ -6,10 +6,10 @@ RSpec.describe PgReports::Modules::SchemaAnalysis do
   # into a separate value object with a public API.
 
   describe "#classify_orphan" do
-    Column = Struct.new(:name)
+    column = Struct.new(:name)
 
-    def cols(*names)
-      names.map { |n| Column.new(n) }
+    define_method(:cols) do |*names|
+      names.map { |n| column.new(n) }
     end
 
     it "classifies a clean two-FK table as join_table_candidate" do
@@ -39,35 +39,35 @@ RSpec.describe PgReports::Modules::SchemaAnalysis do
   end
 
   describe "#coverage_label" do
-    Index = Struct.new(:columns)
+    index = Struct.new(:columns)
 
     it "returns 'neither indexed' when no relevant indexes exist" do
-      indexes = [Index.new(["id"]), Index.new(["created_at"])]
+      indexes = [index.new(["id"]), index.new(["created_at"])]
       result = described_class.send(:coverage_label, indexes, "commentable_type", "commentable_id")
       expect(result).to eq("neither indexed")
     end
 
     it "detects only-id coverage" do
-      indexes = [Index.new(["commentable_id"])]
+      indexes = [index.new(["commentable_id"])]
       result = described_class.send(:coverage_label, indexes, "commentable_type", "commentable_id")
       expect(result).to eq("only id indexed")
     end
 
     it "detects only-type coverage" do
-      indexes = [Index.new(["commentable_type"])]
+      indexes = [index.new(["commentable_type"])]
       result = described_class.send(:coverage_label, indexes, "commentable_type", "commentable_id")
       expect(result).to eq("only type indexed")
     end
 
     it "detects separate single-column indexes for both" do
-      indexes = [Index.new(["commentable_type"]), Index.new(["commentable_id"])]
+      indexes = [index.new(["commentable_type"]), index.new(["commentable_id"])]
       result = described_class.send(:coverage_label, indexes, "commentable_type", "commentable_id")
       expect(result).to eq("type and id indexed separately")
     end
 
     it "ignores indexes where the relevant column is not the leading column" do
       # An index on (other, commentable_id) does not give us type-and-id coverage on its own
-      indexes = [Index.new(["other_col", "commentable_id"])]
+      indexes = [index.new(["other_col", "commentable_id"])]
       result = described_class.send(:coverage_label, indexes, "commentable_type", "commentable_id")
       expect(result).to eq("neither indexed")
     end
@@ -75,7 +75,7 @@ RSpec.describe PgReports::Modules::SchemaAnalysis do
     it "does not crash on expression indexes whose columns is a String" do
       # PostgreSQL expression indexes (e.g. CREATE INDEX ON users (LOWER(email)))
       # are returned with `columns` as a String, not an Array.
-      indexes = [Index.new("LOWER(commentable_type)"), Index.new(["commentable_id"])]
+      indexes = [index.new("LOWER(commentable_type)"), index.new(["commentable_id"])]
       expect {
         described_class.send(:coverage_label, indexes, "commentable_type", "commentable_id")
       }.not_to raise_error
