@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-04-26
+
+### Added
+
+- **Experimental Grafana / Prometheus support.** Selected reports can now be exposed at `<mount_point>/metrics` in Prometheus exposition format. Severity (`ok` / `warning` / `critical`) is derived automatically from the existing `REPORT_CONFIG` thresholds, including inverted ones (`cache_hit_ratio` etc.). Per-row data is emitted as `pg_reports_row` with each row column as a label, suitable for Grafana table panels via the "Labels to fields" transformation.
+  - New config: `grafana_favorites`, `grafana_metrics_token`, `grafana_cache_ttl`. Reports are cached via `Rails.cache` with a per-report TTL override to keep frequent scrapes from hammering the database.
+  - New endpoint: `MetricsController` with timing-safe bearer-token auth.
+  - New rake tasks: `pg_reports:grafana:dashboard` (writes a ready-to-import Grafana dashboard JSON) and `pg_reports:grafana:metrics` (prints the current metrics payload).
+  - New module `PgReports::Grafana::Exporter` and `PgReports::Grafana::DashboardBuilder`.
+  - Documentation: [docs/grafana.md](docs/grafana.md) (integration guide) and [docs/grafana-local-setup.md](docs/grafana-local-setup.md) (local Prometheus + Grafana setup without Docker).
+  - **Note:** the metric format may change in future minor versions until 1.0.
+
 ## [0.6.2] - 2026-04-25
 
 ### Added

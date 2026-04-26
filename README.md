@@ -18,6 +18,7 @@ A comprehensive PostgreSQL monitoring and analysis library for Rails application
 - 🖥️ **System Overview** - Database sizes, PostgreSQL settings, installed extensions
 - 🌐 **Web Dashboard** - Beautiful dark-themed UI with sortable tables and expandable rows
 - 📨 **Telegram Integration** - Send reports directly to Telegram
+- 📈 **Grafana / Prometheus Exporter** - Expose selected reports at `/metrics` with severity derived from configured thresholds
 - 📥 **Export** - Download reports in TXT, CSV, or JSON format
 - 🔗 **IDE Integration** - Open source locations in VS Code, Cursor, RubyMine, or IntelliJ (with WSL support)
 - 📌 **Comparison Mode** - Save records to compare before/after optimization
@@ -296,6 +297,53 @@ When optimizing queries, click **📌 Save for Comparison** on any expanded row.
 <summary><strong>AI prompt export</strong></summary>
 
 The Export dropdown includes **Copy Prompt** (visible on actionable reports). It assembles a ready-to-paste prompt with problem description, fix instructions, and the actual report data — formatted for Claude Code, Cursor, Codex, or any code-aware AI assistant.
+
+</details>
+
+<details>
+<summary><strong>Grafana / Prometheus exporter</strong></summary>
+
+Expose selected reports at `<mount_point>/metrics` in Prometheus exposition format. The default mount is `/pg_reports`, so the endpoint is typically `/pg_reports/metrics` — but it follows whatever path you used in `mount PgReports::Engine, at: "..."`. Severity (`ok` / `warning` / `critical`) is derived automatically from the thresholds defined in [`Dashboard::ReportsRegistry::REPORT_CONFIG`](lib/pg_reports/dashboard/reports_registry.rb).
+
+```ruby
+PgReports.configure do |config|
+  config.grafana_favorites = [
+    :slow_queries,
+    :unused_indexes,
+    :bloated_tables,
+    :missing_validations,
+    :polymorphic_without_index
+  ]
+  config.grafana_metrics_token = ENV["PG_REPORTS_METRICS_TOKEN"]  # optional bearer token
+  config.grafana_cache_ttl     = 60                                # seconds
+end
+```
+
+Scrape with Prometheus:
+
+```yaml
+scrape_configs:
+  - job_name: pg_reports
+    metrics_path: /pg_reports/metrics    # adjust to your Engine mount point
+    scrape_interval: 60s
+    authorization: { credentials: "${PG_REPORTS_METRICS_TOKEN}" }
+    static_configs:
+      - targets: ["app.internal:3000"]
+```
+
+> [!WARNING]
+> Reports are cached via `Rails.cache` for `grafana_cache_ttl` so frequent scrapes don't hammer the database. Without it, Prometheus' default 15s scrape interval against heavy reports like `missing_validations` will DDoS your own DB. Always set a TTL ≥ scrape interval, and consider a longer per-report TTL for expensive reports.
+
+The exporter also emits a `pg_reports_row` series per report row (each column becomes a Prometheus label), so the auto-generated dashboard can show a **table panel** with the actual rows that need fixing — not just an aggregate count.
+
+Generate a matching Grafana dashboard from the same favorites:
+
+```bash
+bundle exec rake pg_reports:grafana:dashboard
+# writes pg_reports.json in pwd; then Dashboards → Import in Grafana
+```
+
+**[Full Grafana integration guide →](docs/grafana.md)** &nbsp;·&nbsp; **[Local Prometheus + Grafana without Docker →](docs/grafana-local-setup.md)**
 
 </details>
 

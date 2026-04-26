@@ -20,6 +20,18 @@ Gem::Specification.new do |spec|
   spec.metadata["source_code_uri"] = spec.homepage
   spec.metadata["changelog_uri"] = "#{spec.homepage}/blob/main/CHANGELOG.md"
 
+  spec.post_install_message = <<~MSG
+    Thanks for installing pg_reports v#{PgReports::VERSION}!
+
+    New in 0.7.0 — experimental Grafana / Prometheus support
+    ────────────────────────────────────────────────────────
+    Expose selected reports at <mount_point>/metrics in Prometheus exposition
+    format and import a ready-to-use Grafana dashboard:
+
+    Setup guide:
+      #{spec.homepage}/blob/main/docs/grafana.md
+  MSG
+
   spec.files = Dir.chdir(__dir__) do
     Dir["{app,config,lib}/**/*", "LICENSE.txt", "README.md", "CHANGELOG.md"]
   end
