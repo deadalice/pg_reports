@@ -15,6 +15,7 @@ A comprehensive PostgreSQL monitoring and analysis library for Rails application
 - 📇 **Index Analysis** - Find unused, duplicate, invalid, and missing indexes
 - 📋 **Table Statistics** - Monitor table sizes, bloat, vacuum needs, and cache hit ratios
 - 🔌 **Connection Monitoring** - Track active connections, locks, and blocking queries
+- 🗄️ **Multi-database** - Auto-discovers every database on the cluster; switch from a dropdown in the dashboard, no configuration required
 - 🖥️ **System Overview** - Database sizes, PostgreSQL settings, installed extensions
 - 🌐 **Web Dashboard** - Beautiful dark-themed UI with sortable tables and expandable rows
 - 📨 **Telegram Integration** - Send reports directly to Telegram
@@ -58,7 +59,7 @@ end
 
 Visit `http://localhost:3000/pg_reports`.
 
-For query analysis, also enable `pg_stat_statements` — see [setup](#pg_stat_statements-setup) below.
+For query analysis, also enable `pg_stat_statements` — see [setup instructions in docs/configuration.md](docs/configuration.md#pg_stat_statements-setup).
 
 ## Usage
 
@@ -81,105 +82,28 @@ PgReports.slow_queries.send_to_telegram
 
 ## Configuration
 
+PgReports works out of the box once mounted. Common options:
+
 ```ruby
 # config/initializers/pg_reports.rb
 PgReports.configure do |config|
-  # Telegram (optional)
-  config.telegram_bot_token = ENV["PG_REPORTS_TELEGRAM_TOKEN"]
-  config.telegram_chat_id   = ENV["PG_REPORTS_TELEGRAM_CHAT_ID"]
-
-  # Thresholds
+  config.telegram_bot_token           = ENV["PG_REPORTS_TELEGRAM_TOKEN"]
+  config.telegram_chat_id             = ENV["PG_REPORTS_TELEGRAM_CHAT_ID"]
   config.slow_query_threshold_ms      = 100
-  config.heavy_query_threshold_calls  = 1000
-  config.expensive_query_threshold_ms = 10_000
   config.unused_index_threshold_scans = 50
   config.bloat_threshold_percent      = 20
-  config.dead_rows_threshold          = 10_000
 
-  # Output
-  config.max_query_length = 200
-
-  # Auth (optional)
+  # Strongly recommended in production
   config.dashboard_auth = -> {
     authenticate_or_request_with_http_basic do |user, pass|
       user == ENV["PG_REPORTS_USER"] && pass == ENV["PG_REPORTS_PASSWORD"]
     end
   }
-
-  # Google Fonts (default: false — no external requests)
-  config.load_external_fonts = false
 end
 ```
 
-<details>
-<summary><strong>Locale (EN / RU / UK)</strong></summary>
-
-PgReports follows your application's `I18n.locale`. Set it the way you set it for the rest of the app — there's no PgReports-specific knob. The dashboard supports `en`, `ru`, and `uk` out of the box.
-
-</details>
-
-<details>
-<summary><strong>Raw query execution (EXPLAIN ANALYZE / Execute Query)</strong></summary>
-
-⚠️ Disabled by default. The dashboard's "Execute Query" and "EXPLAIN ANALYZE" buttons require this opt-in.
-
-```ruby
-PgReports.configure do |config|
-  config.allow_raw_query_execution = Rails.env.development? || Rails.env.staging?
-end
-```
-
-</details>
-
-<details>
-<summary><strong>Query source tracking (Rails query logs)</strong></summary>
-
-PgReports parses query annotations to show **where queries originated**. On Rails 7.0+ use the built-in `ActiveRecord::QueryLogs` (no extra gem needed). On older Rails, install [Marginalia](https://github.com/basecamp/marginalia) — PgReports auto-detects both formats.
-
-Minimal setup — adds controller/action:
-
-```ruby
-# config/application.rb
-config.active_record.query_log_tags_enabled = true
-config.active_record.query_log_tags = [:controller, :action]
-```
-
-To also surface **file path and line number** (so source links jump to the actual call site, not just the controller), add a custom `source_location` lambda that walks `caller_locations` and skips gem/framework frames:
-
-```ruby
-# config/application.rb
-config.active_record.query_log_tags_enabled = true
-config.active_record.query_log_tags = [
-  :controller,
-  :action,
-  :job,
-  {
-    source_location: -> {
-      ignore = %r{/(gems|active_record|active_support|active_model|railties|
-                    action_controller|action_view|action_pack|action_dispatch|
-                    rack|core_ext|relation|associations|scoping|connection_adapters)/}x
-      loc = caller_locations.find { |l| !l.path.match?(ignore) }
-      "#{loc.path}:#{loc.lineno}" if loc
-    }
-  }
-]
-```
-
-PgReports recognizes the `source_location` tag and splits it into file and line for the **source** column.
-
-</details>
-
-## pg_stat_statements setup
-
-1. Edit `postgresql.conf`:
-   ```
-   shared_preload_libraries = 'pg_stat_statements'
-   pg_stat_statements.track = all
-   ```
-2. Restart PostgreSQL: `sudo systemctl restart postgresql`
-3. Create the extension (via dashboard button or `PgReports.enable_pg_stat_statements!`).
-
-> PgReports does **not** require the `pg_read_all_settings` role — extension availability is detected directly. Works with CloudnativePG, managed databases, and other restricted environments.
+**Multi-database, thresholds, query monitor, Grafana, raw query execution, source tracking, locale, Telegram —**
+**[full reference in docs/configuration.md →](docs/configuration.md)**
 
 ## Report object
 
