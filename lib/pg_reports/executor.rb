@@ -1,10 +1,14 @@
 # frozen_string_literal: true
 
 module PgReports
-  # Executes SQL queries and returns results
+  # Executes SQL queries and returns results.
+  #
+  # The connection is resolved lazily on every #execute call so that thread-local
+  # context set by PgReports.with_target / with_database is honored even when an
+  # Executor instance has been memoized at the module level.
   class Executor
     def initialize(connection: nil)
-      @connection = connection || PgReports.config.connection
+      @connection_override = connection
     end
 
     # Execute SQL from a file and return results as array of hashes
@@ -16,8 +20,13 @@ module PgReports
     # Execute raw SQL and return results as array of hashes
     def execute(sql, **params)
       processed_sql = interpolate_params(sql, params)
-      result = @connection.exec_query(processed_sql)
+      result = connection.exec_query(processed_sql)
       result.to_a
+    end
+
+    # Resolved on every call: explicit override > thread-local > registry default.
+    def connection
+      @connection_override || PgReports.config.connection
     end
 
     private
@@ -40,11 +49,11 @@ module PgReports
       when Integer, Float
         value.to_s
       when String
-        @connection.quote(value)
+        connection.quote(value)
       when Array
         "(#{value.map { |v| quote_value(v) }.join(", ")})"
       else
-        @connection.quote(value.to_s)
+        connection.quote(value.to_s)
       end
     end
   end

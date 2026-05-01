@@ -592,6 +592,9 @@ en:
       navigation:
         dashboard: "Dashboard"
         back: "← Back"
+      database_selector:
+        label: "Database"
+        default_marker: "default"
       actions:
         cancel: "Cancel"
         retry: "Retry"

@@ -1,5 +1,15 @@
 <%= csrf_meta_tags %>
 
+<% if @database_error %>
+  <div class="db-error-banner">
+    <strong><%= @database_error[:title] %></strong>
+    <span><%= @database_error[:detail] %></span>
+    <% if @database_error[:hint] %>
+      <code><%= @database_error[:hint] %></code>
+    <% end %>
+  </div>
+<% end %>
+
 <header class="header">
   <div class="logo">
     <div class="logo-icon">🐘</div>
@@ -13,6 +23,8 @@
   </div>
 
   <div class="header-actions">
+    <%= render "database_selector" %>
+
     <% if @pg_stat_status[:ready] %>
       <button class="btn btn-small btn-muted" onclick="showResetConfirmModal()" id="reset-btn">
         <%= t("pg_reports.ui.actions.reset_statistics") %>

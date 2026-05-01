@@ -7,6 +7,9 @@
     <span><%= @categories[@category][:name] %></span>
     <span>/</span>
     <span><%= @report_info[:name] %></span>
+
+    <span class="breadcrumb-spacer"></span>
+    <%= render "database_selector" %>
   </nav>
 
   <div class="report-header">

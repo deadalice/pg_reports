@@ -20,7 +20,7 @@ module PgReports
     attr_accessor :dead_rows_threshold          # Tables with more dead rows need vacuum
 
     # Connection settings
-    attr_accessor :connection_pool              # Custom connection pool (optional)
+    attr_accessor :connection_pool              # Custom connection pool (optional, legacy override)
 
     # Output settings
     attr_accessor :max_query_length             # Truncate query text to this length
@@ -100,7 +100,28 @@ module PgReports
     end
 
     def connection
-      @connection_pool || ActiveRecord::Base.connection
+      return @connection_pool if @connection_pool
+
+      PgReports.connection_registry.current_connection
+    end
+
+    # Register an additional named target (besides the auto-detected :primary).
+    # Spec accepts the same keys as ActiveRecord::Base.establish_connection.
+    #
+    # Example:
+    #   config.add_target :analytics,
+    #     host: "...", user: "...", password: ENV["..."], database: "warehouse"
+    def add_target(name, spec)
+      PgReports.connection_registry.register(name, spec)
+    end
+
+    # Override the default target name (default is :primary).
+    def default_target=(name)
+      PgReports.connection_registry.default_name = name
+    end
+
+    def default_target
+      PgReports.connection_registry.default_name
     end
 
     def telegram_configured?

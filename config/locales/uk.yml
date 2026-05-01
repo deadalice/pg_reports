@@ -557,6 +557,9 @@ uk:
       navigation:
         dashboard: "Дашборд"
         back: "← Назад"
+      database_selector:
+        label: "База даних"
+        default_marker: "за замовчуванням"
       actions:
         cancel: "Скасувати"
         retry: "Повторити"

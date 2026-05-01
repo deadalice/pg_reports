@@ -6,6 +6,9 @@ require "active_record"
 
 require_relative "pg_reports/version"
 require_relative "pg_reports/error"
+require_relative "pg_reports/connection/target"
+require_relative "pg_reports/connection/registry"
+require_relative "pg_reports/connection/error_translator"
 require_relative "pg_reports/compatibility"
 require_relative "pg_reports/configuration"
 require_relative "pg_reports/sql_loader"
@@ -137,6 +140,56 @@ module PgReports
     def reload_definitions!
       ReportLoader.reload!
       ModuleGenerator.generate!
+    end
+
+    # Connection registry — multi-target / multi-database support.
+    # The :primary target is auto-discovered from ActiveRecord on first access.
+    def connection_registry
+      @connection_registry ||= Connection::Registry.new
+    end
+
+    # Run a block against a specific target (and optionally a specific database
+    # on that target). Honored by Executor and any code routing through
+    # PgReports.config.connection.
+    #
+    #   PgReports.with_target(:analytics) { PgReports.slow_queries }
+    #   PgReports.with_target(:primary, database: "logs") { PgReports.table_sizes }
+    def with_target(name, database: nil, &block)
+      connection_registry.with_context(target: name, database: database, &block)
+    end
+
+    # Switch only the database on whatever target is currently active
+    # (defaults to the registry's default target).
+    #
+    #   PgReports.with_database("reporting") { PgReports.database_sizes }
+    def with_database(database, &block)
+      target = connection_registry.current_name || connection_registry.default_name
+      connection_registry.with_context(target: target, database: database, &block)
+    end
+
+    # Name of the currently effective target (taking with_target into account).
+    def current_target_name
+      connection_registry.current_name || connection_registry.default_name
+    end
+
+    # Name of the currently effective database (taking with_database into account).
+    def current_database_name
+      connection_registry.current_database_name
+    end
+
+    # List databases on the currently active target's cluster.
+    # Each row: { "name" => String, "size" => String, "current" => Boolean }
+    def list_databases
+      target = connection_registry.fetch
+      target.list_databases(current: current_database_name)
+    end
+
+    # List of registered targets, each as { name:, default_database:, current: }.
+    def list_targets
+      current = current_target_name
+      connection_registry.targets.map do |t|
+        {name: t.name, default_database: t.default_database, current: t.name == current}
+      end
     end
   end
 end

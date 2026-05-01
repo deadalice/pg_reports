@@ -6,10 +6,27 @@ module PgReports
 
     before_action :authenticate_dashboard!, if: -> { PgReports.config.dashboard_auth.present? }
     before_action :set_categories
+    before_action :resolve_database_selection
+    around_action :within_selected_database
 
     def index
       @pg_stat_status = PgReports.pg_stat_statements_status
       @current_database = PgReports.system.current_database
+    end
+
+    # POST /switch_database
+    # Persists the chosen database in session and redirects back. The actual
+    # connection switch happens on the next request via #within_selected_database.
+    def switch_database
+      requested = params[:database].to_s
+
+      if requested.empty?
+        session.delete(:pg_reports_database)
+      elsif valid_database?(requested)
+        session[:pg_reports_database] = requested
+      end
+
+      redirect_back fallback_location: root_path
     end
 
     def enable_pg_stat_statements
@@ -490,6 +507,48 @@ module PgReports
 
     def set_categories
       @categories = Dashboard::ReportsRegistry.all
+    end
+
+    # Resolves which database every action should run against, based on:
+    # 1. session[:pg_reports_database] (set by #switch_database)
+    # 2. fallback to the current target's default database
+    #
+    # Also exposes @selected_database / @available_databases for the layout to
+    # render the selector. We tolerate connection errors gracefully here so
+    # that the dashboard still loads when the configured DB is unreachable —
+    # the user will see an explanation banner instead of a 500.
+    def resolve_database_selection
+      @available_databases = []
+      @database_error = nil
+      @target_default_database = PgReports.connection_registry.fetch.default_database
+
+      begin
+        @available_databases = PgReports.list_databases
+      rescue => e
+        @database_error = PgReports::Connection::ErrorTranslator.translate(e)
+      end
+
+      requested = session[:pg_reports_database].to_s
+      @selected_database = if requested.present? && @available_databases.any? { |d| d["name"] == requested }
+        requested
+      else
+        @target_default_database
+      end
+    end
+
+    def within_selected_database
+      if @selected_database && @selected_database != @target_default_database
+        PgReports.with_database(@selected_database) { yield }
+      else
+        yield
+      end
+    end
+
+    def valid_database?(name)
+      PgReports.list_databases.any? { |row| row["name"] == name }
+    rescue
+      # If we cannot list databases (permission or transient error), refuse the switch.
+      false
     end
 
     def load_report_filters(category, report_key)

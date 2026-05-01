@@ -7,6 +7,8 @@ PgReports::Engine.routes.draw do
 
   get "live_metrics", to: "dashboard#live_metrics", as: :live_metrics
 
+  post "switch_database", to: "dashboard#switch_database", as: :switch_database
+
   post "enable_pg_stat_statements", to: "dashboard#enable_pg_stat_statements", as: :enable_pg_stat_statements
   post "reset_statistics", to: "dashboard#reset_statistics", as: :reset_statistics
   post "explain_analyze", to: "dashboard#explain_analyze", as: :explain_analyze

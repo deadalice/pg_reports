@@ -989,6 +989,110 @@
     .modal-small {
       max-width: 360px;
     }
+
+    /* Database selector — works in both .header-actions and .breadcrumb. */
+    .db-selector-form {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0;
+    }
+
+    .db-selector-label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    .db-selector {
+      background: var(--bg-card, rgba(255, 255, 255, 0.04));
+      color: var(--text-primary);
+      border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+      border-radius: 6px;
+      padding: 0.375rem 0.625rem;
+      font-size: 0.875rem;
+      cursor: pointer;
+      max-width: 240px;
+    }
+
+    .db-selector:hover {
+      border-color: var(--accent-blue, #6b9fe8);
+    }
+
+    .db-selector:focus {
+      outline: none;
+      border-color: var(--accent-blue, #6b9fe8);
+      box-shadow: 0 0 0 2px rgba(107, 159, 232, 0.2);
+    }
+
+    .db-selector-static {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .db-selector-static strong {
+      color: var(--text-primary);
+    }
+
+    .db-selector-error {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.375rem 0.625rem;
+      background: rgba(232, 107, 107, 0.1);
+      border: 1px solid rgba(232, 107, 107, 0.3);
+      border-radius: 6px;
+      font-size: 0.8125rem;
+      color: var(--accent-red, #e86b6b);
+      cursor: help;
+    }
+
+    .breadcrumb-spacer {
+      flex: 1;
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .db-error-banner {
+      background: rgba(232, 107, 107, 0.08);
+      border: 1px solid rgba(232, 107, 107, 0.3);
+      border-radius: 8px;
+      padding: 0.875rem 1.125rem;
+      margin-bottom: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.375rem;
+    }
+
+    .db-error-banner strong {
+      color: var(--accent-red, #e86b6b);
+      font-size: 0.9375rem;
+    }
+
+    .db-error-banner span {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .db-error-banner code {
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      font-size: 0.8125rem;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 0.375rem 0.625rem;
+      border-radius: 4px;
+      color: var(--text-primary);
+      display: inline-block;
+      width: fit-content;
+    }
   </style>
 </head>
 <body>

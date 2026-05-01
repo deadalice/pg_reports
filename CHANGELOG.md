@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Multi-database dashboard.** Switch between databases on the connected cluster from a dropdown in the dashboard header — no configuration required. The selected database persists across requests in the session and applies to every report on every page.
+  - New `PgReports::Connection::Registry` with auto-registered `:primary` target derived from `ActiveRecord::Base.connection_db_config`. Existing setups need no changes.
+  - New block-scoped APIs: `PgReports.with_target(:name, database: ...)`, `PgReports.with_database("name")`. Honored by `Executor` even when memoized inside modules — the connection is now resolved on every call rather than at construction.
+  - New helpers: `PgReports.list_databases`, `PgReports.list_targets`, `PgReports.current_target_name`, `PgReports.current_database_name`.
+  - New `Configuration#add_target(name, spec)` and `default_target=` for explicitly registering additional targets (host/port/user/database) when the dashboard should reach databases the host app cannot.
+  - Database switching opens an isolated AR connection pool per `(target, database)` so the host application's pool is never disturbed; the primary target's default database keeps using `ActiveRecord::Base` directly.
+- **Human-readable connection errors.** `PgReports::Connection::ErrorTranslator` maps `PG::Error` SQLSTATEs (`42501`, `3D000`, `28P01`, `08006`, `53300`) and AR-wrapped variants into a `{ title, detail, hint, code }` hash. Permission errors include a concrete `GRANT ...` remediation hint. The dashboard renders the translation as a banner on the index when it can't list databases.
+
 ## [0.7.0] - 2026-04-26
 
 ### Added

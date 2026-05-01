@@ -1,0 +1,33 @@
+<% if @available_databases.present? && @available_databases.size > 1 %>
+  <form class="db-selector-form"
+        action="<%= switch_database_path %>"
+        method="post"
+        data-turbo="false">
+    <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+    <label class="db-selector-label" for="pg-reports-db-select">
+      <%= t("pg_reports.ui.database_selector.label", default: "Database") %>
+    </label>
+    <select id="pg-reports-db-select"
+            name="database"
+            class="db-selector"
+            onchange="this.form.submit()">
+      <% @available_databases.each do |row| %>
+        <option value="<%= row["name"] %>"
+                <%= "selected" if row["name"] == @selected_database %>>
+          <%= row["name"] %><%= " (#{row["size"]})" if row["size"].present? %><%= " — #{t("pg_reports.ui.database_selector.default_marker", default: "default")}" if row["name"] == @target_default_database %>
+        </option>
+      <% end %>
+    </select>
+  </form>
+<% elsif @available_databases.present? && @available_databases.size == 1 %>
+  <span class="db-selector-static">
+    <span class="db-selector-label">
+      <%= t("pg_reports.ui.database_selector.label", default: "Database") %>:
+    </span>
+    <strong><%= @available_databases.first["name"] %></strong>
+  </span>
+<% elsif @database_error %>
+  <span class="db-selector-error" title="<%= @database_error[:detail] %>">
+    ⚠ <%= @database_error[:title] %>
+  </span>
+<% end %>

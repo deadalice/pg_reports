@@ -173,7 +173,10 @@ module PgReports
       private
 
       def pg_version
-        @pg_version ||= begin
+        # Cache per-connection so switching targets/databases re-resolves the version.
+        cache = (Thread.current[:pg_reports_pg_version_cache] ||= {})
+        key = executor.connection.object_id
+        cache[key] ||= begin
           result = executor.execute("SELECT current_setting('server_version_num')::int AS v")
           result.first&.fetch("v", 0).to_i
         end
