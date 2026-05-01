@@ -290,13 +290,16 @@ module PgReports
         # when gem is installed from RubyGems
         next if path.include?("/query_monitor.rb")
 
-        # Filter queries from pg_reports internal modules only:
-        # - Installed gem: /gems/pg_reports-X.Y.Z/lib/
-        # - Local gem: /pg_reports/lib/pg_reports/modules/
-        # Note: We intentionally DO NOT filter dashboard_controller.rb
-        # to allow monitoring of user application queries made during dashboard page loads
-        path.match?(%r{/gems/pg_reports[-\d.]+/lib/}) ||
-          path.match?(%r{/pg_reports/lib/pg_reports/modules/})
+        # Filter queries from pg_reports internal code:
+        # - Installed gem: /gems/pg_reports-X.Y.Z/lib/ or /gems/pg_reports-X.Y.Z/app/
+        # - Local gem: /pg_reports/lib/pg_reports/ or /pg_reports/app/(controllers|views)/pg_reports/
+        # This includes the dashboard controller's own SQL execution endpoints
+        # (execute_query, explain_analyze) which call AR directly without going
+        # through Executor — without this match nothing in the caller stack
+        # would identify the query as ours.
+        path.match?(%r{/gems/pg_reports[-\d.]+/(lib|app)/}) ||
+          path.match?(%r{/pg_reports/lib/pg_reports/}) ||
+          path.match?(%r{/pg_reports/app/(controllers|views)/pg_reports/})
       end
     end
 
