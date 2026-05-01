@@ -41,6 +41,7 @@ module PgReports
 
     # Security settings
     attr_accessor :allow_raw_query_execution    # Allow execute_query and explain_analyze from dashboard
+    attr_accessor :allow_migration_creation     # Allow dashboard's "Generate Migration" button to write files into db/migrate/
 
     # Grafana / Prometheus exporter settings
     attr_accessor :grafana_favorites            # Reports exposed at /metrics (Array of keys or Hash with per-report opts)
@@ -92,6 +93,14 @@ module PgReports
       @allow_raw_query_execution = ActiveModel::Type::Boolean.new.cast(
         ENV.fetch("PG_REPORTS_ALLOW_RAW_QUERY_EXECUTION", false)
       )
+      # Migration creation defaults to Rails dev — preserves prior behavior —
+      # but is now explicitly togglable so it can be disabled even in dev.
+      env_override = ENV["PG_REPORTS_ALLOW_MIGRATION_CREATION"]
+      @allow_migration_creation = if env_override.nil?
+        defined?(Rails) && Rails.respond_to?(:env) && Rails.env.development?
+      else
+        ActiveModel::Type::Boolean.new.cast(env_override)
+      end
 
       # Grafana / Prometheus exporter
       @grafana_favorites = []

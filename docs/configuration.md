@@ -6,6 +6,7 @@ All options are set inside `PgReports.configure { |config| ... }` (typically in 
 
 ## Table of contents
 
+- [Security model](#security-model)
 - [Multi-database support](#multi-database-support)
 - [Quick-start example](#quick-start-example)
 - [pg_stat_statements setup](#pg_stat_statements-setup)
@@ -16,10 +17,63 @@ All options are set inside `PgReports.configure { |config| ... }` (typically in 
 - [Dashboard authentication](#dashboard-authentication)
 - [Locale & external fonts](#locale--external-fonts)
 - [Raw query execution (EXPLAIN ANALYZE / Execute Query)](#raw-query-execution-explain-analyze--execute-query)
+- [Migration creation](#migration-creation)
 - [Query source tracking (Rails QueryLogs / Marginalia)](#query-source-tracking-rails-querylogs--marginalia)
 - [SQL Query Monitor](#sql-query-monitor)
 - [Telegram integration](#telegram-integration)
 - [Grafana / Prometheus exporter](#grafana--prometheus-exporter)
+
+---
+
+## Security model
+
+PgReports is a privileged operations tool — it reads pg_stat_statements, can execute arbitrary SELECTs, can write Rails migrations, and can send report content to Telegram. **Treat the dashboard as a database admin console.**
+
+### Authentication is opt-in
+
+The dashboard ships **without authentication**. In production you must either:
+
+- Set `config.dashboard_auth = -> { ... }` (HTTP Basic, Devise, etc.) — runs as a `before_action`. See [Dashboard authentication](#dashboard-authentication).
+- Or gate the route at the host app level (e.g. `authenticate :user, ->(u) { u.admin? } { mount ... }`).
+
+A dashboard reachable without auth on a real database is a security incident waiting to happen.
+
+### CSRF protection
+
+Enabled by default (`protect_from_forgery with: :exception`) on the dashboard controller. The dashboard's forms include `authenticity_token` and XHR uses `X-CSRF-Token`. If you reverse-proxy or wrap the dashboard, preserve standard Rails CSRF behavior.
+
+### Privileged operations are off by default
+
+| Operation | Flag | Default |
+|---|---|---|
+| Execute arbitrary SELECT (`Execute Query`, `EXPLAIN ANALYZE`) | `allow_raw_query_execution` | `false` |
+| Write Ruby files into `db/migrate/` (`Generate Migration`) | `allow_migration_creation` | `Rails.env.development?` |
+
+Both can also be controlled via `PG_REPORTS_ALLOW_RAW_QUERY_EXECUTION` and `PG_REPORTS_ALLOW_MIGRATION_CREATION` env vars.
+
+### Raw query execution caveats
+
+When `allow_raw_query_execution` is on, the controller validates that submitted queries:
+
+- Are SELECT-only (case-insensitive prefix check).
+- Contain no semicolons (no multi-statement).
+- Do not contain `INSERT/UPDATE/DELETE/DROP/ALTER/CREATE/TRUNCATE/GRANT/REVOKE` keywords.
+
+This is a denylist, not a sandbox. A determined attacker with raw SELECT access can still:
+
+- Read filesystem with `pg_read_server_files()` / `pg_read_binary_file()` if the connecting role has the privilege.
+- Probe other servers via `dblink()` if installed.
+- Trigger expensive `EXPLAIN ANALYZE` runs (which actually run the query) for DoS.
+
+Treat `allow_raw_query_execution = true` like a SQL console handed to whoever can reach the dashboard. **Combine with strict `dashboard_auth`.**
+
+### What gets sent to Telegram
+
+The Telegram delivery action sends report content (table rows, possibly including query text and source files) to api.telegram.org. Don't enable this in environments where report data could include PII or secrets unless your bot/chat is appropriately scoped.
+
+### Logged data
+
+The Query Monitor writes captured SQL to `query_monitor_log_file` (default `log/pg_reports.log`, JSON Lines). Captured queries can include user data in WHERE clauses. File permissions inherit from the Rails app.
 
 ---
 
@@ -200,6 +254,18 @@ The dashboard's *Execute Query* and *EXPLAIN ANALYZE* buttons are off by default
 
 ```ruby
 config.allow_raw_query_execution = Rails.env.development? || Rails.env.staging?
+```
+
+## Migration creation
+
+The dashboard's *Generate Migration* button (visible on **Unused Indexes** and a few similar reports) writes a Ruby file into `db/migrate/`. The content is built client-side from report data. Server-side guards: filename matches `\d{14}_\w+\.rb`, target directory is `Rails.root.join("db", "migrate")`.
+
+| Option | Default | ENV | Meaning |
+|---|---|---|---|
+| `allow_migration_creation` | `Rails.env.development?` | `PG_REPORTS_ALLOW_MIGRATION_CREATION` | Whether the *Generate Migration* button writes files. Disable in any environment where the dashboard might be reachable to unauthenticated users — anyone who can hit `/create_migration` can write arbitrary Ruby to `db/migrate/` and gain RCE on the next `rails db:migrate`. |
+
+```ruby
+config.allow_migration_creation = false  # disable everywhere — copy the suggested migration manually
 ```
 
 ## Query source tracking (Rails QueryLogs / Marginalia)

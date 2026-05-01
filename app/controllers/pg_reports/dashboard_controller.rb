@@ -4,6 +4,13 @@ module PgReports
   class DashboardController < ActionController::Base
     layout "pg_reports/application"
 
+    # CSRF protection. ActionController::Base does NOT enforce this by default;
+    # we opt in explicitly because every state-changing endpoint here
+    # (switch_*, execute_query, create_migration, reset_statistics, telegram
+    # delivery, query_monitor start/stop) is sensitive. The dashboard already
+    # ships authenticity_token in forms and X-CSRF-Token in XHR.
+    protect_from_forgery with: :exception
+
     before_action :authenticate_dashboard!, if: -> { PgReports.config.dashboard_auth.present? }
     before_action :set_categories
     before_action :resolve_database_selection
@@ -366,8 +373,7 @@ module PgReports
     end
 
     def create_migration
-      # Only allow migration creation in development environment
-      unless Rails.env.development?
+      unless PgReports.config.allow_migration_creation
         render json: {
           success: false,
           error: I18n.t("pg_reports.ui.errors.migration_dev_only")

@@ -73,6 +73,34 @@ RSpec.describe PgReports::Configuration do
     end
   end
 
+  describe "#allow_migration_creation" do
+    around do |example|
+      original = ENV.delete("PG_REPORTS_ALLOW_MIGRATION_CREATION")
+      example.run
+    ensure
+      ENV["PG_REPORTS_ALLOW_MIGRATION_CREATION"] = original if original
+    end
+
+    it "is settable" do
+      config.allow_migration_creation = true
+      expect(config.allow_migration_creation).to be true
+      config.allow_migration_creation = false
+      expect(config.allow_migration_creation).to be false
+    end
+
+    it "honors PG_REPORTS_ALLOW_MIGRATION_CREATION=true even outside dev" do
+      ENV["PG_REPORTS_ALLOW_MIGRATION_CREATION"] = "true"
+      new_config = described_class.new
+      expect(new_config.allow_migration_creation).to be true
+    end
+
+    it "honors PG_REPORTS_ALLOW_MIGRATION_CREATION=false even when in dev" do
+      ENV["PG_REPORTS_ALLOW_MIGRATION_CREATION"] = "false"
+      new_config = described_class.new
+      expect(new_config.allow_migration_creation).to be false
+    end
+  end
+
   describe "#allow_raw_query_execution" do
     it "can be set to true" do
       config.allow_raw_query_execution = true

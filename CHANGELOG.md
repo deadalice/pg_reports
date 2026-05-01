@@ -16,6 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - New `Configuration#add_target(name, spec)` and `default_target=` for explicitly registering additional targets (host/port/user/database) when the dashboard should reach databases the host app cannot.
   - Database switching opens an isolated AR connection pool per `(target, database)` so the host application's pool is never disturbed; the primary target's default database keeps using `ActiveRecord::Base` directly.
 - **Human-readable connection errors.** `PgReports::Connection::ErrorTranslator` maps `PG::Error` SQLSTATEs (`42501`, `3D000`, `28P01`, `08006`, `53300`) and AR-wrapped variants into a `{ title, detail, hint, code }` hash. Permission errors include a concrete `GRANT ...` remediation hint. The dashboard renders the translation as a banner on the index when it can't list databases.
+- **Schema Analysis category gated to the primary target.** When the dashboard is pointed at a non-primary database (where the host app's models don't apply), the Schema Analysis category is greyed out with an explanation, and direct URL access redirects to the index with a flash message. Same gating extends to the JSON endpoints (`run`, `download`, `send_to_telegram`).
+- **Configuration reference** moved to [docs/configuration.md](docs/configuration.md).
+
+### Security
+
+- **CSRF protection** is now enforced on the dashboard controller (`protect_from_forgery with: :exception`). Previously the controller inherited from `ActionController::Base` without opting in — every state-changing endpoint (`switch_database`, `switch_target`, `execute_query`, `explain_analyze`, `create_migration`, `reset_statistics`, telegram delivery, query_monitor start/stop) was reachable cross-origin from any logged-in user's browser. The dashboard already shipped `authenticity_token` in forms and `X-CSRF-Token` in XHR — only the server enforcement was missing.
+- **`create_migration` is now opt-in via `config.allow_migration_creation`** (default `Rails.env.development?` to preserve prior behavior; toggleable via `PG_REPORTS_ALLOW_MIGRATION_CREATION`). The endpoint writes Ruby code into `db/migrate/`. With CSRF fixed and a denied-by-default flag, a dashboard exposed without auth no longer trivially leads to RCE on next `rails db:migrate`. Combine with `dashboard_auth` for layered defense.
 
 ## [0.7.0] - 2026-04-26
 
