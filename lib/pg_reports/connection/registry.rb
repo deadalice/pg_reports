@@ -82,11 +82,25 @@ module PgReports
         Thread.current[THREAD_KEY_DATABASE]
       end
 
+      # Switch target and/or database for the duration of the block. Semantics:
+      # - target given      → switches target AND clears the database override
+      #                       (the previous database belongs to the previous
+      #                       target's cluster and would not be valid on a new
+      #                       one). Pass `database:` explicitly to override on
+      #                       the new target.
+      # - target nil        → keeps the active target, switches only database.
+      # - database nil      → uses the (possibly new) target's default database.
       def with_context(target: nil, database: nil)
         prev_target = Thread.current[THREAD_KEY_TARGET]
         prev_database = Thread.current[THREAD_KEY_DATABASE]
-        Thread.current[THREAD_KEY_TARGET] = target.to_sym if target
-        Thread.current[THREAD_KEY_DATABASE] = database.to_s if database
+
+        if target
+          Thread.current[THREAD_KEY_TARGET] = target.to_sym
+          Thread.current[THREAD_KEY_DATABASE] = database&.to_s
+        elsif database
+          Thread.current[THREAD_KEY_DATABASE] = database.to_s
+        end
+
         yield
       ensure
         Thread.current[THREAD_KEY_TARGET] = prev_target

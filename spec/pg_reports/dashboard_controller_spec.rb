@@ -133,7 +133,9 @@ RSpec.describe PgReports::DashboardController do
 
     describe "#switch_database" do
       before do
-        allow(PgReports).to receive(:list_databases).and_return([
+        # In a real request `resolve_database_selection` populates this; we set
+        # it directly here since we're invoking the action method in isolation.
+        controller.instance_variable_set(:@available_databases, [
           {"name" => "primary_db"},
           {"name" => "logs"}
         ])
@@ -216,8 +218,8 @@ RSpec.describe PgReports::DashboardController do
   end
 
   describe "#valid_database?" do
-    it "is true when the name appears in PgReports.list_databases" do
-      allow(PgReports).to receive(:list_databases).and_return([
+    it "is true when the name appears in @available_databases" do
+      controller.instance_variable_set(:@available_databases, [
         {"name" => "primary_db"},
         {"name" => "logs"}
       ])
@@ -226,13 +228,13 @@ RSpec.describe PgReports::DashboardController do
     end
 
     it "is false when the name is not in the list" do
-      allow(PgReports).to receive(:list_databases).and_return([{"name" => "primary_db"}])
+      controller.instance_variable_set(:@available_databases, [{"name" => "primary_db"}])
 
       expect(controller.send(:valid_database?, "missing")).to be false
     end
 
-    it "swallows errors and returns false" do
-      allow(PgReports).to receive(:list_databases).and_raise(PG::Error.new("boom"))
+    it "is false when @available_databases was never populated (e.g. connection error)" do
+      controller.instance_variable_set(:@available_databases, nil)
 
       expect(controller.send(:valid_database?, "anything")).to be false
     end

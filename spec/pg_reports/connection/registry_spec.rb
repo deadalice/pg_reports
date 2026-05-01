@@ -83,6 +83,29 @@ RSpec.describe PgReports::Connection::Registry do
       expect(seen_target).to eq(:primary)
       expect(seen_db).to eq("switched_db")
     end
+
+    it "with_context clears the database override when switching target without a new database" do
+      registry.with_context(database: "outer_db") do
+        registry.with_context(target: :other) do
+          # Inner block: target switched, database NOT inherited from outer
+          # (outer database belonged to the previous target's cluster).
+          expect(registry.current_name).to eq(:other)
+          expect(registry.current_database).to be_nil
+        end
+        # After inner block, outer context is restored.
+        expect(registry.current_database).to eq("outer_db")
+      end
+    end
+
+    it "with_context with only database changes leaves target untouched" do
+      registry.with_context(target: :other) do
+        registry.with_context(database: "audit") do
+          expect(registry.current_name).to eq(:other)
+          expect(registry.current_database).to eq("audit")
+        end
+        expect(registry.current_database).to be_nil
+      end
+    end
   end
 
   describe "#current_database_name" do

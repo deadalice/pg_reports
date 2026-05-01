@@ -14,11 +14,11 @@
             name="target"
             class="db-selector"
             onchange="this.form.submit()">
+      <% default_target_name = PgReports.connection_registry.default_name %>
       <% @available_targets.each do |target| %>
-        <% is_default = target.name == PgReports.connection_registry.default_name %>
         <option value="<%= target.name %>"
-                <%= "selected" if target.name == @selected_target %>
-                <%= 'style="font-weight: 700"' if is_default %>>
+                class="<%= "is-default" if target.name == default_target_name %>"
+                <%= "selected" if target.name == @selected_target %>>
           <%= target.name %><%= " (#{target.default_database})" if target.default_database.present? %>
         </option>
       <% end %>

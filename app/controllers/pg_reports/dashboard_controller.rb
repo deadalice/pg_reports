@@ -593,10 +593,9 @@ module PgReports
     end
 
     def valid_database?(name)
-      PgReports.list_databases.any? { |row| row["name"] == name }
-    rescue
-      # If we cannot list databases (permission or transient error), refuse the switch.
-      false
+      # Reuse the list already fetched in #resolve_database_selection so the
+      # switch_database POST hits pg_database once per request, not twice.
+      Array(@available_databases).any? { |row| row["name"] == name }
     end
 
     def load_report_filters(category, report_key)

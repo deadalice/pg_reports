@@ -15,10 +15,9 @@
             class="db-selector"
             onchange="this.form.submit()">
       <% @available_databases.each do |row| %>
-        <% is_default = row["name"] == @target_default_database %>
         <option value="<%= row["name"] %>"
-                <%= "selected" if row["name"] == @selected_database %>
-                <%= 'style="font-weight: 700"' if is_default %>>
+                class="<%= "is-default" if row["name"] == @target_default_database %>"
+                <%= "selected" if row["name"] == @selected_database %>>
           <%= row["name"] %><%= " (#{row["size"]})" if row["size"].present? %>
         </option>
       <% end %>
