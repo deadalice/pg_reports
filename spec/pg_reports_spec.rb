@@ -57,4 +57,124 @@ RSpec.describe PgReports do
       expect(PgReports.system).to eq(PgReports::Modules::System)
     end
   end
+
+  describe "multi-database helpers" do
+    let(:registry) { PgReports.connection_registry }
+
+    around do |example|
+      registry.reset!
+      registry.register(:primary, host: "h", database: "primary_db")
+      registry.register(:secondary, host: "h", database: "secondary_db")
+      example.run
+      registry.reset!
+    end
+
+    describe ".with_target" do
+      it "sets thread-local target inside the block, restores after" do
+        seen = nil
+        PgReports.with_target(:secondary) { seen = registry.current_name }
+
+        expect(seen).to eq(:secondary)
+        expect(registry.current_name).to be_nil
+      end
+
+      it "accepts an explicit database override" do
+        seen_target = nil
+        seen_db = nil
+        PgReports.with_target(:primary, database: "logs") do
+          seen_target = registry.current_name
+          seen_db = registry.current_database
+        end
+
+        expect(seen_target).to eq(:primary)
+        expect(seen_db).to eq("logs")
+      end
+
+      it "restores prior context on exception" do
+        Thread.current[PgReports::Connection::Registry::THREAD_KEY_TARGET] = :primary
+
+        expect {
+          PgReports.with_target(:secondary) { raise "boom" }
+        }.to raise_error("boom")
+
+        expect(registry.current_name).to eq(:primary)
+      ensure
+        Thread.current[PgReports::Connection::Registry::THREAD_KEY_TARGET] = nil
+      end
+    end
+
+    describe ".with_database" do
+      it "swaps database on the currently active target" do
+        PgReports.with_target(:secondary) do
+          PgReports.with_database("audit_log") do
+            expect(registry.current_name).to eq(:secondary)
+            expect(registry.current_database).to eq("audit_log")
+          end
+        end
+      end
+
+      it "uses the registry's default target when no target is active" do
+        PgReports.with_database("audit_log") do
+          expect(registry.current_name).to eq(registry.default_name)
+          expect(registry.current_database).to eq("audit_log")
+        end
+      end
+    end
+
+    describe ".current_target_name" do
+      it "falls back to the registry default when no target is active" do
+        expect(PgReports.current_target_name).to eq(:primary)
+      end
+
+      it "returns the active target inside with_target" do
+        PgReports.with_target(:secondary) do
+          expect(PgReports.current_target_name).to eq(:secondary)
+        end
+      end
+    end
+
+    describe ".current_database_name" do
+      it "returns the target's default database when no override is set" do
+        expect(PgReports.current_database_name).to eq("primary_db")
+      end
+
+      it "returns the override inside with_database" do
+        PgReports.with_database("audit") do
+          expect(PgReports.current_database_name).to eq("audit")
+        end
+      end
+    end
+
+    describe ".list_targets" do
+      it "returns all registered targets with current marker" do
+        result = PgReports.list_targets
+
+        primary = result.find { |t| t[:name] == :primary }
+        secondary = result.find { |t| t[:name] == :secondary }
+
+        expect(primary).to include(default_database: "primary_db", current: true)
+        expect(secondary).to include(default_database: "secondary_db", current: false)
+      end
+
+      it "marks the active target inside with_target" do
+        PgReports.with_target(:secondary) do
+          result = PgReports.list_targets
+          expect(result.find { |t| t[:name] == :secondary }[:current]).to be true
+          expect(result.find { |t| t[:name] == :primary }[:current]).to be false
+        end
+      end
+    end
+
+    describe ".list_databases" do
+      it "delegates to the active target's list_databases" do
+        target = registry.fetch(:primary)
+        rows = [{"name" => "primary_db", "size" => "8192 kB"}]
+        allow(target).to receive(:list_databases).and_return(rows)
+
+        result = PgReports.list_databases
+
+        expect(result).to eq(rows)
+      end
+    end
+  end
 end

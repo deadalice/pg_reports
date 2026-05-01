@@ -82,7 +82,7 @@ PgReports.slow_queries.send_to_telegram
 
 ## Multi-database
 
-The dashboard auto-discovers every database on the cluster you're connected to and shows a dropdown next to *Live monitoring*. Switching is zero-config — credentials and host come from your existing `database.yml`. Schema-analysis reports stay scoped to the primary database (they introspect the host app's models); the dropdown greys them out elsewhere.
+The dashboard auto-discovers every database on the cluster you're connected to and shows a dropdown next to the *Status* panel. Switching is zero-config — credentials and host come from your existing `database.yml`. Schema-analysis reports stay scoped to the primary database (they introspect the host app's models); the dropdown greys them out elsewhere.
 
 Programmatic access:
 

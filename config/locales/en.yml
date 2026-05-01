@@ -637,7 +637,7 @@ en:
         extension_installed: "Extension installed, not preloaded"
         preloaded: "Preloaded, extension not created"
         not_configured: "Not configured"
-        monitoring_unavailable: "Live Monitoring Unavailable"
+        monitoring_unavailable: "Status Unavailable"
       modals:
         enable_pg_stat_title: "Enable pg_stat_statements"
         enable_pg_stat_intro: "To enable pg_stat_statements, follow these steps:"
@@ -669,7 +669,7 @@ en:
         ide_cursor_wsl: "Cursor (WSL)"
         ide_cursor: "Cursor"
       monitoring:
-        live_title: "Live Monitoring"
+        live_title: "Status"
         update_interval: "Updates every 5s"
         toggle_title: "Toggle live monitoring"
         query_monitor_title: "SQL Query Monitor"

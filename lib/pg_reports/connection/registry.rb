@@ -93,11 +93,14 @@ module PgReports
         Thread.current[THREAD_KEY_DATABASE] = prev_database
       end
 
-      # For tests / reload scenarios.
+      # For tests / reload scenarios. Restores the registry to a fresh state —
+      # closes all derived pools, drops all registered targets, resets
+      # default_name back to :primary, and re-arms auto-registration.
       def reset!
         @mutex.synchronize do
           @targets.each_value(&:disconnect!)
           @targets.clear
+          @default_name = :primary
           @auto_registered = false
         end
       end

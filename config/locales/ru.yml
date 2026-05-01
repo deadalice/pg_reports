@@ -602,7 +602,7 @@ ru:
         extension_installed: "Расширение установлено, не предзагружено"
         preloaded: "Предзагружено, расширение не создано"
         not_configured: "Не настроено"
-        monitoring_unavailable: "Live-мониторинг недоступен"
+        monitoring_unavailable: "Статус недоступен"
       modals:
         enable_pg_stat_title: "Включение pg_stat_statements"
         enable_pg_stat_intro: "Чтобы включить pg_stat_statements, выполните следующие шаги:"
@@ -634,7 +634,7 @@ ru:
         ide_cursor_wsl: "Cursor (WSL)"
         ide_cursor: "Cursor"
       monitoring:
-        live_title: "Live-мониторинг"
+        live_title: "Статус"
         update_interval: "Обновление каждые 5с"
         toggle_title: "Переключить live-мониторинг"
         query_monitor_title: "Монитор SQL-запросов"

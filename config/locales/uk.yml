@@ -602,7 +602,7 @@ uk:
         extension_installed: "Розширення встановлено, не передзавантажено"
         preloaded: "Передзавантажено, розширення не створено"
         not_configured: "Не налаштовано"
-        monitoring_unavailable: "Live-моніторинг недоступний"
+        monitoring_unavailable: "Статус недоступний"
       modals:
         enable_pg_stat_title: "Увімкнення pg_stat_statements"
         enable_pg_stat_intro: "Щоб увімкнути pg_stat_statements, виконайте такі кроки:"
@@ -634,7 +634,7 @@ uk:
         ide_cursor_wsl: "Cursor (WSL)"
         ide_cursor: "Cursor"
       monitoring:
-        live_title: "Live-моніторинг"
+        live_title: "Статус"
         update_interval: "Оновлення кожні 5с"
         toggle_title: "Перемкнути live-моніторинг"
         query_monitor_title: "Монітор SQL-запитів"

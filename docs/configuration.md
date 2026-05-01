@@ -25,7 +25,7 @@ All options are set inside `PgReports.configure { |config| ... }` (typically in 
 
 ## Multi-database support
 
-PgReports auto-discovers all databases on the cluster the host application is connected to. The dashboard exposes a database dropdown (next to the *Live monitoring* indicator) and persists the selection in the session — **no configuration is required**.
+PgReports auto-discovers all databases on the cluster the host application is connected to. The dashboard exposes a database dropdown (next to the *Status* panel header) and persists the selection in the session — **no configuration is required**.
 
 What works without any config:
 

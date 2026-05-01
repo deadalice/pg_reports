@@ -137,6 +137,57 @@ RSpec.describe PgReports::Configuration do
     end
   end
 
+  describe "multi-target configuration" do
+    around do |example|
+      registry = PgReports.connection_registry
+      registry.reset!
+      example.run
+      registry.reset!
+    end
+
+    describe "#add_target" do
+      it "registers a new target on the connection registry" do
+        config.add_target :analytics, host: "h", database: "warehouse"
+
+        registry = PgReports.connection_registry
+        expect(registry.target?(:analytics)).to be true
+        expect(registry.fetch(:analytics).default_database).to eq("warehouse")
+      end
+    end
+
+    describe "#default_target" do
+      it "returns the registry's default target name" do
+        expect(config.default_target).to eq(:primary)
+      end
+
+      it "is settable" do
+        config.add_target :analytics, host: "h", database: "warehouse"
+        config.default_target = :analytics
+
+        expect(config.default_target).to eq(:analytics)
+      end
+    end
+
+    describe "#connection" do
+      it "returns the legacy @connection_pool override when set" do
+        custom_pool = double("custom_connection")
+        config.connection_pool = custom_pool
+
+        expect(config.connection).to equal(custom_pool)
+      end
+
+      it "delegates to the registry when no legacy override is set" do
+        registry = PgReports.connection_registry
+        fake_connection = double("ar_connection")
+        allow(registry).to receive(:current_connection).and_return(fake_connection)
+
+        config.connection_pool = nil
+
+        expect(config.connection).to equal(fake_connection)
+      end
+    end
+  end
+
   describe "#telegram_configured?" do
     it "returns false when token is missing" do
       config.telegram_bot_token = nil
