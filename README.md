@@ -5,17 +5,17 @@
 [![Rails](https://img.shields.io/badge/Rails-5.0%2B-red.svg)](https://rubyonrails.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A comprehensive PostgreSQL monitoring and analysis library for Rails applications. Get insights into query performance, index usage, table statistics, connection health, and more. Includes a beautiful web dashboard and Telegram integration for notifications.
+A comprehensive PostgreSQL monitoring and analysis library for Rails applications. Get insights into query performance, index usage, table statistics, connection health, and more — across **every database on the cluster**, switchable from the dashboard with no extra configuration. Includes a beautiful web dashboard, a Grafana / Prometheus exporter, and Telegram delivery.
 
 ![Dashboard Screenshot](docs/dashboard.png)
 
 ## Features
 
+- 🗄️ **Multi-database** - Auto-discovers every database on the cluster and lets you switch from a dropdown in the dashboard. No configuration required.
 - 📊 **Query Analysis** - Identify slow, heavy, and expensive queries using `pg_stat_statements`
 - 📇 **Index Analysis** - Find unused, duplicate, invalid, and missing indexes
 - 📋 **Table Statistics** - Monitor table sizes, bloat, vacuum needs, and cache hit ratios
 - 🔌 **Connection Monitoring** - Track active connections, locks, and blocking queries
-- 🗄️ **Multi-database** - Auto-discovers every database on the cluster; switch from a dropdown in the dashboard, no configuration required
 - 🖥️ **System Overview** - Database sizes, PostgreSQL settings, installed extensions
 - 🌐 **Web Dashboard** - Beautiful dark-themed UI with sortable tables and expandable rows
 - 📨 **Telegram Integration** - Send reports directly to Telegram

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-05-01
+
 ### Added
 
 - **Multi-database dashboard.** Switch between databases on the connected cluster from a dropdown in the dashboard header — no configuration required. The selected database persists across requests in the session and applies to every report on every page.
