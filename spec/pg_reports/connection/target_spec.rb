@@ -60,7 +60,7 @@ RSpec.describe PgReports::Connection::Target do
     let(:rows) {
       [
         {"name" => "myapp", "size" => "8192 kB"},
-        {"name" => "logs",  "size" => "16 MB"},
+        {"name" => "logs", "size" => "16 MB"},
         {"name" => "primary_db", "size" => "2048 kB"}
       ]
     }

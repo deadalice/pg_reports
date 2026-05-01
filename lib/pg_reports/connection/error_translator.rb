@@ -36,7 +36,7 @@ module PgReports
         when ActiveRecord::StatementInvalid, ActiveRecord::ConnectionNotEstablished
           sqlstate_for(error.cause) if error.cause && !error.cause.equal?(error)
         end
-      rescue StandardError
+      rescue
         nil
       end
 
@@ -47,14 +47,14 @@ module PgReports
         hint = if kind && target
           case kind
           when "database" then "GRANT CONNECT ON DATABASE #{target} TO <role>;"
-          when "schema"   then "GRANT USAGE ON SCHEMA #{target} TO <role>;"
+          when "schema" then "GRANT USAGE ON SCHEMA #{target} TO <role>;"
           when "table", "relation", "view" then "GRANT SELECT ON #{target} TO <role>;"
           end
         end
 
         {
           title: "Permission denied",
-          detail: kind && target ? "The connecting role does not have the required privilege on #{kind} \"#{target}\"." : "The connecting role lacks the required privilege.",
+          detail: (kind && target) ? "The connecting role does not have the required privilege on #{kind} \"#{target}\"." : "The connecting role lacks the required privilege.",
           hint: hint
         }
       end

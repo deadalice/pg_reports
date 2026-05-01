@@ -66,7 +66,7 @@ module PgReports
         @pools.each_value do |klass|
           next if klass.equal?(ActiveRecord::Base)
           klass.connection_pool.disconnect! if klass.connection_pool.connected?
-        rescue StandardError
+        rescue
           # Best-effort cleanup
         end
         @pools.clear

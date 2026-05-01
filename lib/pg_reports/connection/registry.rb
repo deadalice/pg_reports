@@ -24,9 +24,7 @@ module PgReports
         @mutex = Mutex.new
       end
 
-      def default_name
-        @default_name
-      end
+      attr_reader :default_name
 
       def default_name=(name)
         @default_name = name.to_sym

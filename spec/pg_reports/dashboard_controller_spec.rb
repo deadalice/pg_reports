@@ -128,7 +128,9 @@ RSpec.describe PgReports::DashboardController do
       # root_path is a Rails route helper; not generated in this isolated unit
       # test environment. Define a stub on the singleton so the call site
       # (`fallback_location: root_path`) evaluates without NameError.
-      def controller.root_path; "/" end
+      def controller.root_path
+        "/"
+      end
     end
 
     describe "#switch_database" do
