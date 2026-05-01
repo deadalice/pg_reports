@@ -23,8 +23,6 @@
   </div>
 
   <div class="header-actions">
-    <%= render "database_selector" %>
-
     <% if @pg_stat_status[:ready] %>
       <button class="btn btn-small btn-muted" onclick="showResetConfirmModal()" id="reset-btn">
         <%= t("pg_reports.ui.actions.reset_statistics") %>
@@ -150,9 +148,7 @@ pg_stat_statements.track = all</pre>
     <div class="live-monitoring-title">
       <span class="live-indicator"></span>
       <span><%= t("pg_reports.ui.monitoring.live_title") %></span>
-      <span class="database-badge">
-        <strong><%= @current_database %></strong>
-      </span>
+      <%= render "database_selector", show_label: false %>
     </div>
     <div class="live-monitoring-controls">
       <span class="live-monitoring-interval"><%= t("pg_reports.ui.monitoring.update_interval") %></span>
@@ -625,22 +621,6 @@ pg_stat_statements.track = all</pre>
     font-size: 1rem;
   }
 
-  .database-badge {
-    margin-left: 0.5rem;
-    padding: 0.375rem 0.75rem;
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-  }
-
-  .database-badge strong {
-    color: var(--text-primary);
-    font-weight: 600;
-  }
-
   .live-indicator {
     width: 8px;
     height: 8px;
@@ -1002,13 +982,12 @@ pg_stat_statements.track = all</pre>
     if (!panel) return;
 
     panel.style.display = 'block';
-    panel.innerHTML = `
-      <div class="live-monitoring-header">
-        <div class="live-monitoring-title">
-          <span class="badge-dot error"></span>
-          <span>${PG_REPORTS_I18N.status.monitoring_unavailable}</span>
-        </div>
-      </div>
+
+    // Replace only the metrics grid; preserve the header (which holds the
+    // database selector) so the user can still switch databases when metrics
+    // are unavailable on the current one.
+    const grid = panel.querySelector('.live-metrics-grid');
+    const fallbackHTML = `
       <div style="padding: 2rem; text-align: center; color: var(--text-muted);">
         <p style="margin-bottom: 1rem;">${PG_REPORTS_I18N.errors.unable_fetch_metrics}</p>
         <p style="font-size: 0.875rem;">${PG_REPORTS_I18N.errors.possible_causes}</p>
@@ -1022,6 +1001,16 @@ pg_stat_statements.track = all</pre>
         </button>
       </div>
     `;
+
+    if (grid) {
+      grid.outerHTML = fallbackHTML;
+    } else {
+      panel.insertAdjacentHTML('beforeend', fallbackHTML);
+    }
+
+    // Surface the unavailable status next to the live indicator.
+    const indicator = panel.querySelector('.live-indicator');
+    if (indicator) indicator.classList.add('error');
   }
 
   function startPolling() {

@@ -1,29 +1,36 @@
+<%# locals: (show_label: true) %>
 <% if @available_databases.present? && @available_databases.size > 1 %>
   <form class="db-selector-form"
         action="<%= switch_database_path %>"
         method="post"
         data-turbo="false">
     <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
-    <label class="db-selector-label" for="pg-reports-db-select">
-      <%= t("pg_reports.ui.database_selector.label", default: "Database") %>
-    </label>
+    <% if local_assigns.fetch(:show_label, true) %>
+      <label class="db-selector-label" for="pg-reports-db-select">
+        <%= t("pg_reports.ui.database_selector.label", default: "Database") %>
+      </label>
+    <% end %>
     <select id="pg-reports-db-select"
             name="database"
             class="db-selector"
             onchange="this.form.submit()">
       <% @available_databases.each do |row| %>
+        <% is_default = row["name"] == @target_default_database %>
         <option value="<%= row["name"] %>"
-                <%= "selected" if row["name"] == @selected_database %>>
-          <%= row["name"] %><%= " (#{row["size"]})" if row["size"].present? %><%= " — #{t("pg_reports.ui.database_selector.default_marker", default: "default")}" if row["name"] == @target_default_database %>
+                <%= "selected" if row["name"] == @selected_database %>
+                <%= 'style="font-weight: 700"' if is_default %>>
+          <%= row["name"] %><%= " (#{row["size"]})" if row["size"].present? %>
         </option>
       <% end %>
     </select>
   </form>
 <% elsif @available_databases.present? && @available_databases.size == 1 %>
   <span class="db-selector-static">
-    <span class="db-selector-label">
-      <%= t("pg_reports.ui.database_selector.label", default: "Database") %>:
-    </span>
+    <% if local_assigns.fetch(:show_label, true) %>
+      <span class="db-selector-label">
+        <%= t("pg_reports.ui.database_selector.label", default: "Database") %>:
+      </span>
+    <% end %>
     <strong><%= @available_databases.first["name"] %></strong>
   </span>
 <% elsif @database_error %>

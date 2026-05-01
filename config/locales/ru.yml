@@ -559,7 +559,6 @@ ru:
         back: "← Назад"
       database_selector:
         label: "База данных"
-        default_marker: "по умолчанию"
       actions:
         cancel: "Отмена"
         retry: "Повторить"
