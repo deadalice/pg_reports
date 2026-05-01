@@ -277,8 +277,8 @@ module PgReports
             seq_scans: {name: "Sequential Scans", description: "Tables with high sequential scans"},
             tables_without_pk: {name: "No Primary Key", description: "Tables missing primary keys"},
             recently_modified: {name: "Recently Modified", description: "Tables with recent activity"},
-            update_hotspots: {name: "Update Hotspots", description: "Same rows or indexed columns updated repeatedly", new: true},
-            unused_tables: {name: "Unused Tables", description: "Tables never queried since the last stats reset", new: true}
+            update_hotspots: {name: "Update Hotspots", description: "Same rows or indexed columns updated repeatedly"},
+            unused_tables: {name: "Unused Tables", description: "Tables never queried since the last stats reset"}
           }
         },
         connections: {
@@ -316,14 +316,19 @@ module PgReports
           name: "Schema Analysis",
           icon: "🔍",
           color: "#06b6d4",
+          # These reports introspect the host application's ActiveRecord models,
+          # which are bound to the default database. Running them against a
+          # different database in the cluster returns rows that may not map to
+          # any model. The dashboard greys the category out in that case.
+          target_constraint: :primary_default_database_only,
           reports: {
             missing_validations: {name: "Missing Validations", description: "Unique indexes without model validations"},
-            unused_columns: {name: "Unused Columns", description: "Columns that have only ever held a single value", new: true},
-            always_null_columns: {name: "Always-NULL Columns", description: "Nullable columns that contain only NULL", new: true},
-            polymorphic_without_index: {name: "Polymorphic Without Index", description: "Polymorphic associations missing composite index", new: true},
-            counter_cache_issues: {name: "Counter Cache Issues", description: "counter_cache declarations whose target column is missing", new: true},
-            soft_delete_without_scope: {name: "Soft Delete Without Scope", description: "Soft-delete columns with no model scope filtering them", new: true},
-            orphan_tables: {name: "Orphan Tables", description: "DB tables without a corresponding Rails model", new: true}
+            unused_columns: {name: "Unused Columns", description: "Columns that have only ever held a single value"},
+            always_null_columns: {name: "Always-NULL Columns", description: "Nullable columns that contain only NULL"},
+            polymorphic_without_index: {name: "Polymorphic Without Index", description: "Polymorphic associations missing composite index"},
+            counter_cache_issues: {name: "Counter Cache Issues", description: "counter_cache declarations whose target column is missing"},
+            soft_delete_without_scope: {name: "Soft Delete Without Scope", description: "Soft-delete columns with no model scope filtering them"},
+            orphan_tables: {name: "Orphan Tables", description: "DB tables without a corresponding Rails model"}
           }
         }
       }.freeze
@@ -397,6 +402,15 @@ module PgReports
       # Returns problem fields for a report
       def self.problem_fields(report)
         REPORT_CONFIG.dig(report.to_sym, :problem_fields) || []
+      end
+
+      # Returns the target constraint declared on a category, or nil.
+      # Currently the only constraint is :primary_default_database_only, which
+      # means "only meaningful when the dashboard is pointing at the host app's
+      # primary target on its default database" — used by Schema Analysis,
+      # which depends on ActiveRecord::Base.descendants of the host app.
+      def self.target_constraint(category)
+        REPORTS.dig(category.to_sym, :target_constraint)
       end
     end
   end

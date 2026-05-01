@@ -559,6 +559,8 @@ uk:
         back: "← Назад"
       database_selector:
         label: "База даних"
+      target_selector:
+        label: "Сервер"
       actions:
         cancel: "Скасувати"
         retry: "Повторити"
@@ -642,6 +644,8 @@ uk:
         feed_no_queries: "Запитів поки не захоплено..."
         unknown_source: "Джерело невідоме"
         expand_collapse_title: "Розгорнути / згорнути"
+        scope_note_short: "область: хост-застосунок"
+        scope_note_long: "Монітор SQL-запитів підписаний на ActiveSupport::Notifications у процесі хост-застосунку та захоплює кожен SQL, який виконує застосунок, у тій базі, до якої він підключений. Селектор бази даних у дашборді на цю область не впливає."
       metrics:
         connections_label: "З'єднання"
         tps_label: "TPS"
@@ -660,6 +664,7 @@ uk:
       categories:
         requires_pg_stat: "🔒 Потрібен pg_stat_statements"
         reports_count_suffix: "звітів"
+        primary_only_reason: "🔒 Ця категорія працює лише на первинній базі — вона перевіряє моделі хост-застосунку. Щоб користуватися, перемкніться на базу за замовчуванням."
       documentation:
         toggle_title: "📖 Що показує цей звіт?"
         what_section: "📋 Що"

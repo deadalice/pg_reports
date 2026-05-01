@@ -80,6 +80,19 @@ PgReports.slow_queries.send_to_telegram
 
 **[Full list of reports →](docs/reports.md)**
 
+## Multi-database
+
+The dashboard auto-discovers every database on the cluster you're connected to and shows a dropdown next to *Live monitoring*. Switching is zero-config — credentials and host come from your existing `database.yml`. Schema-analysis reports stay scoped to the primary database (they introspect the host app's models); the dropdown greys them out elsewhere.
+
+Programmatic access:
+
+```ruby
+PgReports.with_database("logs")    { PgReports.table_sizes }
+PgReports.with_target(:analytics)  { PgReports.slow_queries }
+```
+
+For multi-cluster setups (separate analytics warehouse, replica with different credentials, etc.), register additional targets explicitly. **[Multi-database reference in docs/configuration.md →](docs/configuration.md#multi-database-support)**
+
 ## Configuration
 
 PgReports works out of the box once mounted. Common options:

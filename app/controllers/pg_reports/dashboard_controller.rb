@@ -9,6 +9,8 @@ module PgReports
     before_action :resolve_database_selection
     around_action :within_selected_database
 
+    helper_method :category_disabled_reason, :category_disabled?
+
     def index
       @pg_stat_status = PgReports.pg_stat_statements_status
       @current_database = PgReports.system.current_database
@@ -24,6 +26,25 @@ module PgReports
         session.delete(:pg_reports_database)
       elsif valid_database?(requested)
         session[:pg_reports_database] = requested
+      end
+
+      redirect_back fallback_location: root_path
+    end
+
+    # POST /switch_target
+    # Persists the chosen target in session, clears the database choice (each
+    # target has its own list of databases), and redirects back.
+    def switch_target
+      requested = params[:target].to_s
+
+      if requested.empty?
+        session.delete(:pg_reports_target)
+        session.delete(:pg_reports_database)
+      elsif PgReports.connection_registry.target?(requested)
+        session[:pg_reports_target] = requested
+        # Database list is target-specific; reset so the next request picks the
+        # new target's default rather than carrying a stale name.
+        session.delete(:pg_reports_database)
       end
 
       redirect_back fallback_location: root_path
@@ -86,6 +107,12 @@ module PgReports
 
       if @report_info.nil?
         redirect_to root_path, alert: I18n.t("pg_reports.ui.errors.report_not_found")
+        return
+      end
+
+      reason = category_disabled_reason(@category)
+      if reason
+        redirect_to root_path, alert: reason
         return
       end
 
@@ -509,36 +536,57 @@ module PgReports
       @categories = Dashboard::ReportsRegistry.all
     end
 
-    # Resolves which database every action should run against, based on:
-    # 1. session[:pg_reports_database] (set by #switch_database)
-    # 2. fallback to the current target's default database
+    # Resolves which target/database every action should run against, based on:
+    # 1. session[:pg_reports_target]   (set by #switch_target)
+    # 2. session[:pg_reports_database] (set by #switch_database)
+    # Falls back to the registry's default target and that target's default
+    # database when either is missing or invalid.
     #
-    # Also exposes @selected_database / @available_databases for the layout to
-    # render the selector. We tolerate connection errors gracefully here so
-    # that the dashboard still loads when the configured DB is unreachable —
-    # the user will see an explanation banner instead of a 500.
+    # Exposes @selected_target / @available_targets / @selected_database /
+    # @available_databases / @target_default_database / @database_error for the
+    # layout to render the selectors. Connection errors are swallowed so the
+    # dashboard still renders with a banner instead of a 500.
     def resolve_database_selection
+      registry = PgReports.connection_registry
+
+      # Target resolution (must come first — database list depends on it)
+      @available_targets = registry.targets
+      requested_target = session[:pg_reports_target].to_s
+      @selected_target = if requested_target.present? && registry.target?(requested_target)
+        requested_target.to_sym
+      else
+        registry.default_name
+      end
+
+      # Resolve database list under the chosen target so list_databases hits
+      # the right cluster.
       @available_databases = []
       @database_error = nil
-      @target_default_database = PgReports.connection_registry.fetch.default_database
+      @target_default_database = registry.fetch(@selected_target).default_database
 
       begin
-        @available_databases = PgReports.list_databases
+        registry.with_context(target: @selected_target) do
+          @available_databases = registry.fetch(@selected_target).list_databases(current: @target_default_database)
+        end
       rescue => e
         @database_error = PgReports::Connection::ErrorTranslator.translate(e)
       end
 
-      requested = session[:pg_reports_database].to_s
-      @selected_database = if requested.present? && @available_databases.any? { |d| d["name"] == requested }
-        requested
+      requested_database = session[:pg_reports_database].to_s
+      @selected_database = if requested_database.present? && @available_databases.any? { |d| d["name"] == requested_database }
+        requested_database
       else
         @target_default_database
       end
     end
 
     def within_selected_database
-      if @selected_database && @selected_database != @target_default_database
-        PgReports.with_database(@selected_database) { yield }
+      database_override = (@selected_database && @selected_database != @target_default_database) ? @selected_database : nil
+      target_override = (@selected_target && @selected_target != PgReports.connection_registry.default_name) ? @selected_target : nil
+
+      if target_override || database_override
+        PgReports.with_target(target_override || PgReports.connection_registry.default_name,
+          database: database_override) { yield }
       else
         yield
       end
@@ -589,6 +637,9 @@ module PgReports
     end
 
     def execute_report(category, report_key, **filter_params)
+      reason = category_disabled_reason(category)
+      raise ArgumentError, reason if reason
+
       mod = case category
       when :queries then Modules::Queries
       when :indexes then Modules::Indexes
@@ -604,6 +655,31 @@ module PgReports
       end
 
       mod.public_send(report_key, **filter_params)
+    end
+
+    # nil if the category is available in the current target/database context,
+    # otherwise a localized string explaining why it is disabled. Exposed to
+    # views via helper_method.
+    def category_disabled_reason(category)
+      constraint = Dashboard::ReportsRegistry.target_constraint(category)
+      return nil unless constraint == :primary_default_database_only
+      return nil if on_primary_default_database?
+
+      I18n.t("pg_reports.ui.categories.primary_only_reason",
+        default: "This report category only runs on the primary database " \
+          "because it inspects the host application's models. Switch back to " \
+          "the default database to use it.")
+    end
+
+    def category_disabled?(category)
+      category_disabled_reason(category).present?
+    end
+
+    def on_primary_default_database?
+      return true if @target_default_database.nil?
+
+      @selected_target == PgReports.connection_registry.default_name &&
+        @selected_database == @target_default_database
     end
 
     def substitute_params(query, params_hash)

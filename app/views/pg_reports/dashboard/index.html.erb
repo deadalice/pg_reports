@@ -148,6 +148,7 @@ pg_stat_statements.track = all</pre>
     <div class="live-monitoring-title">
       <span class="live-indicator"></span>
       <span><%= t("pg_reports.ui.monitoring.live_title") %></span>
+      <%= render "target_selector", show_label: false %>
       <%= render "database_selector", show_label: false %>
     </div>
     <div class="live-monitoring-controls">
@@ -266,6 +267,9 @@ pg_stat_statements.track = all</pre>
     <div class="query-monitoring-title">
       <span class="monitoring-indicator" id="monitor-indicator"></span>
       <span><%= t("pg_reports.ui.monitoring.query_monitor_title") %></span>
+      <span class="query-monitoring-scope" title="<%= t("pg_reports.ui.monitoring.scope_note_long", default: "Query Monitor subscribes to ActiveSupport::Notifications in the host application's process. It captures every SQL the host app runs, on whichever database the host app is connected to. The dashboard's database selector does not change this scope.") %>">
+        <%= t("pg_reports.ui.monitoring.scope_note_short", default: "scope: host application") %>
+      </span>
       <span class="session-badge" id="session-badge" style="display: none;">
         <%= t("pg_reports.ui.monitoring.session_label") %> <strong id="session-id"></strong>
       </span>
@@ -305,10 +309,19 @@ pg_stat_statements.track = all</pre>
 
 <div class="categories-grid">
   <% @categories.each do |category_key, category| %>
-    <div class="category-card<%= ' disabled' if category_key == :queries && !@pg_stat_status[:ready] %>">
-      <% if category_key == :queries && !@pg_stat_status[:ready] %>
+    <%
+      requires_pg_stat = (category_key == :queries && !@pg_stat_status[:ready])
+      target_disabled_reason = category_disabled_reason(category_key)
+      is_disabled = requires_pg_stat || target_disabled_reason.present?
+    %>
+    <div class="category-card<%= ' disabled' if is_disabled %>">
+      <% if requires_pg_stat %>
         <div class="category-warning">
           <%= t("pg_reports.ui.categories.requires_pg_stat") %>
+        </div>
+      <% elsif target_disabled_reason %>
+        <div class="category-warning">
+          <%= target_disabled_reason %>
         </div>
       <% end %>
       <div class="category-header">
@@ -321,7 +334,7 @@ pg_stat_statements.track = all</pre>
 
       <div class="reports-list">
         <% category[:reports].each do |report_key, report| %>
-          <% if category_key == :queries && !@pg_stat_status[:ready] %>
+          <% if is_disabled %>
             <div class="report-link disabled">
               <div class="report-link-info">
                 <span class="report-link-name">

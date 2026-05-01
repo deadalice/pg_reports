@@ -559,6 +559,8 @@ ru:
         back: "← Назад"
       database_selector:
         label: "База данных"
+      target_selector:
+        label: "Сервер"
       actions:
         cancel: "Отмена"
         retry: "Повторить"
@@ -642,6 +644,8 @@ ru:
         feed_no_queries: "Запросы пока не захвачены..."
         unknown_source: "Источник неизвестен"
         expand_collapse_title: "Развернуть / свернуть"
+        scope_note_short: "область: хост-приложение"
+        scope_note_long: "Монитор SQL-запросов подписан на ActiveSupport::Notifications в процессе хост-приложения и захватывает каждый SQL, который выполняет приложение, в той базе, к которой приложение подключено. Селектор базы данных в дашборде на эту область не влияет."
       metrics:
         connections_label: "Соединения"
         tps_label: "TPS"
@@ -660,6 +664,7 @@ ru:
       categories:
         requires_pg_stat: "🔒 Требуется pg_stat_statements"
         reports_count_suffix: "отчётов"
+        primary_only_reason: "🔒 Эта категория работает только на первичной базе — она проверяет модели хост-приложения. Чтобы пользоваться, переключитесь обратно на базу по умолчанию."
       documentation:
         toggle_title: "📖 Что показывает этот отчёт?"
         what_section: "📋 Что"

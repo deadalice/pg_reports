@@ -594,6 +594,8 @@ en:
         back: "← Back"
       database_selector:
         label: "Database"
+      target_selector:
+        label: "Target"
       actions:
         cancel: "Cancel"
         retry: "Retry"
@@ -677,6 +679,8 @@ en:
         feed_no_queries: "No queries captured yet..."
         unknown_source: "Unknown source"
         expand_collapse_title: "Expand/Collapse"
+        scope_note_short: "scope: host application"
+        scope_note_long: "Query Monitor subscribes to ActiveSupport::Notifications in the host application's process. It captures every SQL the host app runs, on whichever database the host app is connected to. The dashboard's database selector does not change this scope."
       metrics:
         connections_label: "Connections"
         tps_label: "TPS"
@@ -695,6 +699,7 @@ en:
       categories:
         requires_pg_stat: "🔒 Requires pg_stat_statements"
         reports_count_suffix: "reports"
+        primary_only_reason: "🔒 This category only runs on the primary database — it inspects the host application's models. Switch back to the default database to use it."
       documentation:
         toggle_title: "📖 What does this report show?"
         what_section: "📋 What"

@@ -1,0 +1,27 @@
+<%# locals: (show_label: true) %>
+<% if @available_targets.present? && @available_targets.size > 1 %>
+  <form class="db-selector-form"
+        action="<%= switch_target_path %>"
+        method="post"
+        data-turbo="false">
+    <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+    <% if local_assigns.fetch(:show_label, true) %>
+      <label class="db-selector-label" for="pg-reports-target-select">
+        <%= t("pg_reports.ui.target_selector.label", default: "Target") %>
+      </label>
+    <% end %>
+    <select id="pg-reports-target-select"
+            name="target"
+            class="db-selector"
+            onchange="this.form.submit()">
+      <% @available_targets.each do |target| %>
+        <% is_default = target.name == PgReports.connection_registry.default_name %>
+        <option value="<%= target.name %>"
+                <%= "selected" if target.name == @selected_target %>
+                <%= 'style="font-weight: 700"' if is_default %>>
+          <%= target.name %><%= " (#{target.default_database})" if target.default_database.present? %>
+        </option>
+      <% end %>
+    </select>
+  </form>
+<% end %>
