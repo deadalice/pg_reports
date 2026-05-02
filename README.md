@@ -323,8 +323,8 @@ bundle exec rubocop
 
 ## License
 
-MIT. See [LICENSE.txt](LICENSE.txt).
+The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
 
 ## Acknowledgments
 
-Inspired by [rails-pg-extras](https://github.com/pawurb/rails-pg-extras). UI built with [Claude](https://www.anthropic.com/claude) by Anthropic.
+Inspired by [rails-pg-extras](https://github.com/pawurb/rails-pg-extras) and built with ❤️ for the Rails community.
