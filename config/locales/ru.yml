@@ -660,7 +660,7 @@ ru:
         cache_hit_detail: "блоки heap из кэша"
         long_queries_label: "Долгие запросы"
         queries_unit: "запросов"
-        long_running_threshold: "> 60с выполнения"
+        long_running_threshold: "> 5с выполнения"
         blocked_label: "Заблокировано"
         processes_unit: "процессов"
         waiting_for_locks: "ждут блокировок"

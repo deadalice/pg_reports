@@ -89,7 +89,7 @@ pg_stat_statements.track = all</pre>
 
 <!-- Create extension modal -->
 <div id="create-extension-modal" class="modal" style="display: none;">
-  <div class="modal-content modal-small">
+  <div class="modal-content modal-medium">
     <div class="modal-header">
       <h3><%= t("pg_reports.ui.modals.create_extension_title") %></h3>
       <button class="modal-close" onclick="closeCreateExtensionModal()">×</button>
@@ -292,7 +292,7 @@ pg_stat_statements.track = all</pre>
     <div class="query-monitoring-title">
       <span class="monitoring-indicator" id="monitor-indicator"></span>
       <span><%= t("pg_reports.ui.monitoring.query_monitor_title") %></span>
-      <span class="query-monitoring-scope" title="<%= t("pg_reports.ui.monitoring.scope_note_long", default: "Query Monitor subscribes to ActiveSupport::Notifications in the host application's process. It captures every SQL the host app runs, on whichever database the host app is connected to. The dashboard's database selector does not change this scope.") %>">
+      <span class="query-monitoring-scope" tabindex="0" data-tooltip="<%= t("pg_reports.ui.monitoring.scope_note_long", default: "Query Monitor subscribes to ActiveSupport::Notifications in the host application's process. It captures every SQL the host app runs, on whichever database the host app is connected to. The dashboard's database selector does not change this scope.") %>">
         <%= t("pg_reports.ui.monitoring.scope_note_short", default: "scope: host application") %>
       </span>
       <span class="session-badge" id="session-badge" style="display: none;">
@@ -400,15 +400,26 @@ pg_stat_statements.track = all</pre>
     font-size: 0.8rem;
   }
 
+  /* Keep the header action button the same height as the status badge and
+     the settings button (all 2.125rem); inline-flex centers the label so no
+     vertical padding is needed. */
+  .header-actions .btn {
+    height: 2.125rem;
+    padding: 0 1rem;
+  }
+
   .btn-info {
-    width: 24px;
-    height: 24px;
+    width: 2.125rem;
+    height: 2.125rem;
     padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background: var(--bg-tertiary);
     color: var(--text-muted);
     border: 1px solid var(--border-color);
-    border-radius: 50%;
-    font-size: 0.8rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s;
@@ -456,7 +467,7 @@ pg_stat_statements.track = all</pre>
 
   .category-warning {
     padding: 0.625rem 1rem;
-    margin: -1.5rem -1.5rem 1rem -1.5rem;
+    margin: -1rem -1rem 1rem -1rem;
     background: rgba(245, 158, 11, 0.1);
     border-bottom: 1px solid rgba(245, 158, 11, 0.2);
     border-radius: 6px 6px 0 0;

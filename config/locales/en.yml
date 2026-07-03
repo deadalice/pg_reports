@@ -695,7 +695,7 @@ en:
         cache_hit_detail: "heap blocks from cache"
         long_queries_label: "Long Queries"
         queries_unit: "queries"
-        long_running_threshold: "> 60s runtime"
+        long_running_threshold: "> 5s runtime"
         blocked_label: "Blocked"
         processes_unit: "processes"
         waiting_for_locks: "waiting for locks"

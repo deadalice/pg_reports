@@ -82,7 +82,7 @@ module PgReports
       # @param long_query_threshold [Integer] Threshold in seconds for long queries
       # @return [Hash] Metrics data
       # @raise [StandardError] If no data is returned
-      def live_metrics(long_query_threshold: 60)
+      def live_metrics(long_query_threshold: 5)
         data = executor.execute_from_file(:system, :live_metrics,
           long_query_threshold: long_query_threshold)
 

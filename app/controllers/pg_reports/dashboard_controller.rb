@@ -70,7 +70,7 @@ module PgReports
     end
 
     def live_metrics
-      threshold = params[:long_query_threshold]&.to_i || 60
+      threshold = params[:long_query_threshold]&.to_i || 5
 
       # Check if we have access to required statistics
       begin

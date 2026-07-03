@@ -113,7 +113,8 @@
       display: flex;
       align-items: center;
       gap: 0.4rem;
-      padding: 0.4rem 0.75rem;
+      height: 2.125rem;
+      padding: 0 0.75rem;
       background: var(--bg-tertiary);
       border: 1px solid var(--border-color);
       border-radius: 4px;
@@ -652,6 +653,7 @@
     }
 
     .query-monitoring-scope {
+      position: relative;
       font-weight: 400;
       font-size: 0.75rem;
       color: var(--text-muted);
@@ -659,6 +661,40 @@
       padding: 0.125rem 0.5rem;
       border-radius: 999px;
       cursor: help;
+    }
+
+    .query-monitoring-scope::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      z-index: 100;
+      width: max-content;
+      max-width: 320px;
+      padding: 0.6rem 0.75rem;
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+      font-size: 0.75rem;
+      font-weight: 400;
+      line-height: 1.5;
+      white-space: normal;
+      text-align: left;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-4px);
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      pointer-events: none;
+    }
+
+    .query-monitoring-scope:hover::after,
+    .query-monitoring-scope:focus::after,
+    .query-monitoring-scope:focus-visible::after {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
     }
 
     .monitoring-indicator {
@@ -1018,6 +1054,10 @@
       max-width: 360px;
     }
 
+    .modal-medium {
+      max-width: 560px;
+    }
+
     /* Database selector — used inside .live-monitoring-title and .breadcrumb.
        Sizes to fit its longest option (no artificial cap), capped at the
        parent's available width so it never overruns neighboring controls. */
@@ -1154,6 +1194,26 @@
       if (!template) return '';
       return template.replace(/%\{(\w+)\}/g, function(_, k) { return vars[k] != null ? vars[k] : ''; });
     };
+
+    // Close the topmost open modal on ESC. Applies to every `.modal` that has a
+    // close (×) button — it triggers that button so each modal's own close
+    // handler (and any cleanup) runs.
+    document.addEventListener('keydown', function(e) {
+      if (e.key !== 'Escape' && e.key !== 'Esc') return;
+      const open = Array.prototype.slice.call(document.querySelectorAll('.modal'))
+        .filter(function(m) {
+          return getComputedStyle(m).display !== 'none' && m.querySelector('.modal-close');
+        });
+      if (!open.length) return;
+      e.preventDefault();
+      const modal = open[open.length - 1];
+      const closeBtn = modal.querySelector('.modal-close');
+      if (closeBtn) {
+        closeBtn.click();
+      } else {
+        modal.style.display = 'none';
+      }
+    });
 
     function showToast(message, type = 'success') {
       const toast = document.getElementById('toast');

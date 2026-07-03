@@ -660,7 +660,7 @@ uk:
         cache_hit_detail: "блоки heap із кешу"
         long_queries_label: "Довгі запити"
         queries_unit: "запитів"
-        long_running_threshold: "> 60с виконання"
+        long_running_threshold: "> 5с виконання"
         blocked_label: "Заблоковано"
         processes_unit: "процесів"
         waiting_for_locks: "чекають блокувань"
