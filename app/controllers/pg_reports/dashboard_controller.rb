@@ -668,6 +668,17 @@ module PgReports
     def category_disabled_reason(category)
       constraint = Dashboard::ReportsRegistry.target_constraint(category)
       return nil unless constraint == :primary_default_database_only
+
+      # In standalone mode there is no host application, so its ActiveRecord
+      # models don't exist — these reports would inspect nothing. Disable the
+      # whole category with an explanation instead of returning empty results.
+      if PgReports.config.standalone
+        return I18n.t("pg_reports.ui.categories.standalone_no_host_app_reason",
+          default: "🔒 This category isn't available in standalone mode — it " \
+            "inspects the host application's models, and there is no host app " \
+            "when running the dashboard on its own.")
+      end
+
       return nil if on_primary_default_database?
 
       I18n.t("pg_reports.ui.categories.primary_only_reason",

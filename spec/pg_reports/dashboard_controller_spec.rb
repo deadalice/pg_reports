@@ -79,6 +79,29 @@ RSpec.describe PgReports::DashboardController do
       reason = controller.send(:category_disabled_reason, :schema_analysis)
       expect(reason).to be_a(String)
     end
+
+    context "in standalone mode" do
+      around do |example|
+        PgReports.config.standalone = true
+        example.run
+        PgReports.config.standalone = false
+      end
+
+      it "disables schema_analysis even on the primary's default DB" do
+        stub_selection(selected_target: :primary, selected_database: "primary_db")
+
+        reason = controller.send(:category_disabled_reason, :schema_analysis)
+        expect(reason).to be_a(String)
+        expect(reason).to include("standalone")
+      end
+
+      it "still returns nil for unconstrained categories" do
+        stub_selection(selected_target: :primary, selected_database: "primary_db")
+
+        expect(controller.send(:category_disabled_reason, :queries)).to be_nil
+        expect(controller.send(:category_disabled_reason, :tables)).to be_nil
+      end
+    end
   end
 
   describe "#category_disabled?" do

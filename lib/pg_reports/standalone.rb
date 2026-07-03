@@ -42,6 +42,11 @@ module PgReports
       # and database switching / multi-cluster all work unchanged.
       ENV["DATABASE_URL"] = connection_url(database_url)
 
+      # Mark this process as standalone so the dashboard can hide reports that
+      # only make sense with a host app (e.g. Schema Analysis, which introspects
+      # the host application's ActiveRecord models — there are none here).
+      PgReports.config.standalone = true
+
       app = build_application(mount_path)
       app.initialize!
       verify_connection!

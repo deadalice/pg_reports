@@ -27,6 +27,7 @@ module PgReports
 
     # Dashboard settings
     attr_accessor :dashboard_auth               # Proc for dashboard authentication
+    attr_accessor :standalone                   # True when running via PgReports::Standalone (no host app)
 
     # Assets / privacy settings
     attr_accessor :load_external_fonts          # When true, loads Google Fonts in the dashboard layout
@@ -74,6 +75,7 @@ module PgReports
 
       # Dashboard
       @dashboard_auth = nil
+      @standalone = false
 
       # Assets / privacy
       @load_external_fonts = ActiveModel::Type::Boolean.new.cast(ENV.fetch("PG_REPORTS_LOAD_EXTERNAL_FONTS", false))

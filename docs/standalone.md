@@ -57,6 +57,10 @@ Standalone mode adds **no runtime dependencies** to the gem:
 
 The repository's own `Gemfile` includes `puma` in the development group so `./bin/pg_reports server` works out of the box from a checkout.
 
+## Schema Analysis is disabled
+
+The **Schema Analysis** category is greyed out in standalone mode. Its reports (missing validations, orphan tables, polymorphic-without-index, counter-cache issues, …) introspect the **host application's ActiveRecord models** — and standalone mode has no host app, so there are no models to compare the schema against. Rather than return misleading empty or all-orphan results, the whole category is disabled with an explanation in the UI. Every other category works unchanged. Run the dashboard mounted inside your Rails app to use Schema Analysis.
+
 ## Security
 
 Standalone mode is intended for **local, trusted use** (a developer inspecting a database from their machine). It binds to `127.0.0.1` by default and applies no dashboard authentication. If you bind to a non-loopback interface (`--host 0.0.0.0`), put it behind your own network controls — the dashboard can run queries and, if enabled, generate migrations against the target database.
