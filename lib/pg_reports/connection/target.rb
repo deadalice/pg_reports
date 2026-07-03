@@ -49,7 +49,7 @@ module PgReports
       # List all databases visible on this target's cluster (using pg_database).
       # Result rows: { "name" => String, "size" => String, "current" => Boolean }
       def list_databases(current: nil)
-        rows = connection_for.exec_query(<<~SQL).to_a
+        rows = connection_for.exec_query(<<~SQL, "PgReports").to_a
           SELECT datname AS name,
                  pg_size_pretty(pg_database_size(datname)) AS size
           FROM pg_database

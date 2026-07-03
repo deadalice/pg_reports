@@ -17,10 +17,15 @@ module PgReports
       execute(sql, **params)
     end
 
-    # Execute raw SQL and return results as array of hashes
+    # Execute raw SQL and return results as array of hashes.
+    #
+    # Every query is tagged with the "PgReports" AR statement name so the Query
+    # Monitor can skip our own queries by name (see QueryMonitor#should_skip?),
+    # reliably and independent of backtrace depth — the internal live_metrics /
+    # status polling would otherwise leak into the monitor's history.
     def execute(sql, **params)
       processed_sql = interpolate_params(sql, params)
-      result = connection.exec_query(processed_sql)
+      result = connection.exec_query(processed_sql, "PgReports")
       result.to_a
     end
 

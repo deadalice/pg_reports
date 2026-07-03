@@ -9,8 +9,8 @@ RSpec.describe PgReports::Executor do
       first_result = double("result1", to_a: [{"v" => 1}])
       second_result = double("result2", to_a: [{"v" => 2}])
 
-      expect(first_conn).to receive(:exec_query).with("SELECT 1").and_return(first_result)
-      expect(second_conn).to receive(:exec_query).with("SELECT 2").and_return(second_result)
+      expect(first_conn).to receive(:exec_query).with("SELECT 1", "PgReports").and_return(first_result)
+      expect(second_conn).to receive(:exec_query).with("SELECT 2", "PgReports").and_return(second_result)
 
       executor = described_class.new
 
@@ -24,7 +24,7 @@ RSpec.describe PgReports::Executor do
     it "honors an explicit connection override over the registry" do
       override = double("override")
       result = double("result", to_a: [])
-      expect(override).to receive(:exec_query).with("SELECT 1").and_return(result)
+      expect(override).to receive(:exec_query).with("SELECT 1", "PgReports").and_return(result)
       allow(PgReports.config).to receive(:connection).and_raise("registry should not be hit")
 
       executor = described_class.new(connection: override)

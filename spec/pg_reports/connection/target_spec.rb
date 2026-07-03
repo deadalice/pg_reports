@@ -75,7 +75,8 @@ RSpec.describe PgReports::Connection::Target do
       target.list_databases
 
       expect(fake_connection).to have_received(:exec_query).with(
-        a_string_matching(/FROM pg_database\s+WHERE datistemplate = false AND datallowconn = true/)
+        a_string_matching(/FROM pg_database\s+WHERE datistemplate = false AND datallowconn = true/),
+        "PgReports"
       )
     end
 
