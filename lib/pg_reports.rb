@@ -43,6 +43,10 @@ require_relative "pg_reports/grafana/dashboard_builder"
 # Rails Engine
 require_relative "pg_reports/engine" if defined?(Rails::Engine)
 
+# Standalone runner (no host app). Only defines methods; the heavy Rails/web
+# requires happen lazily inside PgReports::Standalone.run.
+require_relative "pg_reports/standalone"
+
 module PgReports
   class << self
     # Query analysis methods

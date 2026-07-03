@@ -1,0 +1,85 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Soft bundler shim: when run straight from the gem checkout (a Gemfile sits at
+# the repo root, next to bin/), activate the bundle so the local `lib` and the
+# dev-group web server are on the load path — letting `./bin/pg_reports` work
+# without an explicit `bundle exec`. Installed as a gem there is no Gemfile
+# alongside the executable, so this is skipped and RubyGems resolves everything.
+gemfile = File.expand_path("../Gemfile", __dir__)
+if File.exist?(gemfile) && !defined?(Bundler)
+  ENV["BUNDLE_GEMFILE"] ||= gemfile
+  begin
+    require "bundler/setup"
+  rescue LoadError
+    # Bundler unavailable — fall through and let RubyGems/$LOAD_PATH resolve.
+  end
+end
+
+require "optparse"
+
+options = {
+  port: 4000,
+  host: "127.0.0.1",
+  mount: "/",
+  database_url: nil,
+  server: nil
+}
+
+banner = <<~BANNER
+  pg_reports — self-contained PostgreSQL insights dashboard
+
+  Usage:
+    pg_reports server [options]
+
+  Connection is resolved from --database-url, else DATABASE_URL, else the
+  standard libpq env vars (PGHOST, PGPORT, PGUSER, PGPASSWORD, PGDATABASE).
+
+  Options:
+BANNER
+
+parser = OptionParser.new do |o|
+  o.banner = banner
+  o.on("-p", "--port PORT", Integer, "Port to listen on (default: 4000)") { |v| options[:port] = v }
+  o.on("-b", "--host HOST", "Host/interface to bind (default: 127.0.0.1)") { |v| options[:host] = v }
+  o.on("-m", "--mount PATH", "Path to mount the dashboard at (default: /)") { |v| options[:mount] = v }
+  o.on("-d", "--database-url URL", "PostgreSQL connection URL") { |v| options[:database_url] = v }
+  o.on("-s", "--server NAME", "Web server to use (e.g. puma, webrick)") { |v| options[:server] = v }
+  o.on("-h", "--help", "Show this help") do
+    puts o
+    exit
+  end
+  o.on("-v", "--version", "Show version") do
+    require "pg_reports/version"
+    puts PgReports::VERSION
+    exit
+  end
+end
+
+# parse! permutes, so options are recognized before or after the subcommand
+# (e.g. `pg_reports server --port 4055`).
+parser.parse!(ARGV)
+command = ARGV.shift || "server"
+
+case command
+when "server"
+  require "pg_reports"
+  begin
+    PgReports::Standalone.run(
+      port: options[:port],
+      host: options[:host],
+      mount_path: options[:mount],
+      database_url: options[:database_url],
+      server: options[:server]
+    )
+  rescue PgReports::Standalone::ServerUnavailable => e
+    warn e.message
+    exit 1
+  rescue Interrupt
+    warn "\npg_reports: stopped"
+  end
+else
+  warn "Unknown command: #{command.inspect}"
+  warn parser.help
+  exit 1
+end

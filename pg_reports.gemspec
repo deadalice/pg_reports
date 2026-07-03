@@ -21,9 +21,11 @@ Gem::Specification.new do |spec|
   spec.metadata["changelog_uri"] = "#{spec.homepage}/blob/main/CHANGELOG.md"
 
   spec.files = Dir.chdir(__dir__) do
-    Dir["{app,config,lib}/**/*", "LICENSE.txt", "README.md", "CHANGELOG.md"]
+    Dir["{app,bin,config,lib}/**/*", "LICENSE.txt", "README.md", "CHANGELOG.md"]
   end
 
+  spec.bindir = "bin"
+  spec.executables = ["pg_reports"]
   spec.require_paths = ["lib"]
 
   # Runtime dependencies

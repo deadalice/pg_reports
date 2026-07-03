@@ -1187,7 +1187,10 @@
   <div id="ide-menu" class="ide-menu"></div>
 
   <script>
-    const pgReportsRoot = document.querySelector('meta[name="pg-reports-root"]')?.content || '/pg_reports';
+    // Trailing slash stripped so `${pgReportsRoot}/foo` never becomes `//foo` —
+    // a protocol-relative URL (host "foo") — when the engine is mounted at "/"
+    // (e.g. standalone mode), where the mount path resolves to "/".
+    const pgReportsRoot = (document.querySelector('meta[name="pg-reports-root"]')?.content || '/pg_reports').replace(/\/+$/, '');
     window.PG_REPORTS_I18N = <%= raw I18n.t("pg_reports.ui").to_json %>;
 
     // Format strings with %{var} placeholders

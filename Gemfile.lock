@@ -90,6 +90,7 @@ GEM
     minitest (6.0.6)
       drb (~> 2.0)
       prism (~> 1.5)
+    nio4r (2.7.5)
     nokogiri (1.19.3-arm64-darwin)
       racc (~> 1.4)
     nokogiri (1.19.3-x86_64-linux-gnu)
@@ -107,6 +108,8 @@ GEM
     psych (5.3.1)
       date
       stringio
+    puma (8.0.2)
+      nio4r (~> 2.0)
     racc (1.8.1)
     rack (3.2.6)
     rack-session (2.1.2)
@@ -213,6 +216,7 @@ DEPENDENCIES
   debug
   factory_bot_rails
   pg_reports!
+  puma
   rspec-rails (~> 6.0)
   standard
   yard (~> 0.9)
