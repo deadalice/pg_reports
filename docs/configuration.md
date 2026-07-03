@@ -325,6 +325,8 @@ config.query_monitor_backtrace_filter = ->(loc) {
 
 ## Telegram integration
 
+Setup, the optional `telegram-bot-ruby` dependency, and sending are covered in the dedicated **[Telegram delivery guide → telegram.md](telegram.md)**.
+
 | Option | Default | ENV | Meaning |
 |---|---|---|---|
 | `telegram_bot_token` | `nil` | `PG_REPORTS_TELEGRAM_TOKEN` | Bot token from [@BotFather](https://t.me/BotFather). |

@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8.1] - 2026-07-03
 
+### Added
+
+- **Standalone mode — run the dashboard without a host Rails app.** A new `pg_reports server` executable (and `rake pg_reports:server` task) boots a minimal Rails application that mounts the engine at `/` and serves it on port **4000**, straight from the gem's root folder. The connection is resolved from `--database-url`, then `DATABASE_URL`, then libpq-style `PG*` env vars; flags cover `--port`, `--host`, `--mount`, and `--server`. All existing multi-database / multi-cluster switching works unchanged, since the connection registry auto-registers the standalone connection as the `:primary` target.
+  - **No new runtime dependencies.** `rack` and `rackup` already ship transitively via `actionpack`/`railties`; the web server (Puma, WEBrick, …) is resolved at run time and is not a hard dependency — the runner uses whichever is installed and prints a clear message if none is.
+  - New `PgReports::Standalone` module encapsulating app construction, connection resolution, and server boot.
+  - `./bin/pg_reports` runs from a checkout without `bundle exec` via a soft bundler shim (activated only when a Gemfile sits next to the executable; skipped for the installed gem).
+  - **[docs/standalone.md](docs/standalone.md).**
+- **Dashboard footer** with links to the project on GitHub and a contact address.
+- **ESC closes any open modal.** A single global handler triggers the modal's own close button, so per-modal cleanup still runs.
+
 ### Changed
 
 - **Redesigned the pg_stat_statements status badge.** The header badge now reports four clearly distinguished states with plain-language labels instead of a raw identifier glued to an adjective (`pg_stat_statements готовий`):
@@ -18,6 +28,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 🔴 **No connection** — the database itself is unreachable.
   Warning/error badges are now clickable and self-explanatory. The redundant `?` info button and the header **Create extension** button were removed in favor of the badge-driven modals. Labels no longer use a negative "Not …" framing. Translations updated for `en` / `uk` / `ru`.
 - **pg_stat_statements status detection no longer reads `shared_preload_libraries`.** That setting requires the `pg_read_all_settings` role and is unreadable by a typical monitoring user, which made the "preloaded but extension missing" state unreachable. State is now derived entirely from signals every role can observe: connectivity (`SELECT 1`), extension presence in `pg_extension`, and whether the `pg_stat_statements` view is queryable. `pg_stat_statements_status` gains a `connected:` key, and `PgReports.system.connected?` is a new public helper.
+- **Primary buttons toned down.** `btn-primary` (Start monitoring, Run report, Create extension, …) switched from a solid accent fill to a subtle tinted style, so it reads as the accent action without dominating the page.
+- **Live-metrics "long queries" threshold lowered from 60s to 5s** — the default the top-of-dashboard tile counts against.
+- **Header/layout polish** — the status badge, settings button, and Reset button are unified to the same height; the settings button is now square; the pg_stat_statements category warning banner no longer overhangs its card; and the "scope: host application" note in the query monitor uses a real styled tooltip (hover + keyboard focus) instead of the unreliable native `title`.
+- **README trimmed**: standalone, Telegram, and Grafana/Prometheus details moved to dedicated docs ([docs/standalone.md](docs/standalone.md), [docs/telegram.md](docs/telegram.md), [docs/grafana.md](docs/grafana.md)).
+
+### Fixed
+
+- **Query Monitor no longer records pg_reports' own queries.** Internal queries (live-metrics polling, status checks, database listing) run through `Executor`/`Target` are now tagged with a `"PgReports"` statement name, so `QueryMonitor#should_skip?` filters them by name regardless of backtrace depth. Previously the deep `ActiveSupport::Notifications` stack could push the pg_reports frames past the 30-frame backtrace scan, leaking these queries into the monitor history.
+- **Dashboard requests broke when the engine is mounted at the root path** (e.g. standalone). The client base path resolved to `/`, so `fetch` URLs became `//live_metrics` — a protocol-relative URL the browser sent to a bogus host, breaking live metrics and report runs. The base now strips a trailing slash.
 
 ## [0.8.0] - 2026-05-01
 

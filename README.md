@@ -61,6 +61,17 @@ Visit `http://localhost:3000/pg_reports`.
 
 For query analysis, also enable `pg_stat_statements` — see [setup instructions in docs/configuration.md](docs/configuration.md#pg_stat_statements-setup).
 
+## Standalone (no host app)
+
+You can also run the dashboard on its own, straight from the gem's root folder — no Rails app to mount it in. It serves at `/` on port **4000** and connects via `DATABASE_URL` or libpq env vars:
+
+```bash
+./bin/pg_reports server        # from a checkout; no `bundle exec` needed
+DATABASE_URL=postgres://user:pass@localhost/myapp bundle exec pg_reports server
+```
+
+Adds no runtime dependencies to the gem. **[Standalone guide → docs/standalone.md](docs/standalone.md)**
+
 ## Usage
 
 ```ruby
@@ -73,12 +84,9 @@ report = PgReports.expensive_queries
 report.to_text
 report.to_csv
 report.to_a
-
-# Telegram
-PgReports.slow_queries.send_to_telegram
 ```
 
-**[Full list of reports →](docs/reports.md)**
+**[Full list of reports →](docs/reports.md)** &nbsp;·&nbsp; **[Send reports to Telegram →](docs/telegram.md)**
 
 ## Multi-database
 
@@ -100,8 +108,6 @@ PgReports works out of the box once mounted. Common options:
 ```ruby
 # config/initializers/pg_reports.rb
 PgReports.configure do |config|
-  config.telegram_bot_token           = ENV["PG_REPORTS_TELEGRAM_TOKEN"]
-  config.telegram_chat_id             = ENV["PG_REPORTS_TELEGRAM_CHAT_ID"]
   config.slow_query_threshold_ms      = 100
   config.unused_index_threshold_scans = 50
   config.bloat_threshold_percent      = 20
@@ -115,8 +121,8 @@ PgReports.configure do |config|
 end
 ```
 
-**Multi-database, thresholds, query monitor, Grafana, raw query execution, source tracking, locale, Telegram —**
-**[full reference in docs/configuration.md →](docs/configuration.md)**
+**Multi-database, thresholds, query monitor, raw query execution, source tracking, locale —**
+**[full reference in docs/configuration.md →](docs/configuration.md)** &nbsp;·&nbsp; **[Telegram](docs/telegram.md)** &nbsp;·&nbsp; **[Grafana / Prometheus](docs/grafana.md)**
 
 ## Report object
 
@@ -240,66 +246,9 @@ The Export dropdown includes **Copy Prompt** (visible on actionable reports). It
 <details>
 <summary><strong>Grafana / Prometheus exporter</strong></summary>
 
-Expose selected reports at `<mount_point>/metrics` in Prometheus exposition format. The default mount is `/pg_reports`, so the endpoint is typically `/pg_reports/metrics` — but it follows whatever path you used in `mount PgReports::Engine, at: "..."`. Severity (`ok` / `warning` / `critical`) is derived automatically from the thresholds defined in [`Dashboard::ReportsRegistry::REPORT_CONFIG`](lib/pg_reports/dashboard/reports_registry.rb).
+Expose selected reports at `<mount_point>/metrics` in Prometheus exposition format, with severity (`ok` / `warning` / `critical`) derived automatically from each report's thresholds. Reports are cached per a configurable TTL so frequent scrapes don't hammer the database, and a matching Grafana dashboard can be generated from the same favorites (`rake pg_reports:grafana:dashboard`).
 
-```ruby
-PgReports.configure do |config|
-  config.grafana_favorites = [
-    :slow_queries,
-    :unused_indexes,
-    :bloated_tables,
-    :missing_validations,
-    :polymorphic_without_index
-  ]
-  config.grafana_metrics_token = ENV["PG_REPORTS_METRICS_TOKEN"]  # optional bearer token
-  config.grafana_cache_ttl     = 60                                # seconds
-end
-```
-
-Scrape with Prometheus:
-
-```yaml
-scrape_configs:
-  - job_name: pg_reports
-    metrics_path: /pg_reports/metrics    # adjust to your Engine mount point
-    scrape_interval: 60s
-    authorization: { credentials: "${PG_REPORTS_METRICS_TOKEN}" }
-    static_configs:
-      - targets: ["app.internal:3000"]
-```
-
-> [!WARNING]
-> Reports are cached via `Rails.cache` for `grafana_cache_ttl` so frequent scrapes don't hammer the database. Without it, Prometheus' default 15s scrape interval against heavy reports like `missing_validations` will DDoS your own DB. Always set a TTL ≥ scrape interval, and consider a longer per-report TTL for expensive reports.
-
-The exporter also emits a `pg_reports_row` series per report row (each column becomes a Prometheus label), so the auto-generated dashboard can show a **table panel** with the actual rows that need fixing — not just an aggregate count.
-
-Generate a matching Grafana dashboard from the same favorites:
-
-```bash
-bundle exec rake pg_reports:grafana:dashboard
-# writes pg_reports.json in pwd; then Dashboards → Import in Grafana
-```
-
-**[Full Grafana integration guide →](docs/grafana.md)** &nbsp;·&nbsp; **[Local Prometheus + Grafana without Docker →](docs/grafana-local-setup.md)**
-
-</details>
-
-<details>
-<summary><strong>Telegram delivery</strong></summary>
-
-Get a bot token from [@BotFather](https://t.me/BotFather) and your chat ID from [@userinfobot](https://t.me/userinfobot), then:
-
-```ruby
-PgReports.configure do |config|
-  config.telegram_bot_token = "123456:ABC-DEF..."
-  config.telegram_chat_id   = "-1001234567890"
-end
-
-PgReports.slow_queries.send_to_telegram
-PgReports.health_report.send_to_telegram_as_file
-```
-
-Reports under ~50 rows go as a message; larger ones are sent as a file attachment.
+**[Grafana / Prometheus integration guide →](docs/grafana.md)** &nbsp;·&nbsp; **[Local Prometheus + Grafana without Docker →](docs/grafana-local-setup.md)**
 
 </details>
 
