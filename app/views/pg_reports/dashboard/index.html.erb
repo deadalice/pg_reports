@@ -388,7 +388,37 @@ pg_stat_statements.track = all</pre>
   <% end %>
 </div>
 
+<footer class="dashboard-footer">
+  <a href="https://github.com/deadalice/pg_reports" target="_blank" rel="noopener noreferrer">github.com/deadalice/pg_reports</a>
+  <span class="footer-sep">·</span>
+  <a href="mailto:deadalice@gmail.com">deadalice@gmail.com</a>
+</footer>
+
 <style>
+  .dashboard-footer {
+    margin-top: 2rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+  .dashboard-footer a {
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+  .dashboard-footer a:hover {
+    color: var(--accent-purple);
+    text-decoration: underline;
+  }
+  .dashboard-footer .footer-sep {
+    opacity: 0.5;
+  }
+
   .header-actions {
     display: flex;
     align-items: center;
