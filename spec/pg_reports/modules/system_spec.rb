@@ -118,6 +118,7 @@ RSpec.describe PgReports::Modules::System do
   describe ".pg_stat_statements_status" do
     it "returns hash with status" do
       status = {
+        connected: true,
         extension_installed: true,
         preloaded: true,
         ready: true
@@ -126,6 +127,7 @@ RSpec.describe PgReports::Modules::System do
 
       result = described_class.pg_stat_statements_status
       expect(result).to be_a(Hash)
+      expect(result).to have_key(:connected)
       expect(result).to have_key(:extension_installed)
       expect(result).to have_key(:preloaded)
       expect(result).to have_key(:ready)

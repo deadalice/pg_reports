@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-07-03
+
+### Changed
+
+- **Redesigned the pg_stat_statements status badge.** The header badge now reports four clearly distinguished states with plain-language labels instead of a raw identifier glued to an adjective (`pg_stat_statements готовий`):
+  - 🟢 **Active** — monitoring works.
+  - 🟡 **Preload required** — the extension exists but isn't in `shared_preload_libraries`; clicking the badge opens the setup instructions.
+  - 🟡 **Extension required** — the library is loaded but the extension isn't created; clicking opens a modal with a one-click **Create extension** button.
+  - 🔴 **No connection** — the database itself is unreachable.
+  Warning/error badges are now clickable and self-explanatory. The redundant `?` info button and the header **Create extension** button were removed in favor of the badge-driven modals. Labels no longer use a negative "Not …" framing. Translations updated for `en` / `uk` / `ru`.
+- **pg_stat_statements status detection no longer reads `shared_preload_libraries`.** That setting requires the `pg_read_all_settings` role and is unreadable by a typical monitoring user, which made the "preloaded but extension missing" state unreachable. State is now derived entirely from signals every role can observe: connectivity (`SELECT 1`), extension presence in `pg_extension`, and whether the `pg_stat_statements` view is queryable. `pg_stat_statements_status` gains a `connected:` key, and `PgReports.system.connected?` is a new public helper.
+
 ## [0.8.0] - 2026-05-01
 
 ### Added

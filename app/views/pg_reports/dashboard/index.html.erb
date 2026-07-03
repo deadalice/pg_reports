@@ -27,28 +27,34 @@
       <button class="btn btn-small btn-muted" onclick="showResetConfirmModal()" id="reset-btn">
         <%= t("pg_reports.ui.actions.reset_statistics") %>
       </button>
-    <% else %>
-      <button class="btn btn-small btn-primary" onclick="enablePgStatStatements(this)" id="enable-btn">
-        <%= t("pg_reports.ui.actions.create_extension") %>
-      </button>
-      <button class="btn-info" onclick="showPgStatInfo()">?</button>
     <% end %>
     <button class="btn-info" onclick="showIdeSettingsModal()" title="<%= t("pg_reports.ui.actions.ide_settings_button_title") %>">⚙️</button>
-    <div class="header-badge" id="pg-stat-badge">
-      <% if @pg_stat_status[:ready] %>
+
+    <% if !@pg_stat_status[:connected] %>
+      <div class="header-badge" id="pg-stat-badge">
+        <span class="badge-dot error"></span>
+        <span><%= t("pg_reports.ui.status.disconnected") %></span>
+      </div>
+    <% elsif @pg_stat_status[:ready] %>
+      <div class="header-badge" id="pg-stat-badge">
         <span class="badge-dot"></span>
         <span><%= t("pg_reports.ui.status.pg_stat_ready") %></span>
-      <% elsif @pg_stat_status[:extension_installed] %>
+      </div>
+    <% elsif @pg_stat_status[:extension_installed] %>
+      <button type="button" class="header-badge header-badge-clickable" id="pg-stat-badge"
+              onclick="showPgStatInfo()" title="<%= t("pg_reports.ui.status.click_for_details") %>">
         <span class="badge-dot warning"></span>
-        <span><%= t("pg_reports.ui.status.extension_installed") %></span>
-      <% elsif @pg_stat_status[:preloaded] %>
+        <span><%= t("pg_reports.ui.status.not_preloaded") %></span>
+        <span class="badge-info-icon" aria-hidden="true">ⓘ</span>
+      </button>
+    <% else %>
+      <button type="button" class="header-badge header-badge-clickable" id="pg-stat-badge"
+              onclick="showCreateExtensionModal()" title="<%= t("pg_reports.ui.status.click_for_details") %>">
         <span class="badge-dot warning"></span>
-        <span><%= t("pg_reports.ui.status.preloaded") %></span>
-      <% else %>
-        <span class="badge-dot error"></span>
-        <span><%= t("pg_reports.ui.status.not_configured") %></span>
-      <% end %>
-    </div>
+        <span><%= t("pg_reports.ui.status.extension_missing") %></span>
+        <span class="badge-info-icon" aria-hidden="true">ⓘ</span>
+      </button>
+    <% end %>
   </div>
 </header>
 
@@ -77,6 +83,25 @@ pg_stat_statements.track = all</pre>
           <p><%= t("pg_reports.ui.modals.enable_button_note") %></p>
         </li>
       </ol>
+    </div>
+  </div>
+</div>
+
+<!-- Create extension modal -->
+<div id="create-extension-modal" class="modal" style="display: none;">
+  <div class="modal-content modal-small">
+    <div class="modal-header">
+      <h3><%= t("pg_reports.ui.modals.create_extension_title") %></h3>
+      <button class="modal-close" onclick="closeCreateExtensionModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p><%= t("pg_reports.ui.modals.create_extension_intro") %></p>
+      <pre>CREATE EXTENSION IF NOT EXISTS pg_stat_statements;</pre>
+      <p class="warning-subtext"><%= t("pg_reports.ui.modals.create_extension_note") %></p>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeCreateExtensionModal()"><%= t("pg_reports.ui.actions.cancel") %></button>
+        <button class="btn btn-primary" onclick="enablePgStatStatements(this)" id="modal-create-extension-btn"><%= t("pg_reports.ui.actions.create_extension") %></button>
+      </div>
     </div>
   </div>
 </div>
@@ -857,6 +882,18 @@ pg_stat_statements.track = all</pre>
     if (e.target === this) closePgStatModal();
   });
 
+  function showCreateExtensionModal() {
+    document.getElementById('create-extension-modal').style.display = 'flex';
+  }
+
+  function closeCreateExtensionModal() {
+    document.getElementById('create-extension-modal').style.display = 'none';
+  }
+
+  document.getElementById('create-extension-modal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeCreateExtensionModal();
+  });
+
   function showResetConfirmModal() {
     document.getElementById('reset-confirm-modal').style.display = 'flex';
   }
@@ -923,6 +960,7 @@ pg_stat_statements.track = all</pre>
       } else {
         showToast(data.message, 'error');
         if (data.requires_restart) {
+          closeCreateExtensionModal();
           showPgStatInfo();
         }
         button.disabled = false;

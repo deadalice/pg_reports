@@ -44,13 +44,37 @@ module PgReports
         false
       end
 
-      # Get pg_stat_statements status details
+      # Whether the database connection can execute a basic query.
+      # Used to tell "the connection itself is down" apart from
+      # "connected, but pg_stat_statements isn't set up yet".
+      # @return [Boolean]
+      def connected?
+        executor.execute("SELECT 1")
+        true
+      rescue
+        false
+      end
+
+      # Get pg_stat_statements status details.
+      #
+      # Note: whether pg_stat_statements is in shared_preload_libraries cannot be
+      # read by a plain monitoring role (that requires the pg_read_all_settings
+      # role), so we never look at the setting. Instead we derive the state from
+      # signals every role can observe: can we run a query at all, does the
+      # extension exist in pg_extension, and is its view queryable.
+      #
       # @return [Hash] Status information
       def pg_stat_statements_status
+        unless connected?
+          return {connected: false, extension_installed: false, preloaded: false, ready: false}
+        end
+
+        installed = pg_stat_statements_available?
         {
-          extension_installed: pg_stat_statements_available?,
+          connected: true,
+          extension_installed: installed,
           preloaded: pg_stat_statements_preloaded?,
-          ready: pg_stat_statements_available? && pg_stat_statements_preloaded?
+          ready: installed && pg_stat_statements_preloaded?
         }
       end
 
