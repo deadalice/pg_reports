@@ -7,10 +7,14 @@
 
 A comprehensive PostgreSQL monitoring and analysis library for Rails applications. Get insights into query performance, index usage, table statistics, connection health, and more — across **every database on the cluster**, switchable from the dashboard with no extra configuration. Includes a beautiful web dashboard, a Grafana / Prometheus exporter, and Telegram delivery.
 
+> [!NOTE]
+> **It now runs standalone, too** — launch the dashboard against any PostgreSQL database without a host Rails app, straight from the gem with a single command (`pg_reports server`). It still needs a Ruby runtime installed. Docker images (no Ruby required) are planned for the near future. See **[Standalone mode →](docs/standalone.md)**.
+
 ![Dashboard Screenshot](docs/dashboard.png)
 
 ## Features
 
+- 🚀 **Standalone or mounted** - Run inside your Rails app, or launch the dashboard on its own with `pg_reports server` (requires Ruby; Docker images coming soon).
 - 🗄️ **Multi-database** - Auto-discovers every database on the cluster and lets you switch from a dropdown in the dashboard. No configuration required.
 - 📊 **Query Analysis** - Identify slow, heavy, and expensive queries using `pg_stat_statements`
 - 📇 **Index Analysis** - Find unused, duplicate, invalid, and missing indexes
