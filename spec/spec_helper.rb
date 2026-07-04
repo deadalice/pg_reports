@@ -35,4 +35,14 @@ RSpec.configure do |config|
 
   config.order = :random
   Kernel.srand config.seed
+
+  # Rails.cache is process-global: once any spec boots a Rails app (e.g. the
+  # standalone specs) it stays live for the rest of the run. The Grafana
+  # exporter caches per report key, so a stale entry can make a later example
+  # skip the underlying call. Clear it between examples to keep them isolated.
+  config.before do
+    if defined?(Rails) && Rails.respond_to?(:cache) && Rails.cache.respond_to?(:clear)
+      Rails.cache.clear
+    end
+  end
 end
