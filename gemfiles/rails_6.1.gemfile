@@ -1,0 +1,6 @@
+# frozen_string_literal: true
+
+# Reuse the root Gemfile (gemspec + dev/test groups), then pin Rails.
+eval_gemfile File.expand_path("../Gemfile", __dir__)
+
+gem "rails", "~> 6.1.0"

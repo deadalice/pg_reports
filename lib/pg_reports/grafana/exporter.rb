@@ -105,7 +105,11 @@ module PgReports
         mod = module_for(key) or raise ArgumentError, "Unknown report: #{key}"
 
         started = @clock.now
-        report = mod.public_send(key, **report_args(opts))
+        args = report_args(opts)
+        # Call with no arguments when there are no kwargs to forward. On Ruby 2.7
+        # `public_send(key, **{})` does not reliably elide to a no-arg call, which
+        # breaks report methods (and `have_received(...).with(no_args)` matchers).
+        report = args.empty? ? mod.public_send(key) : mod.public_send(key, **args)
         finished = @clock.now
 
         {

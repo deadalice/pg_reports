@@ -1,0 +1,74 @@
+{
+  "ignored_warnings": [
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "5209397462e689c349f77e534f897c12a8550b9a013bd535153a929c12b944e2",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/controllers/pg_reports/dashboard_controller.rb",
+      "line": 357,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "ActiveRecord::Base.connection.execute(\"SELECT COUNT(*) FROM (#{substitute_params(retrieve_query_by_hash(params[:query_hash]), (params[:params] or {}))}) AS count_query\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "PgReports::DashboardController",
+        "method": "execute_query"
+      },
+      "user_input": "params[:params]",
+      "confidence": "High",
+      "cwe_id": [
+        89
+      ],
+      "note": "Reviewed & accepted: user-query execution feature (execute_query count). Gated by config.allow_raw_query_execution; the query is fetched by hash from an internal registry (retrieve_query_by_hash), parameters are validated/substituted, and SecurityError checks reject dangerous input. Not arbitrary attacker-controlled SQL."
+    },
+    {
+      "warning_type": "Cross-Site Request Forgery",
+      "warning_code": 7,
+      "fingerprint": "b9682cc0e0a1cd86fddef96834d4f71c3558989c2136fe58b5ff51c75b83c8b4",
+      "check_name": "ForgerySetting",
+      "message": "`protect_from_forgery` should be called in `PgReports::MetricsController`",
+      "file": "app/controllers/pg_reports/metrics_controller.rb",
+      "line": 6,
+      "link": "https://brakemanscanner.org/docs/warning_types/cross-site_request_forgery/",
+      "code": null,
+      "render_path": null,
+      "location": {
+        "type": "controller",
+        "controller": "PgReports::MetricsController"
+      },
+      "user_input": null,
+      "confidence": "High",
+      "cwe_id": [
+        352
+      ],
+      "note": "Reviewed & accepted: read-only Prometheus /metrics endpoint. Uses bearer-token auth (config.grafana_metrics_token) with constant-time compare; CSRF protection is not applicable to a GET scrape endpoint."
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "f133378f2542f3c09b527aebcc0939a1d227c46b0ab124be613e1e5aac829c79",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/controllers/pg_reports/dashboard_controller.rb",
+      "line": 278,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "ActiveRecord::Base.connection.execute(\"EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) #{substitute_params(retrieve_query_by_hash(params[:query_hash]), (params[:params] or {}))}\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "PgReports::DashboardController",
+        "method": "explain_analyze"
+      },
+      "user_input": "params[:params]",
+      "confidence": "High",
+      "cwe_id": [
+        89
+      ],
+      "note": "Reviewed & accepted: EXPLAIN ANALYZE feature. Same safeguards as execute_query - query resolved by hash from internal registry, params validated, SecurityError guards. Intentional DBA tooling."
+    }
+  ],
+  "updated": "2026-07-04 20:27:49 +0300",
+  "brakeman_version": "8.0.5"
+}

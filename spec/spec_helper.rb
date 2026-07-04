@@ -1,6 +1,22 @@
 # frozen_string_literal: true
 
 require "bundler/setup"
+
+require "simplecov"
+SimpleCov.start do
+  enable_coverage :branch
+  add_filter "/spec/"
+  add_group "Modules", "lib/pg_reports/modules"
+  add_group "Connection", "lib/pg_reports/connection"
+  add_group "Dashboard", %w[lib/pg_reports/dashboard app/controllers]
+  add_group "Grafana", "lib/pg_reports/grafana"
+
+  # Conservative floor to catch large regressions, not to chase 100%.
+  # Bump this up as coverage improves. Skip enforcement across the Rails
+  # matrix (some code paths are version-gated); enforce on the main job only.
+  minimum_coverage(line: 55) unless ENV["COVERAGE_NO_MIN"] == "1"
+end
+
 require "pg_reports"
 
 RSpec.configure do |config|
@@ -19,4 +35,14 @@ RSpec.configure do |config|
 
   config.order = :random
   Kernel.srand config.seed
+
+  # Rails.cache is process-global: once any spec boots a Rails app (e.g. the
+  # standalone specs) it stays live for the rest of the run. The Grafana
+  # exporter caches per report key, so a stale entry can make a later example
+  # skip the underlying call. Clear it between examples to keep them isolated.
+  config.before do
+    if defined?(Rails) && Rails.respond_to?(:cache) && Rails.cache.respond_to?(:clear)
+      Rails.cache.clear
+    end
+  end
 end
