@@ -1,5 +1,10 @@
 # frozen_string_literal: true
 
+# ActiveSupport < 7.1 relies on Ruby's `logger` being loaded implicitly, which
+# concurrent-ruby dropped in 1.3.5. Require it up front so pg_reports loads on
+# Rails 6.1/7.0 (and any bundle with a modern concurrent-ruby). Harmless on
+# newer Rails, which require it themselves.
+require "logger"
 require "active_support"
 require "active_support/core_ext"
 require "active_record"
