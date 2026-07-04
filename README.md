@@ -72,9 +72,10 @@ You can also run the dashboard on its own, straight from the gem's root folder �
 ```bash
 ./bin/pg_reports server        # from a checkout; no `bundle exec` needed
 DATABASE_URL=postgres://user:pass@localhost/myapp bundle exec pg_reports server
+./bin/pg_reports server --allow-raw-query-execution   # opt into the Run SQL panel
 ```
 
-Adds no runtime dependencies to the gem. **[Standalone guide → docs/standalone.md](docs/standalone.md)**
+Settings come from `PG_REPORTS_*` env vars, an auto-detected `./pg_reports.rb` config file (full `PgReports.configure` access), or CLI flags — in that order of precedence. Adds no runtime dependencies to the gem. **[Standalone guide → docs/standalone.md](docs/standalone.md)**
 
 ## Usage
 

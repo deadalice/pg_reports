@@ -24,6 +24,10 @@ module PgReports
     # Rack handlers tried, in order, when none is named explicitly.
     CANDIDATE_SERVERS = %w[puma webrick].freeze
 
+    # Config files auto-loaded (first that exists), relative to the working
+    # directory, when no explicit --config path is given.
+    DEFAULT_CONFIG_FILES = %w[pg_reports.rb config/pg_reports.rb].freeze
+
     class ServerUnavailable < PgReports::Error; end
 
     # Boot the app and start a (blocking) web server.
@@ -34,8 +38,12 @@ module PgReports
     # @param database_url [String, nil] explicit connection URL; otherwise resolved
     #   from DATABASE_URL or libpq-style PG* env vars
     # @param server [String, nil] Rack handler name to force (e.g. "puma")
+    # @param config_file [String, nil] path to a Ruby config file that calls
+    #   `PgReports.configure`; auto-detected from DEFAULT_CONFIG_FILES otherwise
+    # @param overrides [Hash] per-setting overrides applied last (from CLI flags);
+    #   nil values are ignored. Keys are Configuration attribute names.
     def run(port: DEFAULT_PORT, host: DEFAULT_HOST, mount_path: DEFAULT_MOUNT,
-      database_url: nil, server: nil)
+      database_url: nil, server: nil, config_file: nil, overrides: {})
       # Rails' ActiveRecord railtie reads the connection from DATABASE_URL when no
       # config/database.yml exists — so we route our resolved connection through
       # it. The connection registry then auto-registers it as the :primary target,
@@ -46,6 +54,10 @@ module PgReports
       # only make sense with a host app (e.g. Schema Analysis, which introspects
       # the host application's ActiveRecord models — there are none here).
       PgReports.config.standalone = true
+
+      # Layer settings on top of the ENV-derived defaults: config file first, then
+      # explicit CLI overrides win.
+      apply_configuration(config_file: config_file, overrides: overrides)
 
       app = build_application(mount_path)
       app.initialize!
@@ -80,6 +92,47 @@ module PgReports
     end
 
     private
+
+    # Apply configuration in increasing order of precedence:
+    #   ENV vars (already read when Configuration was built)
+    #     < config file (full Ruby, calls PgReports.configure)
+    #     < CLI overrides (individual flags)
+    #
+    # The config file is the escape hatch for every setting that has no dedicated
+    # flag — thresholds, Telegram, Grafana favorites, even the dashboard_auth
+    # proc. CLI flags cover only the handful of common security toggles.
+    def apply_configuration(config_file:, overrides:)
+      path = config_file || detect_config_file
+      load_config_file(path) if path
+
+      overrides.each do |key, value|
+        next if value.nil? # unset flag — leave the file/ENV value in place
+        PgReports.config.public_send(:"#{key}=", value)
+      end
+    end
+
+    # First existing DEFAULT_CONFIG_FILES entry (relative to the working dir), or
+    # nil when the user keeps no config file.
+    def detect_config_file
+      DEFAULT_CONFIG_FILES
+        .map { |f| File.expand_path(f, Dir.pwd) }
+        .find { |f| File.file?(f) }
+    end
+
+    # Evaluate a Ruby config file. A missing explicit path is an error (the user
+    # asked for it); a broken file is reported with context rather than a raw
+    # backtrace.
+    def load_config_file(path)
+      full = File.expand_path(path)
+      raise PgReports::Error, "Config file not found: #{path}" unless File.file?(full)
+
+      warn "pg_reports: loading config from #{full}"
+      load full
+    rescue PgReports::Error
+      raise
+    rescue => e
+      raise PgReports::Error, "Failed to load config file #{full}: #{e.message}"
+    end
 
     # Build (and register as Rails.application) a minimal Rails app that mounts
     # the engine. Kept intentionally small: no asset pipeline (views are inline),

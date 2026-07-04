@@ -23,7 +23,16 @@ options = {
   host: "127.0.0.1",
   mount: "/",
   database_url: nil,
-  server: nil
+  server: nil,
+  config_file: nil
+}
+
+# Per-setting overrides from flags. nil means "unset" — the config file / ENV
+# value is kept. Populated below and forwarded to Standalone.run(overrides:).
+overrides = {
+  allow_raw_query_execution: nil,
+  allow_migration_creation: nil,
+  load_external_fonts: nil
 }
 
 banner = <<~BANNER
@@ -35,6 +44,12 @@ banner = <<~BANNER
   Connection is resolved from --database-url, else DATABASE_URL, else the
   standard libpq env vars (PGHOST, PGPORT, PGUSER, PGPASSWORD, PGDATABASE).
 
+  Configuration is layered, lowest to highest precedence:
+    PG_REPORTS_* env vars  <  config file  <  the flags below.
+  A config file (--config, else ./pg_reports.rb or config/pg_reports.rb) is
+  plain Ruby calling `PgReports.configure` — the way to set every option that
+  has no flag (thresholds, Telegram, Grafana, dashboard_auth, …).
+
   Options:
 BANNER
 
@@ -45,6 +60,10 @@ parser = OptionParser.new do |o|
   o.on("-m", "--mount PATH", "Path to mount the dashboard at (default: /)") { |v| options[:mount] = v }
   o.on("-d", "--database-url URL", "PostgreSQL connection URL") { |v| options[:database_url] = v }
   o.on("-s", "--server NAME", "Web server to use (e.g. puma, webrick)") { |v| options[:server] = v }
+  o.on("-c", "--config PATH", "Ruby config file to load (default: ./pg_reports.rb or config/pg_reports.rb)") { |v| options[:config_file] = v }
+  o.on("--[no-]allow-raw-query-execution", "Allow running raw SQL / EXPLAIN ANALYZE from the dashboard") { |v| overrides[:allow_raw_query_execution] = v }
+  o.on("--[no-]allow-migration-creation", "Allow the dashboard to write migration files to db/migrate/") { |v| overrides[:allow_migration_creation] = v }
+  o.on("--[no-]external-fonts", "Load Google Fonts in the dashboard (off by default)") { |v| overrides[:load_external_fonts] = v }
   o.on("-h", "--help", "Show this help") do
     puts o
     exit
@@ -70,10 +89,17 @@ when "server"
       host: options[:host],
       mount_path: options[:mount],
       database_url: options[:database_url],
-      server: options[:server]
+      server: options[:server],
+      config_file: options[:config_file],
+      overrides: overrides
     )
   rescue PgReports::Standalone::ServerUnavailable => e
     warn e.message
+    exit 1
+  rescue PgReports::Error => e
+    # Config-file and connection problems surface as PgReports::Error with a
+    # human-readable message — print it, not a backtrace.
+    warn "pg_reports: #{e.message}"
     exit 1
   rescue Interrupt
     warn "\npg_reports: stopped"
