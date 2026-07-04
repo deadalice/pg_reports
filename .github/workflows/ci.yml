@@ -18,7 +18,9 @@ jobs:
       matrix:
         # Curated Ruby x Rails pairs covering the supported range
         # (gemspec: Ruby >= 2.7, Rails >= 5.0). Each Rails version has a
-        # matching Gemfile in gemfiles/; the newest runs on the root Gemfile.
+        # matching Gemfile in gemfiles/; Ruby 3.4 runs the root Gemfile and
+        # owns coverage. Ruby 4.0 is pinned to Rails 8.1 to add forward
+        # coverage of the newest Ruby without a duplicate coverage artifact.
         include:
           - { ruby: "2.7", rails: "6.1", name: "Rails 6.1", gemfile: "gemfiles/rails_6.1.gemfile" }
           - { ruby: "3.0", rails: "7.0", name: "Rails 7.0", gemfile: "gemfiles/rails_7.0.gemfile" }
@@ -26,6 +28,7 @@ jobs:
           - { ruby: "3.2", rails: "7.2", name: "Rails 7.2", gemfile: "gemfiles/rails_7.2.gemfile" }
           - { ruby: "3.3", rails: "8.0", name: "Rails 8.0", gemfile: "gemfiles/rails_8.0.gemfile" }
           - { ruby: "3.4", rails: "edge", name: "Rails (root)", gemfile: "Gemfile" }
+          - { ruby: "4.0", rails: "8.1", name: "Rails 8.1", gemfile: "gemfiles/rails_8.1.gemfile" }
     env:
       BUNDLE_GEMFILE: ${{ matrix.gemfile }}
       # Enforce the coverage floor only on the primary (root Gemfile) job;
