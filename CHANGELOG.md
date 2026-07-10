@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **SQL Console — free-form SQL editor.** A new **SQL Console** button in the dashboard header opens a large modal with a SQL textarea (⌘/Ctrl+Enter to run) and a results table with row count and execution time. Renamed from the initial "Run Query" label, which read too similarly to the existing **▶ Run Report** button. Unlike *Execute Query* (which only ever runs server-generated, hash-cached queries — see 0.5.1 below), this accepts client-typed SQL directly, so the same SELECT-only/no-semicolon/keyword-denylist validation is applied straight to the submitted text via a new shared `enforce_select_only!` check. Gated by the existing `config.allow_raw_query_execution` flag; new `POST /run_query` endpoint.
+
+### Changed
+
+- **SQL Query Monitor is no longer shown in standalone mode.** It works by subscribing to `ActiveSupport::Notifications` in a host application's process — standalone mode has no separate host app, so the panel had nothing meaningful to monitor. The dashboard panel is now hidden and the `/query_monitor/*` endpoints return `403 Forbidden` when `PgReports.config.standalone` is true.
+
 ## [0.8.1] - 2026-07-03
 
 ### Added

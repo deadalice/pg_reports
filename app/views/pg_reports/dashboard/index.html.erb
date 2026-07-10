@@ -23,6 +23,9 @@
   </div>
 
   <div class="header-actions">
+    <button class="btn btn-small btn-primary" onclick="showRunQueryModal()" id="run-query-open-btn">
+      <%= t("pg_reports.ui.actions.run_query") %>
+    </button>
     <% if @pg_stat_status[:ready] %>
       <button class="btn btn-small btn-muted" onclick="showResetConfirmModal()" id="reset-btn">
         <%= t("pg_reports.ui.actions.reset_statistics") %>
@@ -167,6 +170,42 @@ pg_stat_statements.track = all</pre>
   </div>
 </div>
 
+<!-- Run Query Modal -->
+<div id="run-query-modal" class="modal" style="display: none;">
+  <div class="modal-content modal-run-query">
+    <div class="modal-header">
+      <h3><%= t("pg_reports.ui.modals.run_query_title") %></h3>
+      <button class="modal-close" onclick="closeRunQueryModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <% if PgReports.config.allow_raw_query_execution %>
+        <label class="explain-label" for="run-query-input"><%= t("pg_reports.ui.modals.query_label") %></label>
+        <textarea id="run-query-input" class="run-query-textarea" spellcheck="false" placeholder="<%= t("pg_reports.ui.modals.run_query_placeholder") %>"></textarea>
+        <div class="run-query-actions">
+          <button class="btn btn-secondary" onclick="clearRunQuery()"><%= t("pg_reports.ui.actions.clear_all") %></button>
+          <button class="btn btn-primary" onclick="executeRunQuery()" id="btn-run-query"><%= t("pg_reports.ui.actions.run_query") %></button>
+        </div>
+        <div id="run-query-loading" class="loading" style="display: none;">
+          <div class="spinner"></div>
+        </div>
+        <div id="run-query-content"></div>
+      <% else %>
+        <div class="error-message">
+          <strong><%= t("pg_reports.ui.modals.query_execution_disabled_title") %></strong><br><br>
+          <%= t("pg_reports.ui.modals.query_execution_disabled_intro") %><br>
+          <code style="display: block; margin-top: 0.5rem; padding: 0.5rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
+PgReports.configure do |config|<br>
+&nbsp;&nbsp;config.allow_raw_query_execution = true<br>
+end
+          </code>
+          <p style="margin-top: 0.75rem;"><%= t("pg_reports.ui.modals.query_execution_disabled_env_note") %></p>
+          <code style="display: block; margin-top: 0.5rem; padding: 0.5rem; background: rgba(0,0,0,0.2); border-radius: 4px;">PG_REPORTS_ALLOW_RAW_QUERY_EXECUTION=true</code>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
 <!-- Live Monitoring Panel -->
 <div id="live-monitoring" class="live-monitoring-panel" style="display: none;">
   <div class="live-monitoring-header">
@@ -286,7 +325,11 @@ pg_stat_statements.track = all</pre>
   </div>
 </div>
 
-<!-- Query Monitoring Panel -->
+<!-- Query Monitoring Panel: taps ActiveSupport::Notifications in the host
+     application's process. There is no host app in standalone mode, so the
+     panel is hidden entirely rather than showing a monitor with nothing to
+     monitor. -->
+<% unless PgReports.config.standalone %>
 <div id="query-monitoring" class="query-monitoring-panel" style="display: none;">
   <div class="query-monitoring-header">
     <div class="query-monitoring-title">
@@ -331,6 +374,7 @@ pg_stat_statements.track = all</pre>
     </div>
   </div>
 </div>
+<% end %>
 
 <div class="categories-grid">
   <% @categories.each do |category_key, category| %>
@@ -907,9 +951,254 @@ pg_stat_statements.track = all</pre>
   .toast.toast-warning {
     border-left: 3px solid var(--accent-amber);
   }
+
+  /* Run Query Modal */
+  .modal-run-query {
+    max-width: 1100px;
+    width: 95%;
+  }
+
+  .explain-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .run-query-textarea {
+    width: 100%;
+    min-height: 180px;
+    padding: 1rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    resize: vertical;
+  }
+
+  .run-query-textarea:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 2px rgba(107, 159, 232, 0.2);
+  }
+
+  .run-query-textarea::placeholder {
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  .run-query-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin: 1rem 0;
+  }
+
+  .run-query-actions .btn {
+    flex: 1;
+  }
+
+  /* Query Results Table (mirrors _show_styles.html.erb — index.html.erb has
+     its own <style> block and isn't loaded through that partial) */
+  .query-results-wrapper {
+    margin-top: 1rem;
+    max-height: 400px;
+    overflow: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+  }
+
+  .query-results-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+  }
+
+  .query-results-table th {
+    position: sticky;
+    top: 0;
+    padding: 0.75rem;
+    text-align: left;
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .query-results-table td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .query-results-table tr:hover td {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  .query-results-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    margin-top: 1rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  .query-results-info .count {
+    color: var(--accent-blue);
+    font-weight: 600;
+  }
+
+  .query-results-info .time {
+    color: var(--accent-green);
+    font-weight: 600;
+  }
 </style>
 
 <script>
+  const allowRawQueryExecution = <%= PgReports.config.allow_raw_query_execution.to_s.downcase %>;
+
+  function escapeHtmlAttr(text) {
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function showRunQueryModal() {
+    document.getElementById('run-query-modal').style.display = 'flex';
+    document.getElementById('run-query-input')?.focus();
+  }
+
+  function closeRunQueryModal() {
+    document.getElementById('run-query-modal').style.display = 'none';
+  }
+
+  document.getElementById('run-query-modal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeRunQueryModal();
+  });
+
+  document.getElementById('run-query-input')?.addEventListener('keydown', function(e) {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
+      executeRunQuery();
+    }
+  });
+
+  function clearRunQuery() {
+    document.getElementById('run-query-input').value = '';
+    document.getElementById('run-query-content').innerHTML = '';
+  }
+
+  async function executeRunQuery() {
+    const input = document.getElementById('run-query-input');
+    const loading = document.getElementById('run-query-loading');
+    const content = document.getElementById('run-query-content');
+    const query = input.value.trim();
+
+    if (!query) {
+      showToast(PG_REPORTS_I18N.errors.query_required, 'error');
+      return;
+    }
+
+    if (!allowRawQueryExecution) {
+      showToast(PG_REPORTS_I18N.errors.execute_disabled_toast, 'error');
+      content.innerHTML = `<div class="error-message">
+        <strong>${PG_REPORTS_I18N.modals.query_execution_disabled_title}</strong><br><br>
+        ${PG_REPORTS_I18N.modals.query_execution_disabled_intro}<br>
+        <code style="display: block; margin-top: 0.5rem; padding: 0.5rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
+PgReports.configure do |config|<br>
+&nbsp;&nbsp;config.allow_raw_query_execution = true<br>
+end
+        </code>
+      </div>`;
+      return;
+    }
+
+    loading.style.display = 'flex';
+    content.innerHTML = '';
+
+    try {
+      const response = await fetch(`${pgReportsRoot}/run_query`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        },
+        body: JSON.stringify({ query: query })
+      });
+
+      const data = await response.json();
+      loading.style.display = 'none';
+
+      if (data.success) {
+        let html = '';
+
+        html += `<div class="query-results-info">
+          <span>${PG_REPORTS_I18N.results.rows_label} <span class="count">${data.count}</span></span>
+          <span>${PG_REPORTS_I18N.results.execution_time_label} <span class="time">${data.execution_time} ms</span></span>
+        </div>`;
+
+        if (data.rows && data.rows.length > 0) {
+          html += '<div class="query-results-wrapper">';
+          html += '<table class="query-results-table">';
+
+          html += '<thead><tr>';
+          data.columns.forEach(col => {
+            html += `<th>${escapeHtml(col)}</th>`;
+          });
+          html += '</tr></thead>';
+
+          html += '<tbody>';
+          data.rows.forEach(row => {
+            html += '<tr>';
+            data.columns.forEach(col => {
+              const value = row[col];
+              const displayValue = value === null ? PG_REPORTS_I18N.results.null_placeholder : String(value);
+              html += `<td title="${escapeHtmlAttr(displayValue)}">${escapeHtml(displayValue)}</td>`;
+            });
+            html += '</tr>';
+          });
+          html += '</tbody>';
+
+          html += '</table>';
+          html += '</div>';
+
+          if (data.truncated) {
+            html += `<p style="margin-top: 0.5rem; color: var(--text-muted); font-size: 0.75rem;">${pgReportsFormat(PG_REPORTS_I18N.results.showing_first_of_total, { count: data.rows.length, total: data.total_count })}</p>`;
+          }
+        } else {
+          html += '<p style="margin-top: 1rem; color: var(--text-muted);">' + PG_REPORTS_I18N.results.no_rows_returned + '</p>';
+        }
+
+        content.innerHTML = html;
+      } else {
+        content.innerHTML = `<div class="error-message">${escapeHtml(data.error || PG_REPORTS_I18N.errors.run_query_failed)}</div>`;
+      }
+    } catch (error) {
+      loading.style.display = 'none';
+      content.innerHTML = `<div class="error-message">${PG_REPORTS_I18N.errors.network_error_prefix} ${escapeHtml(error.message)}</div>`;
+    }
+  }
+
   function showPgStatInfo() {
     document.getElementById('pg-stat-modal').style.display = 'flex';
   }

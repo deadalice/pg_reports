@@ -15,6 +15,10 @@ module PgReports
     before_action :set_categories
     before_action :resolve_database_selection
     around_action :within_selected_database
+    before_action :block_query_monitor_in_standalone, only: %i[
+      start_query_monitoring stop_query_monitoring query_monitor_status
+      query_monitor_feed load_query_history download_query_monitor
+    ]
 
     helper_method :category_disabled_reason, :category_disabled?
 
@@ -372,6 +376,67 @@ module PgReports
       render json: {success: false, error: e.message}, status: :unprocessable_entity
     end
 
+    # POST /run_query
+    # Free-text SQL runner backing the "Run Query" modal. Unlike #execute_query
+    # (which only ever runs queries the server itself generated and cached by
+    # hash — see CHANGELOG 0.5.1), this endpoint accepts client-typed SQL
+    # directly, so it applies the same SELECT-only/denylist validation that
+    # normally happens on cache retrieval directly to the submitted text.
+    def run_query
+      raw_query = params[:query].to_s
+
+      if raw_query.blank?
+        render json: {success: false, error: I18n.t("pg_reports.ui.errors.query_required")}, status: :unprocessable_entity
+        return
+      end
+
+      unless PgReports.config.allow_raw_query_execution
+        render json: {
+          success: false,
+          error: I18n.t("pg_reports.ui.errors.query_execution_disabled")
+        }, status: :forbidden
+        return
+      end
+
+      begin
+        enforce_select_only!(raw_query)
+      rescue SecurityError => e
+        render json: {success: false, error: "#{I18n.t("pg_reports.ui.errors.security_violation_prefix")} #{e.message}"}, status: :forbidden
+        return
+      end
+
+      limited_query = add_limit_if_missing(raw_query, 100)
+
+      start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      result = ActiveRecord::Base.connection.execute(limited_query)
+      end_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      execution_time = ((end_time - start_time) * 1000).round(2)
+
+      rows = result.to_a
+      columns = rows.first&.keys || []
+
+      total_count = rows.size
+      truncated = false
+
+      if rows.size >= 100
+        count_result = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM (#{raw_query}) AS count_query")
+        total_count = count_result.first["count"].to_i
+        truncated = total_count > 100
+      end
+
+      render json: {
+        success: true,
+        columns: columns,
+        rows: rows,
+        count: rows.size,
+        total_count: total_count,
+        truncated: truncated,
+        execution_time: execution_time
+      }
+    rescue => e
+      render json: {success: false, error: e.message}, status: :unprocessable_entity
+    end
+
     def create_migration
       unless PgReports.config.allow_migration_creation
         render json: {
@@ -691,6 +756,20 @@ module PgReports
       category_disabled_reason(category).present?
     end
 
+    # SQL Query Monitor taps ActiveSupport::Notifications in the host
+    # application's process. In standalone mode there is no host app — pg_reports
+    # is the only process running, so there's nothing meaningful to observe.
+    # Blocks the API even if a client calls it directly (the UI panel is also
+    # hidden in standalone, see dashboard/index view).
+    def block_query_monitor_in_standalone
+      return unless PgReports.config.standalone
+
+      render json: {
+        success: false,
+        error: I18n.t("pg_reports.ui.errors.query_monitor_unavailable_standalone")
+      }, status: :forbidden
+    end
+
     def on_primary_default_database?
       return true if @target_default_database.nil?
 
@@ -779,7 +858,15 @@ module PgReports
         return nil
       end
 
-      # Strict validation: must be a SELECT query only
+      enforce_select_only!(query)
+
+      query
+    end
+
+    # Strict validation: must be a single SELECT statement, no dangerous
+    # keywords. This is a denylist, not a sandbox (see docs/configuration.md)
+    # — shared by #retrieve_query_by_hash and the free-text #run_query action.
+    def enforce_select_only!(query)
       normalized = query.strip.gsub(/\s+/, " ").downcase
 
       # Check for semicolons (prevents multiple statements)
@@ -799,8 +886,6 @@ module PgReports
           raise SecurityError, "Dangerous keyword detected: #{keyword.upcase}"
         end
       end
-
-      query
     end
 
     def generate_query_monitor_csv(queries)

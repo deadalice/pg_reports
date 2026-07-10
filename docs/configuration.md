@@ -244,17 +244,19 @@ PgReports follows your application's `I18n.locale`. The dashboard ships with `en
 |---|---|---|---|
 | `load_external_fonts` | `false` | `PG_REPORTS_LOAD_EXTERNAL_FONTS` | Loads Google Fonts in the dashboard layout. Off by default for privacy. |
 
-## Raw query execution (EXPLAIN ANALYZE / Execute Query)
+## Raw query execution (EXPLAIN ANALYZE / Execute Query / SQL Console)
 
-The dashboard's *Execute Query* and *EXPLAIN ANALYZE* buttons are off by default. Opt in only where appropriate:
+The dashboard's *Execute Query*, *EXPLAIN ANALYZE*, and *SQL Console* features are off by default. Opt in only where appropriate:
 
 | Option | Default | ENV | Meaning |
 |---|---|---|---|
-| `allow_raw_query_execution` | `false` | `PG_REPORTS_ALLOW_RAW_QUERY_EXECUTION` | Enables ad-hoc query execution from the dashboard. Restricted to SELECT and uses parameterized hashing — but still treat it as privileged. |
+| `allow_raw_query_execution` | `false` | `PG_REPORTS_ALLOW_RAW_QUERY_EXECUTION` | Enables ad-hoc query execution from the dashboard. Restricted to SELECT — but still treat it as privileged. |
 
 ```ruby
 config.allow_raw_query_execution = Rails.env.development? || Rails.env.staging?
 ```
+
+*Execute Query* and *EXPLAIN ANALYZE* (from a report row) never see client-supplied SQL text directly — the client only ever sends a SHA256 hash of a query the server generated and cached (see the "Raw query execution" caveats above). The **SQL Console** modal (a free-text SQL editor, opened from the *SQL Console* header button) is the exception: it accepts client-typed SQL, so it re-applies the same validation (`SELECT`-only, no semicolons, keyword denylist) directly to the submitted text via a shared `enforce_select_only!` check. It is gated by the same `allow_raw_query_execution` flag and is subject to the same denylist-not-a-sandbox caveats.
 
 ## Migration creation
 
@@ -308,6 +310,8 @@ PgReports recognizes the `source_location` tag and splits it into `file` and `li
 ## SQL Query Monitor
 
 Live capture of `sql.active_record` events from the host process. Filtered to exclude framework / SCHEMA / CACHE / pg_reports' own queries.
+
+Not available in [standalone mode](standalone.md) — there is no separate host application process to subscribe to, so both the dashboard panel and its API endpoints (`/query_monitor/*`) are disabled.
 
 | Option | Default | Meaning |
 |---|---|---|

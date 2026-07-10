@@ -28,7 +28,8 @@ A comprehensive PostgreSQL monitoring and analysis library for Rails application
 - 🔗 **IDE Integration** - Open source locations in VS Code, Cursor, RubyMine, or IntelliJ (with WSL support)
 - 📌 **Comparison Mode** - Save records to compare before/after optimization
 - 📊 **EXPLAIN ANALYZE** - Advanced query plan analyzer with problem detection and recommendations
-- 🔍 **SQL Query Monitoring** - Real-time monitoring of all executed SQL queries with source location tracking
+- 🖥️ **SQL Console** - Free-form SQL editor in a modal, run SELECT queries and view results directly from the dashboard
+- 🔍 **SQL Query Monitoring** - Real-time monitoring of all executed SQL queries with source location tracking (not available in standalone mode)
 - 🔌 **Connection Pool Analytics** - Monitor pool usage, wait times, saturation warnings, and connection churn
 - 🤖 **AI Prompt Export** - Copy a ready-to-paste prompt for Claude Code, Cursor, or Codex with problem context and report data
 - 🗑️ **Migration Generator** - Generate Rails migrations to drop unused indexes
@@ -184,6 +185,17 @@ Requires `config.allow_raw_query_execution = true`.
 </details>
 
 <details>
+<summary><strong>SQL Console — free-form SQL editor</strong></summary>
+
+Click **SQL Console** in the header to open a large modal with a SQL editor. Type or paste a query, run it (⌘/Ctrl+Enter also works), and see the results in a table with row count and execution time.
+
+Only `SELECT` statements are allowed — the same denylist validation used for the query-hash based **Execute Query** panel (single statement, no `INSERT`/`UPDATE`/`DELETE`/`DROP`/`ALTER`/`CREATE`/`TRUNCATE`/`GRANT`/`REVOKE`) applies here, since this is client-typed SQL rather than a server-generated query. See [Security model](docs/configuration.md#security-model) for the full threat model and residual risks (this is a denylist, not a sandbox).
+
+Requires `config.allow_raw_query_execution = true`.
+
+</details>
+
+<details>
 <summary><strong>SQL Query Monitor — real-time query capture</strong></summary>
 
 Live capture of all SQL executed by your Rails app. Click **▶ Start Monitoring**, run any operation, watch the queries appear with:
@@ -204,6 +216,8 @@ end
 ```
 
 Use cases: debugging N+1, identifying slow queries during feature development, tracking down unexpected queries, teaching ActiveRecord behavior.
+
+Not available in [standalone mode](docs/standalone.md) — there is no host application process to subscribe to, so the panel and its API are both disabled.
 
 </details>
 

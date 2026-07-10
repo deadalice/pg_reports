@@ -1,6 +1,6 @@
 # Standalone mode
 
-Run the PgReports dashboard on its own — no host Rails app to mount it in. It boots a minimal Rails application that mounts the engine at `/` and serves it over HTTP, straight from the gem's root folder. Everything the dashboard does inside a host app (multi-database switching, query monitor, EXPLAIN ANALYZE, exports) works unchanged, because the connection you point it at is auto-registered as the `:primary` target.
+Run the PgReports dashboard on its own — no host Rails app to mount it in. It boots a minimal Rails application that mounts the engine at `/` and serves it over HTTP, straight from the gem's root folder. Most of what the dashboard does inside a host app (multi-database switching, EXPLAIN ANALYZE, SQL Console, exports) works unchanged, because the connection you point it at is auto-registered as the `:primary` target. The **SQL Query Monitor is the one exception** — see [Security](#security) below.
 
 ## Quick start
 
@@ -108,8 +108,10 @@ Standalone mode is intended for **local, trusted use** (a developer inspecting a
 
 Two capabilities that can modify or read arbitrary data are **off by default** and must be turned on explicitly, via a flag or the config file:
 
-- `--allow-raw-query-execution` — the **Run SQL** and **EXPLAIN ANALYZE** panels.
+- `--allow-raw-query-execution` — the **Run SQL**, **SQL Console**, and **EXPLAIN ANALYZE** panels.
 - `--allow-migration-creation` — the **Generate Migration** button (writes to `db/migrate/`).
+
+The **SQL Query Monitor is not available in standalone mode** — it works by subscribing to `ActiveSupport::Notifications` inside a host application's process, and standalone mode has no separate host app to subscribe to (pg_reports would just be observing its own queries, which are already filtered out). The dashboard hides the panel and its `/query_monitor/*` API returns `403 Forbidden`.
 
 If you must expose the dashboard beyond loopback, set a `dashboard_auth` proc in a config file (see [Configuration](#configuration)).
 

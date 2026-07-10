@@ -14,6 +14,7 @@ PgReports::Engine.routes.draw do
   post "reset_statistics", to: "dashboard#reset_statistics", as: :reset_statistics
   post "explain_analyze", to: "dashboard#explain_analyze", as: :explain_analyze
   post "execute_query", to: "dashboard#execute_query", as: :execute_query
+  post "run_query", to: "dashboard#run_query", as: :run_query
   post "create_migration", to: "dashboard#create_migration", as: :create_migration
 
   # Query monitoring
