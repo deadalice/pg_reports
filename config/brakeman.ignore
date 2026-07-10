@@ -24,6 +24,29 @@
       "note": "Reviewed & accepted: user-query execution feature (execute_query count). Gated by config.allow_raw_query_execution; the query is fetched by hash from an internal registry (retrieve_query_by_hash), parameters are validated/substituted, and SecurityError checks reject dangerous input. Not arbitrary attacker-controlled SQL."
     },
     {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "52294539b2a9666f9a79f7ad52cdd1dc531a3b71e487e5134174029cd5138571",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/controllers/pg_reports/dashboard_controller.rb",
+      "line": 440,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "ActiveRecord::Base.connection.execute(\"SELECT COUNT(*) FROM (#{params[:query].to_s}) AS count_query\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "PgReports::DashboardController",
+        "method": "run_query"
+      },
+      "user_input": "params[:query]",
+      "confidence": "High",
+      "cwe_id": [
+        89
+      ],
+      "note": "Reviewed & accepted: SQL Console (run_query count). Gated by config.allow_raw_query_execution; the client-typed query passes enforce_select_only! (SELECT-only, no semicolons, keyword denylist) and runs under a bounded statement_timeout. Intentional DBA tooling; same risk profile as execute_query/explain_analyze."
+    },
+    {
       "warning_type": "Cross-Site Request Forgery",
       "warning_code": 7,
       "fingerprint": "b9682cc0e0a1cd86fddef96834d4f71c3558989c2136fe58b5ff51c75b83c8b4",
@@ -69,6 +92,6 @@
       "note": "Reviewed & accepted: EXPLAIN ANALYZE feature. Same safeguards as execute_query - query resolved by hash from internal registry, params validated, SecurityError guards. Intentional DBA tooling."
     }
   ],
-  "updated": "2026-07-04 20:27:49 +0300",
+  "updated": "2026-07-10 19:15:00 +0300",
   "brakeman_version": "8.0.5"
 }
