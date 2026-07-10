@@ -43,6 +43,9 @@ module PgReports
     # Security settings
     attr_accessor :allow_raw_query_execution    # Allow execute_query and explain_analyze from dashboard
     attr_accessor :allow_migration_creation     # Allow dashboard's "Generate Migration" button to write files into db/migrate/
+    attr_accessor :raw_query_statement_timeout_ms    # Postgres statement_timeout (ms) applied to Execute Query / EXPLAIN ANALYZE / SQL Console. 0 disables it.
+    attr_accessor :raw_query_rate_limit              # Max privileged requests (raw query execution / Generate Migration) per client IP per window. nil disables rate limiting.
+    attr_accessor :raw_query_rate_limit_window_seconds # Window size (seconds) for raw_query_rate_limit
 
     # Grafana / Prometheus exporter settings
     attr_accessor :grafana_favorites            # Reports exposed at /metrics (Array of keys or Hash with per-report opts)
@@ -103,6 +106,9 @@ module PgReports
       else
         ActiveModel::Type::Boolean.new.cast(env_override)
       end
+      @raw_query_statement_timeout_ms = ENV.fetch("PG_REPORTS_RAW_QUERY_STATEMENT_TIMEOUT_MS", 5_000).to_i
+      @raw_query_rate_limit = ENV.fetch("PG_REPORTS_RAW_QUERY_RATE_LIMIT", 30).to_i
+      @raw_query_rate_limit_window_seconds = ENV.fetch("PG_REPORTS_RAW_QUERY_RATE_LIMIT_WINDOW_SECONDS", 60).to_i
 
       # Grafana / Prometheus exporter
       @grafana_favorites = []

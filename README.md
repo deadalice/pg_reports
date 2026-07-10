@@ -191,6 +191,8 @@ Click **SQL Console** in the header to open a large modal with a SQL editor. Typ
 
 Only `SELECT` statements are allowed — the same denylist validation used for the query-hash based **Execute Query** panel (single statement, no `INSERT`/`UPDATE`/`DELETE`/`DROP`/`ALTER`/`CREATE`/`TRUNCATE`/`GRANT`/`REVOKE`) applies here, since this is client-typed SQL rather than a server-generated query. See [Security model](docs/configuration.md#security-model) for the full threat model and residual risks (this is a denylist, not a sandbox).
 
+Every query (here and in Execute Query / EXPLAIN ANALYZE) runs under a bounded `statement_timeout` (`config.raw_query_statement_timeout_ms`, default 5s) and these endpoints are rate-limited per client IP (`config.raw_query_rate_limit`, default 30/min) — see [Raw query execution](docs/configuration.md#raw-query-execution-explain-analyze--execute-query--sql-console).
+
 Requires `config.allow_raw_query_execution = true`.
 
 </details>

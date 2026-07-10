@@ -46,7 +46,7 @@ Enabled by default (`protect_from_forgery with: :exception`) on the dashboard co
 
 | Operation | Flag | Default |
 |---|---|---|
-| Execute arbitrary SELECT (`Execute Query`, `EXPLAIN ANALYZE`) | `allow_raw_query_execution` | `false` |
+| Execute arbitrary SELECT (`Execute Query`, `EXPLAIN ANALYZE`, `SQL Console`) | `allow_raw_query_execution` | `false` |
 | Write Ruby files into `db/migrate/` (`Generate Migration`) | `allow_migration_creation` | `Rails.env.development?` |
 
 Both can also be controlled via `PG_REPORTS_ALLOW_RAW_QUERY_EXECUTION` and `PG_REPORTS_ALLOW_MIGRATION_CREATION` env vars.
@@ -63,7 +63,7 @@ This is a denylist, not a sandbox. A determined attacker with raw SELECT access 
 
 - Read filesystem with `pg_read_server_files()` / `pg_read_binary_file()` if the connecting role has the privilege.
 - Probe other servers via `dblink()` if installed.
-- Trigger expensive `EXPLAIN ANALYZE` runs (which actually run the query) for DoS.
+- Trigger expensive queries or `EXPLAIN ANALYZE` runs (which actually run the query) for DoS — mitigated but not eliminated by `raw_query_statement_timeout_ms` (bounds how long any single query can run) and `raw_query_rate_limit` (bounds how many such requests one client can fire per window). See [Raw query execution](#raw-query-execution-explain-analyze--execute-query--sql-console) below for both.
 
 Treat `allow_raw_query_execution = true` like a SQL console handed to whoever can reach the dashboard. **Combine with strict `dashboard_auth`.**
 
@@ -251,12 +251,22 @@ The dashboard's *Execute Query*, *EXPLAIN ANALYZE*, and *SQL Console* features a
 | Option | Default | ENV | Meaning |
 |---|---|---|---|
 | `allow_raw_query_execution` | `false` | `PG_REPORTS_ALLOW_RAW_QUERY_EXECUTION` | Enables ad-hoc query execution from the dashboard. Restricted to SELECT — but still treat it as privileged. |
+| `raw_query_statement_timeout_ms` | `5000` | `PG_REPORTS_RAW_QUERY_STATEMENT_TIMEOUT_MS` | Postgres `statement_timeout` (in ms) applied to every Execute Query / EXPLAIN ANALYZE / SQL Console query, so a runaway query can't hang the connection indefinitely. Set to `0` to disable. |
+| `raw_query_rate_limit` | `30` | `PG_REPORTS_RAW_QUERY_RATE_LIMIT` | Max requests per client IP per window for Execute Query / EXPLAIN ANALYZE / SQL Console / Generate Migration. Set to `nil` to disable. |
+| `raw_query_rate_limit_window_seconds` | `60` | `PG_REPORTS_RAW_QUERY_RATE_LIMIT_WINDOW_SECONDS` | Window size, in seconds, for `raw_query_rate_limit`. |
 
 ```ruby
 config.allow_raw_query_execution = Rails.env.development? || Rails.env.staging?
+config.raw_query_statement_timeout_ms = 3_000  # cancel raw queries running longer than 3s
+config.raw_query_rate_limit = 10               # at most 10 raw-query requests...
+config.raw_query_rate_limit_window_seconds = 60 # ...per client IP, per 60s
 ```
 
 *Execute Query* and *EXPLAIN ANALYZE* (from a report row) never see client-supplied SQL text directly — the client only ever sends a SHA256 hash of a query the server generated and cached (see the "Raw query execution" caveats above). The **SQL Console** modal (a free-text SQL editor, opened from the *SQL Console* header button) is the exception: it accepts client-typed SQL, so it re-applies the same validation (`SELECT`-only, no semicolons, keyword denylist) directly to the submitted text via a shared `enforce_select_only!` check. It is gated by the same `allow_raw_query_execution` flag and is subject to the same denylist-not-a-sandbox caveats.
+
+**Statement timeout.** All three raw-query actions wrap execution in a transaction with `SET LOCAL statement_timeout`, so an expensive or accidentally unbounded query (e.g. a cross join, or `pg_sleep(...)` slipped past the denylist) is cancelled by Postgres rather than holding a connection open indefinitely. The timeout reverts automatically at the end of the transaction.
+
+**Rate limiting.** `raw_query_rate_limit` throttles `explain_analyze`, `execute_query`, `run_query`, and `create_migration` per client IP, backed by `Rails.cache` (works across processes if you use a shared cache store like Redis; falls back to per-process counting with the default in-memory store). This is a best-effort guard against a single client hammering these expensive/privileged actions — not a hardened, distributed rate limiter — and it fails open (allows the request) if the cache backend is unavailable or errors.
 
 ## Migration creation
 

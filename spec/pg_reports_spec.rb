@@ -33,6 +33,9 @@ RSpec.describe PgReports do
       expect(config.slow_query_threshold_ms).to eq(100)
       expect(config.heavy_query_threshold_calls).to eq(1000)
       expect(config.bloat_threshold_percent).to eq(20)
+      expect(config.raw_query_statement_timeout_ms).to eq(5_000)
+      expect(config.raw_query_rate_limit).to eq(30)
+      expect(config.raw_query_rate_limit_window_seconds).to eq(60)
     end
   end
 

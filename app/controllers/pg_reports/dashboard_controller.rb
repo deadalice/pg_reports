@@ -19,6 +19,9 @@ module PgReports
       start_query_monitoring stop_query_monitoring query_monitor_status
       query_monitor_feed load_query_history download_query_monitor
     ]
+    before_action :enforce_rate_limit!, only: %i[
+      explain_analyze execute_query run_query create_migration
+    ]
 
     helper_method :category_disabled_reason, :category_disabled?
 
@@ -279,8 +282,11 @@ module PgReports
         return
       end
 
-      result = ActiveRecord::Base.connection.execute("EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) #{final_query}")
-      explain_output = result.map { |r| r["QUERY PLAN"] }.join("\n")
+      explain_output = nil
+      with_statement_timeout do
+        result = ActiveRecord::Base.connection.execute("EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) #{final_query}")
+        explain_output = result.map { |r| r["QUERY PLAN"] }.join("\n")
+      end
 
       # Analyze the EXPLAIN output
       analyzer = ExplainAnalyzer.new(explain_output)
@@ -294,6 +300,8 @@ module PgReports
         problems: analysis[:problems],
         summary: analysis[:summary]
       }
+    rescue ActiveRecord::QueryCanceled
+      render json: {success: false, error: query_timed_out_message}, status: :unprocessable_entity
     rescue => e
       render json: {success: false, error: e.message}, status: :unprocessable_entity
     end
@@ -344,23 +352,27 @@ module PgReports
       # Execute with LIMIT to prevent huge result sets
       limited_query = add_limit_if_missing(final_query, 100)
 
-      start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      result = ActiveRecord::Base.connection.execute(limited_query)
-      end_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      execution_time = ((end_time - start_time) * 1000).round(2)
-
-      rows = result.to_a
-      columns = rows.first&.keys || []
-
-      # Check if we need to get total count
-      total_count = rows.size
+      rows = columns = nil
+      total_count = 0
       truncated = false
+      execution_time = nil
 
-      if rows.size >= 100
-        # Check if there are more rows
-        count_result = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM (#{final_query}) AS count_query")
-        total_count = count_result.first["count"].to_i
-        truncated = total_count > 100
+      with_statement_timeout do
+        start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        result = ActiveRecord::Base.connection.execute(limited_query)
+        end_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        execution_time = ((end_time - start_time) * 1000).round(2)
+
+        rows = result.to_a
+        columns = rows.first&.keys || []
+        total_count = rows.size
+
+        # Check if we need to get total count
+        if rows.size >= 100
+          count_result = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM (#{final_query}) AS count_query")
+          total_count = count_result.first["count"].to_i
+          truncated = total_count > 100
+        end
       end
 
       render json: {
@@ -372,6 +384,8 @@ module PgReports
         truncated: truncated,
         execution_time: execution_time
       }
+    rescue ActiveRecord::QueryCanceled
+      render json: {success: false, error: query_timed_out_message}, status: :unprocessable_entity
     rescue => e
       render json: {success: false, error: e.message}, status: :unprocessable_entity
     end
@@ -407,21 +421,26 @@ module PgReports
 
       limited_query = add_limit_if_missing(raw_query, 100)
 
-      start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      result = ActiveRecord::Base.connection.execute(limited_query)
-      end_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      execution_time = ((end_time - start_time) * 1000).round(2)
-
-      rows = result.to_a
-      columns = rows.first&.keys || []
-
-      total_count = rows.size
+      rows = columns = nil
+      total_count = 0
       truncated = false
+      execution_time = nil
 
-      if rows.size >= 100
-        count_result = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM (#{raw_query}) AS count_query")
-        total_count = count_result.first["count"].to_i
-        truncated = total_count > 100
+      with_statement_timeout do
+        start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        result = ActiveRecord::Base.connection.execute(limited_query)
+        end_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        execution_time = ((end_time - start_time) * 1000).round(2)
+
+        rows = result.to_a
+        columns = rows.first&.keys || []
+        total_count = rows.size
+
+        if rows.size >= 100
+          count_result = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM (#{raw_query}) AS count_query")
+          total_count = count_result.first["count"].to_i
+          truncated = total_count > 100
+        end
       end
 
       render json: {
@@ -433,6 +452,8 @@ module PgReports
         truncated: truncated,
         execution_time: execution_time
       }
+    rescue ActiveRecord::QueryCanceled
+      render json: {success: false, error: query_timed_out_message}, status: :unprocessable_entity
     rescue => e
       render json: {success: false, error: e.message}, status: :unprocessable_entity
     end
@@ -770,6 +791,37 @@ module PgReports
       }, status: :forbidden
     end
 
+    # Soft per-IP throttle for the dashboard's privileged raw-query and
+    # migration endpoints. This is not a hardened distributed rate limiter —
+    # just a best-effort guard against a single client hammering these
+    # expensive/privileged actions, backed by Rails.cache (works with or
+    # without a shared cache backend across processes). Fails open if the
+    # cache is unavailable, consistent with the rest of the dashboard (see
+    # #resolve_database_selection, #retrieve_query_by_hash).
+    def enforce_rate_limit!
+      limit = PgReports.config.raw_query_rate_limit
+      return if limit.nil?
+
+      window = PgReports.config.raw_query_rate_limit_window_seconds
+      key = "pg_reports:rate_limit:#{request.remote_ip}:#{params[:action]}"
+
+      count = begin
+        current = (Rails.cache.read(key) || 0) + 1
+        Rails.cache.write(key, current, expires_in: window)
+        current
+      rescue => e
+        Rails.logger.warn("PgReports: Rate limit cache unavailable: #{e.message}") if defined?(Rails.logger)
+        return
+      end
+
+      return if count <= limit
+
+      render json: {
+        success: false,
+        error: I18n.t("pg_reports.ui.errors.rate_limit_exceeded")
+      }, status: :too_many_requests
+    end
+
     def on_primary_default_database?
       return true if @target_default_database.nil?
 
@@ -886,6 +938,24 @@ module PgReports
           raise SecurityError, "Dangerous keyword detected: #{keyword.upcase}"
         end
       end
+    end
+
+    # Bounds how long a single raw-query execution (Execute Query / EXPLAIN
+    # ANALYZE / SQL Console) can run, so a runaway query can't hang the
+    # connection indefinitely. SET LOCAL only takes effect inside a
+    # transaction and reverts automatically at its end (commit or rollback) —
+    # safe here since every caller only ever runs SELECTs.
+    def with_statement_timeout
+      ActiveRecord::Base.transaction do
+        timeout_ms = PgReports.config.raw_query_statement_timeout_ms.to_i
+        ActiveRecord::Base.connection.execute("SET LOCAL statement_timeout = #{timeout_ms}") if timeout_ms.positive?
+        yield
+      end
+    end
+
+    def query_timed_out_message
+      I18n.t("pg_reports.ui.errors.query_timed_out",
+        ms: PgReports.config.raw_query_statement_timeout_ms.to_i)
     end
 
     def generate_query_monitor_csv(queries)

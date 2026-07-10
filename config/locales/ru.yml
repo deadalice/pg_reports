@@ -748,6 +748,8 @@ ru:
         query_execution_disabled: "Выполнение запросов из дашборда отключено. Включите в конфигурации: 'config.allow_raw_query_execution = true'"
         query_not_found_expired: "Запрос не найден или истёк срок действия. Обновите страницу."
         query_monitor_unavailable_standalone: "SQL Query Monitor недоступен в автономном режиме — нет процесса основного приложения для наблюдения."
+        query_timed_out: "Превышено время ожидания запроса (%{ms} мс, statement_timeout). Сузьте запрос или увеличьте config.raw_query_statement_timeout_ms."
+        rate_limit_exceeded: "Слишком много запросов. Подождите немного и попробуйте снова."
         security_violation_prefix: "Нарушение безопасности:"
         trigger_variables_not_allowed: "Нельзя выполнить EXPLAIN ANALYZE для запросов с триггерными переменными (NEW, OLD). Они доступны только в контексте триггерных функций."
         missing_parameter_values: "Укажите значения для всех плейсхолдеров параметров ($1, $2 и т.д.)"

@@ -264,4 +264,171 @@ RSpec.describe PgReports::DashboardController do
       expect(controller.send(:valid_database?, "anything")).to be false
     end
   end
+
+  describe "#enforce_select_only!" do
+    it "allows a simple SELECT" do
+      expect { controller.send(:enforce_select_only!, "SELECT 1") }.not_to raise_error
+    end
+
+    it "rejects multiple statements" do
+      expect {
+        controller.send(:enforce_select_only!, "SELECT 1; SELECT 2")
+      }.to raise_error(SecurityError, /semicolons/)
+    end
+
+    it "rejects queries that don't start with SELECT" do
+      expect {
+        controller.send(:enforce_select_only!, "DELETE FROM users")
+      }.to raise_error(SecurityError, /Only SELECT queries/)
+    end
+
+    it "rejects a dangerous keyword anywhere in the text (denylist, not a parser)" do
+      expect {
+        controller.send(:enforce_select_only!, "SELECT * FROM pg_stat_activity WHERE query ILIKE '%grant%'")
+      }.to raise_error(SecurityError, /Dangerous keyword detected: GRANT/)
+    end
+  end
+
+  describe "#with_statement_timeout" do
+    let(:connection) { double("connection") }
+
+    around do |example|
+      original = PgReports.config.raw_query_statement_timeout_ms
+      example.run
+      PgReports.config.raw_query_statement_timeout_ms = original
+    end
+
+    before do
+      allow(ActiveRecord::Base).to receive(:transaction).and_yield
+      allow(ActiveRecord::Base).to receive(:connection).and_return(connection)
+    end
+
+    it "sets a Postgres statement_timeout scoped to the transaction" do
+      PgReports.config.raw_query_statement_timeout_ms = 1234
+      expect(connection).to receive(:execute).with("SET LOCAL statement_timeout = 1234")
+
+      ran = false
+      controller.send(:with_statement_timeout) { ran = true }
+
+      expect(ran).to be true
+    end
+
+    it "skips SET LOCAL when the timeout is disabled (0)" do
+      PgReports.config.raw_query_statement_timeout_ms = 0
+      expect(connection).not_to receive(:execute)
+
+      controller.send(:with_statement_timeout) {}
+    end
+  end
+
+  describe "#block_query_monitor_in_standalone" do
+    it "does nothing outside standalone mode" do
+      expect(controller).not_to receive(:render)
+      controller.send(:block_query_monitor_in_standalone)
+    end
+
+    context "in standalone mode" do
+      around do |example|
+        PgReports.config.standalone = true
+        example.run
+        PgReports.config.standalone = false
+      end
+
+      it "renders 403" do
+        expect(controller).to receive(:render).with(hash_including(status: :forbidden))
+        controller.send(:block_query_monitor_in_standalone)
+      end
+    end
+  end
+
+  describe "#enforce_rate_limit!" do
+    let(:cache_store) { {} }
+    let(:fake_cache) do
+      double("cache").tap do |c|
+        allow(c).to receive(:read) { |key| cache_store[key] }
+        allow(c).to receive(:write) { |key, value, **_opts| cache_store[key] = value }
+      end
+    end
+    let(:fake_rails) { double("Rails", cache: fake_cache, logger: double("logger", warn: nil)) }
+    let(:fake_request) { instance_double(ActionDispatch::Request, remote_ip: "203.0.113.5") }
+
+    around do |example|
+      original_limit = PgReports.config.raw_query_rate_limit
+      original_window = PgReports.config.raw_query_rate_limit_window_seconds
+      example.run
+      PgReports.config.raw_query_rate_limit = original_limit
+      PgReports.config.raw_query_rate_limit_window_seconds = original_window
+    end
+
+    before do
+      stub_const("Rails", fake_rails)
+      allow(controller).to receive(:params).and_return(action: "run_query")
+      allow(controller).to receive(:request).and_return(fake_request)
+    end
+
+    it "does nothing when the limit is disabled (nil)" do
+      PgReports.config.raw_query_rate_limit = nil
+
+      expect(fake_cache).not_to receive(:read)
+      controller.send(:enforce_rate_limit!)
+    end
+
+    it "allows requests under the limit" do
+      PgReports.config.raw_query_rate_limit = 2
+      PgReports.config.raw_query_rate_limit_window_seconds = 60
+
+      expect(controller).not_to receive(:render)
+      controller.send(:enforce_rate_limit!)
+    end
+
+    it "blocks requests once the limit is exceeded" do
+      PgReports.config.raw_query_rate_limit = 1
+      PgReports.config.raw_query_rate_limit_window_seconds = 60
+
+      controller.send(:enforce_rate_limit!) # consumes the only slot
+
+      expect(controller).to receive(:render).with(hash_including(status: :too_many_requests))
+      controller.send(:enforce_rate_limit!)
+    end
+
+    it "fails open when the cache backend raises" do
+      PgReports.config.raw_query_rate_limit = 1
+      allow(fake_cache).to receive(:read).and_raise(StandardError, "cache down")
+
+      expect(controller).not_to receive(:render)
+      controller.send(:enforce_rate_limit!)
+    end
+  end
+
+  describe "#run_query" do
+    around do |example|
+      original = PgReports.config.allow_raw_query_execution
+      example.run
+      PgReports.config.allow_raw_query_execution = original
+    end
+
+    it "rejects a blank query" do
+      allow(controller).to receive(:params).and_return(query: "")
+
+      expect(controller).to receive(:render).with(hash_including(status: :unprocessable_entity))
+      controller.run_query
+    end
+
+    it "returns 403 when raw query execution is disabled" do
+      PgReports.config.allow_raw_query_execution = false
+      allow(controller).to receive(:params).and_return(query: "SELECT 1")
+
+      expect(controller).to receive(:render).with(hash_including(status: :forbidden))
+      controller.run_query
+    end
+
+    it "rejects a non-SELECT query without touching the database" do
+      PgReports.config.allow_raw_query_execution = true
+      allow(controller).to receive(:params).and_return(query: "DELETE FROM users")
+
+      expect(ActiveRecord::Base).not_to receive(:connection)
+      expect(controller).to receive(:render).with(hash_including(status: :forbidden))
+      controller.run_query
+    end
+  end
 end

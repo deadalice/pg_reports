@@ -783,6 +783,8 @@ en:
         query_execution_disabled: "Query execution from dashboard is disabled. Enable it in configuration with 'config.allow_raw_query_execution = true'"
         query_not_found_expired: "Query not found or expired. Please refresh the page."
         query_monitor_unavailable_standalone: "SQL Query Monitor isn't available in standalone mode — there is no host application process to observe."
+        query_timed_out: "Query timed out after %{ms}ms (statement_timeout). Try narrowing the query or increase config.raw_query_statement_timeout_ms."
+        rate_limit_exceeded: "Too many requests. Please wait a bit before trying again."
         security_violation_prefix: "Security violation:"
         trigger_variables_not_allowed: "Cannot EXPLAIN ANALYZE queries with trigger variables (NEW, OLD). These are only available within trigger functions."
         missing_parameter_values: "Please provide values for all parameter placeholders ($1, $2, etc.)"
