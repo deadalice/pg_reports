@@ -384,6 +384,20 @@ RSpec.describe PgReports::QueryMonitor do
       expect(last_line["type"]).to eq("session_end")
     end
 
+    # Regression: ActiveSupport's #to_json override passes json's removed
+    # `quirks_mode` option, so on json >= 3 with Rails <= 7.0 it raises
+    # ArgumentError — which the writer's rescue swallowed, leaving the log
+    # silently empty. Serialization has to go through json's own generator.
+    it "serializes with JSON.generate rather than ActiveSupport's to_json" do
+      expect(JSON).to receive(:generate).at_least(:once).and_call_original
+
+      monitor.start
+      monitor.stop
+
+      log_file.rewind
+      expect(log_file.readlines).not_to be_empty
+    end
+
     it "flushes queries to file on stop" do
       monitor.start
       # Clear any existing queries from previous operations

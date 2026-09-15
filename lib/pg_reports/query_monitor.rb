@@ -356,6 +356,10 @@ module PgReports
       end
     end
 
+    # JSON.generate, not #to_json: ActiveSupport overrides #to_json and (up to
+    # Rails 7.0) passes json's removed `quirks_mode` option, so on json >= 3 it
+    # raises ArgumentError. The rescue below would swallow that and leave the
+    # log silently empty. json's own generator takes no such option.
     def write_session_marker(marker_type, sid = @session_id)
       return unless log_file_enabled?
 
@@ -366,7 +370,7 @@ module PgReports
       }
 
       File.open(log_file_path, "a") do |f|
-        f.puts marker.to_json
+        f.puts JSON.generate(marker)
       end
     rescue => e
       # Silently fail - don't break monitoring if file write fails
@@ -379,7 +383,7 @@ module PgReports
 
       File.open(log_file_path, "a") do |f|
         @queries.each do |query|
-          f.puts query.to_json
+          f.puts JSON.generate(query)
         end
       end
     rescue => e

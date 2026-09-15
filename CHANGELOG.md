@@ -8,7 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-
+- **The CI matrix now resolves against committed lockfiles.** `gemfiles/*.gemfile.lock` were gitignored, so every matrix job re-resolved dependencies from scratch and drifted with whatever was newest on the day — which is how the Rails 6.1 job silently moved onto a json 3.x that ActiveSupport 6.1 cannot use, turning green builds red with no code change. Each lockfile is generated with that entry's own Ruby and pinned to the runner's `x86_64-linux` platform. The Rails 6.1 lockfile deliberately pins json 3.0.2, so the incompatibility that started this stays covered rather than being pinned away.
+- **Updated `json`, `loofah` and `rails-html-sanitizer`** in the root lockfile to clear open advisories (`bundler-audit`).
 - **Dashboard visual overhaul — a single design system instead of three drifting stylesheets.** The three `<style>` blocks (layout, `index`, `_show_styles`) had grown independent, conflicting copies of the same components: `.modal-close` was 28px in one and 32px in another, `.modal-small` was 360px and 420px, `.toast` and the whole `.btn` family were defined twice with different colours, and `.explain-stats` / `.explain-result` were each declared twice within one file. All shared components now live once in the layout, and the per-page blocks only hold what is genuinely page-specific. `_show_styles.html.erb` shrank from 1678 to ~1500 lines with no loss of coverage.
   - **Design tokens.** New `:root` tokens for radii (`--radius-sm`/`--radius`/`--radius-lg`), control height, shadows, fonts, and an accent-tint scale (`--amber-soft`/`--amber-line`, …) derived from the actual `--accent-*` values. Every hard-coded `rgba()`/hex tint was replaced — many were leftover Tailwind-palette values (`#ef4444`, `rgba(59,130,246,…)`) that no longer matched the accent they bordered.
   - **Fixed two undeclared variables.** `--text-tertiary` and `--accent-red` were referenced but never defined, so those rules silently fell back to inherited colour; both are now declared. Removed the unused `--accent-indigo`, `--gradient-start` and `--gradient-end`.
@@ -30,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **One field-label definition.** `.explain-label`, `.explain-stat-label`, `.row-detail-label`, `.problem-field-label`, `.saved-record-field-name` and `.saved-record-detail-label` were six variants of "small-caps label above a value", spread across 0.65–0.8rem, three letter-spacings and two colours. Collapsed into a single rule.
 
 ### Fixed
+- **Query-monitor file logging silently wrote nothing on Rails <= 7.0 with json >= 3.** The writer serialized with `#to_json`, which ActiveSupport overrides and (up to Rails 7.0) calls with json's `quirks_mode` option — removed in json 3, so it raises `ArgumentError: unknown keyword: quirks_mode`. The writer's `rescue` swallowed that by design ("don't break monitoring if the file write fails"), so the log file just stayed empty with no visible error. Serialization now goes through `JSON.generate`, json's own generator, which takes no such option. Covered by a regression spec.
+
 
 - **Migration-disabled toast was hardcoded Russian** in an otherwise fully translated UI. Now goes through `errors.migration_disabled_toast` (added to all three locales).
 - **Migration-disabled panel title was hardcoded English.** Now goes through `modals.migration_disabled_title` (added to all three locales).
