@@ -239,7 +239,6 @@ end</pre>
           <svg id="sparkline-connections" viewBox="0 0 100 30" preserveAspectRatio="none"></svg>
         </div>
       </div>
-      <div class="metric-status" id="status-connections"></div>
     </div>
 
     <!-- TPS -->
@@ -260,7 +259,6 @@ end</pre>
           <svg id="sparkline-tps" viewBox="0 0 100 30" preserveAspectRatio="none"></svg>
         </div>
       </div>
-      <div class="metric-status" id="status-tps"></div>
     </div>
 
     <!-- Cache Hit Ratio -->
@@ -279,7 +277,6 @@ end</pre>
           <svg id="sparkline-cache" viewBox="0 0 100 30" preserveAspectRatio="none"></svg>
         </div>
       </div>
-      <div class="metric-status" id="status-cache"></div>
     </div>
 
     <!-- Long Running Queries -->
@@ -298,7 +295,6 @@ end</pre>
           <svg id="sparkline-longrunning" viewBox="0 0 100 30" preserveAspectRatio="none"></svg>
         </div>
       </div>
-      <div class="metric-status" id="status-longrunning"></div>
     </div>
 
     <!-- Blocked Queries -->
@@ -317,7 +313,6 @@ end</pre>
           <svg id="sparkline-blocked" viewBox="0 0 100 30" preserveAspectRatio="none"></svg>
         </div>
       </div>
-      <div class="metric-status" id="status-blocked"></div>
     </div>
   </div>
 </div>
@@ -654,11 +649,14 @@ end</pre>
      value colour and the sparkline, never by a coloured edge: "healthy" is
      the common case and should read as quiet, not decorated. */
   .live-metric-card {
+    display: flex;
+    flex-direction: column;
     background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
     padding: 0.875rem 1rem;
-    position: relative;
+    /* The trend band below bleeds to the card's edges. */
+    overflow: hidden;
     transition: border-color 0.12s ease;
   }
 
@@ -674,7 +672,7 @@ end</pre>
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    margin-bottom: 0.625rem;
+    margin-bottom: 0.25rem;
   }
 
   .metric-icon {
@@ -693,6 +691,9 @@ end</pre>
   .metric-body {
     display: flex;
     flex-direction: column;
+    /* Figures hug the right edge; the trend band below opts back out. */
+    align-items: flex-end;
+    flex: 1;
     gap: 0.1875rem;
   }
 
@@ -719,17 +720,27 @@ end</pre>
   }
 
   .metric-detail {
+    max-width: 100%;
     font-size: 0.7rem;
     color: var(--text-muted);
+    text-align: right;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  /* Sparkline */
+  /* Trend band. Negative margins cancel the card's padding so it spans the full
+     width and sits flush with the bottom edge — as a floating inset line it left
+     the lower half of the card reading as dead space. `margin-top: auto` keeps
+     it pinned down when cards in a row differ in height. */
   .metric-sparkline {
-    height: 28px;
-    margin-top: 0.625rem;
+    /* Full width, regardless of the right-alignment its siblings use. */
+    align-self: stretch;
+    height: 2.25rem;
+    /* auto keeps the band on the bottom edge when cards in a row differ in
+       height; the negative side/bottom margins cancel the card's padding. */
+    margin: auto -1rem -0.875rem;
+    padding-top: 0.5rem;
     color: var(--text-muted);
   }
 
@@ -741,20 +752,6 @@ end</pre>
     height: 100%;
     display: block;
   }
-
-  /* Status indicator */
-  .metric-status {
-    position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--border-strong);
-  }
-
-  .metric-status.warning { background: var(--accent-amber); }
-  .metric-status.critical { background: var(--accent-rose); }
 
   /* Run Query Modal */
   .modal-run-query {
@@ -1329,23 +1326,30 @@ end</pre>
 
     const width = 100;
     const height = 30;
+    // No horizontal inset: the band spans the card's full width, so the trace
+    // should reach both edges. Vertical inset only, to keep the stroke from
+    // being clipped at the extremes.
     const padding = 2;
 
     const min = Math.min(...data);
     const max = Math.max(...data);
-    const range = max - min || 1;
+    const range = max - min;
 
     const points = data.map((value, index) => {
-      const x = padding + (index / (data.length - 1)) * (width - 2 * padding);
-      const y = height - padding - ((value - min) / range) * (height - 2 * padding);
+      const x = (index / (data.length - 1)) * width;
+      // A series that never moves is drawn mid-band: pinned to the floor it
+      // reads as "zero" (or as a stray underline) rather than "steady".
+      const y = range === 0
+        ? height / 2
+        : height - padding - ((value - min) / range) * (height - 2 * padding);
       return { x, y };
     });
 
     const pathD = points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`)).join(' ');
 
     const areaD = pathD +
-      ` L ${points[points.length - 1].x} ${height - padding}` +
-      ` L ${points[0].x} ${height - padding} Z`;
+      ` L ${points[points.length - 1].x} ${height}` +
+      ` L ${points[0].x} ${height} Z`;
 
     const area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     area.setAttribute('d', areaD);
@@ -1366,8 +1370,7 @@ end</pre>
 
   function updateStatus(metric, value, badDirection) {
     const card = document.querySelector(`[data-metric="${metric}"]`);
-    const statusDot = document.getElementById(`status-${metric}`);
-    if (!card || !statusDot) return;
+    if (!card) return;
 
     const thresholds = LIVE_CONFIG.thresholds[metric];
     let status = 'ok';
@@ -1384,8 +1387,6 @@ end</pre>
 
     card.classList.remove('status-ok', 'status-warning', 'status-critical');
     card.classList.add(`status-${status}`);
-    statusDot.classList.remove('ok', 'warning', 'critical');
-    statusDot.classList.add(status);
   }
 
   document.addEventListener('DOMContentLoaded', initLiveMonitoring);
