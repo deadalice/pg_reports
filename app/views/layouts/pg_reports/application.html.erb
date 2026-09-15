@@ -901,17 +901,65 @@
         align-items: flex-start;
       }
 
+      .header-actions {
+        width: 100%;
+        flex-wrap: wrap;
+      }
+
       .report-header {
         flex-direction: column;
+        gap: 0.75rem;
       }
 
       .report-actions {
         width: 100%;
+        flex-wrap: wrap;
       }
 
-      .btn {
+      /* Only action bars stretch their buttons — elsewhere a stretched button
+         overruns the label sitting next to it. */
+      .header-actions .btn,
+      .report-actions .btn,
+      .modal-actions .btn {
         flex: 1;
         justify-content: center;
+      }
+
+      /* The selectors take a line of their own instead of squeezing the trail. */
+      .breadcrumb {
+        flex-wrap: wrap;
+        row-gap: 0.5rem;
+      }
+
+      .breadcrumb-spacer {
+        flex-basis: 100%;
+      }
+
+      .results-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+
+      .results-meta {
+        flex-wrap: wrap;
+        gap: 0.25rem 0.75rem;
+      }
+
+      .modal {
+        padding: 0.75rem;
+      }
+
+      .modal-large {
+        width: 100%;
+      }
+
+      /* Placed by `right`, a toast wider than the screen hangs off the left. */
+      .toast {
+        left: 0.875rem;
+        right: 0.875rem;
+        bottom: 0.875rem;
+        max-width: none;
       }
     }
 
@@ -1441,6 +1489,33 @@
       color: var(--text-primary);
       max-width: 100%;
       overflow-x: auto;
+    }
+
+    /* Responsive, for the panels defined above this point. */
+    @media (max-width: 768px) {
+      .query-monitoring-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+      }
+
+      .query-monitoring-title {
+        flex-wrap: wrap;
+      }
+
+      .query-monitoring-controls {
+        width: 100%;
+        flex-wrap: wrap;
+      }
+
+      /* Anchored to its chip, this tooltip runs off the screen and stretches
+         the page with it; on a phone it reads as a bottom sheet instead. */
+      .query-monitoring-scope::after {
+        position: fixed;
+        inset: auto 0.875rem 0.875rem;
+        width: auto;
+        max-width: none;
+      }
     }
   </style>
 </head>

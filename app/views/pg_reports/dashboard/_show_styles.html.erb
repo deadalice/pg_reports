@@ -1554,4 +1554,41 @@
     padding: 1.25rem;
     color: var(--text-secondary);
   }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    /* The detail of an expanded row is pinned to the viewport: the table
+       scrolls sideways under it, the detail stays readable in one column. */
+    .results-table tbody tr.detail-row td {
+      overflow: visible; /* the generic cell rule clips it, and sticky with it */
+    }
+
+    .row-detail {
+      position: sticky;
+      left: 0;
+      width: min(100%, calc(100vw - 1.875rem));
+      grid-template-columns: 1fr;
+      padding: 1rem;
+    }
+
+    .detail-actions,
+    .explain-actions,
+    .migration-actions,
+    .saved-records-header {
+      flex-wrap: wrap;
+    }
+
+    .filter-item {
+      grid-template-columns: 1fr;
+      gap: 0.4rem;
+    }
+
+    .filter-input {
+      max-width: none;
+    }
+
+    .threshold-field {
+      min-width: 0;
+    }
+  }
 </style>

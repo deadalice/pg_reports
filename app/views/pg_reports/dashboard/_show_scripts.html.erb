@@ -19,8 +19,10 @@
 
     if (!topScrollWrapper || !topScrollContent || !tableWrapper || !table) return;
 
-    // Check if table overflows
-    if (table.scrollWidth > tableWrapper.clientWidth) {
+    // Check if table overflows. On touch there is no visible scrollbar to
+    // drag, so the proxy would only be an empty strip above the table.
+    const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
+    if (table.scrollWidth > tableWrapper.clientWidth && !coarsePointer) {
       topScrollWrapper.style.display = 'block';
       topScrollContent.style.width = table.scrollWidth + 'px';
 
