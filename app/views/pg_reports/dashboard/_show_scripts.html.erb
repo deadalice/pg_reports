@@ -412,11 +412,16 @@
     let lineNumber = null;
     let methodName = null;
 
-    // Try to match file:line pattern
-    const fileLineMatch = source.match(/^([^:]+\.(rb|erb|js|ts|py|go|java)):(\d+)/);
+    // Try to match file:line pattern. Deliberately no extension allow-list —
+    // source locations legitimately end in .rake, .jbuilder, .ru, .haml, or in
+    // no extension at all (Rakefile:5), and anything the list missed silently
+    // lost its shortening and its IDE link. Lazy up to the first ":<line>" that
+    // ends the token, so a trailing ":in `method'" or a Windows drive letter
+    // ("C:\app\x.rb:12") doesn't derail it.
+    const fileLineMatch = source.match(/^(.+?):(\d+)(?=$|[:\s])/);
     if (fileLineMatch) {
       filePath = fileLineMatch[1];
-      lineNumber = parseInt(fileLineMatch[3], 10);
+      lineNumber = parseInt(fileLineMatch[2], 10);
     }
 
     // Try to match Controller#action pattern (e.g., PostsController#index)
@@ -482,7 +487,9 @@
   // *start*: see .source-dir in the styles, and markClippedSources below for the
   // leading ellipsis.
   function sourceBadgeLabel(parsed) {
-    if (!parsed.filePath) return escapeHtml(parsed.original);
+    if (!parsed.filePath) {
+      return `<span class="source-file"><span>${escapeHtml(parsed.original)}</span></span>`;
+    }
 
     const shortened = shortenSourcePath(parsed.filePath);
     const line = parsed.lineNumber ? ':' + parsed.lineNumber : '';
