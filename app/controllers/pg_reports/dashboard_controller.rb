@@ -536,7 +536,8 @@ module PgReports
         success: true,
         enabled: status[:enabled],
         session_id: status[:session_id],
-        query_count: status[:query_count]
+        query_count: status[:query_count],
+        history_available: status[:history_available]
       }
     rescue => e
       render json: {success: false, error: e.message}, status: :unprocessable_entity

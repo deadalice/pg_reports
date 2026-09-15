@@ -106,8 +106,16 @@ module PgReports
       {
         enabled: enabled,
         session_id: session_id,
-        query_count: @queries.size
+        query_count: @queries.size,
+        history_available: history_available?
       }
+    end
+
+    # Whether #load_from_log has anything to return. History is persisted only
+    # when a log file is configured, and the file exists only once something has
+    # been written to it — without both, "Load history" can only ever no-op.
+    def history_available?
+      log_file_enabled? && File.exist?(log_file_path)
     end
 
     def queries(limit: nil, session_id: nil)

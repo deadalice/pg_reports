@@ -470,7 +470,10 @@
 
   /* Source location badge in table */
   .source-badge {
-    display: inline-block;
+    display: inline-flex;
+    align-items: baseline;
+    max-width: 22rem;
+    min-width: 0;
     padding: 0.15rem 0.4rem;
     background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
@@ -479,11 +482,45 @@
     font-size: 0.7rem;
     color: var(--text-secondary);
     white-space: nowrap;
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
     text-decoration: none;
-    transition: all 0.15s;
+    vertical-align: middle;
+    transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  }
+
+  /* The directory gives up space first and is clipped at its *start*: the tail of
+     a path (file name and line) is what identifies the call site, so it has to
+     survive. justify-content: flex-end pins the inner span's right edge, letting
+     the overflow fall off the left where the parent clips it.
+     Not `direction: rtl` + text-overflow — bidi reorders numeric path segments
+     (a gem's "3.4.0" jumps out of place). */
+  .source-dir {
+    flex: 0 1 auto;
+    min-width: 0;
+    display: flex;
+    justify-content: flex-end;
+    overflow: hidden;
+    color: var(--text-muted);
+  }
+
+  .source-dir > span {
+    flex: none;
+    white-space: nowrap;
+  }
+
+  .source-file {
+    flex: none;
+    white-space: nowrap;
+  }
+
+  /* Only shown once layout proves the directory really is cut off. */
+  .source-ellipsis {
+    flex: none;
+    display: none;
+    color: var(--text-muted);
+  }
+
+  .source-badge.is-clipped .source-ellipsis {
+    display: inline;
   }
 
   .source-badge:hover {
@@ -497,8 +534,15 @@
   }
 
   .source-badge.clickable::after {
-    content: ' ↗';
-    opacity: 0.7;
+    content: '↗';
+    flex: none;
+    margin-left: 0.25rem;
+    opacity: 0.6;
+  }
+
+  .source-badge.clickable:hover .source-dir,
+  .source-badge.clickable:hover .source-file {
+    color: var(--text-primary);
   }
 
   .source-badge.empty {

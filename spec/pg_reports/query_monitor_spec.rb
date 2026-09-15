@@ -105,6 +105,33 @@ RSpec.describe PgReports::QueryMonitor do
     end
   end
 
+  # Drives whether the dashboard's "Load history" button is offered at all —
+  # without a log file the button can only ever no-op.
+  describe "#history_available?" do
+    it "is false when no log file is configured" do
+      expect(monitor.history_available?).to be false
+      expect(monitor.status[:history_available]).to be false
+    end
+
+    it "is false when a log file is configured but has never been written" do
+      allow(PgReports.config).to receive(:query_monitor_log_file)
+        .and_return(File.join(Dir.tmpdir, "pg_reports_never_written_#{SecureRandom.hex(4)}.log"))
+
+      expect(monitor.history_available?).to be false
+    end
+
+    it "is true once the log file exists" do
+      file = Tempfile.new(["pg_reports_history", ".log"])
+      allow(PgReports.config).to receive(:query_monitor_log_file).and_return(file.path)
+
+      expect(monitor.history_available?).to be true
+      expect(monitor.status[:history_available]).to be true
+    ensure
+      file.close
+      file.unlink
+    end
+  end
+
   describe "#queries" do
     before { monitor.start }
 
