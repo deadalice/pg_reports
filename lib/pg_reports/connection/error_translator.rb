@@ -9,6 +9,16 @@ module PgReports
     #   PgReports::Connection::ErrorTranslator.translate(error)
     #   # => { title: "...", detail: "...", hint: "GRANT ...", code: "42501" }
     module ErrorTranslator
+      # Relations the reports read that are supplied by an extension rather than
+      # by core PostgreSQL. Used to turn "relation X does not exist" into the
+      # actionable "extension Y isn't installed here".
+      EXTENSION_RELATIONS = {
+        "pg_stat_statements" => "pg_stat_statements",
+        "pg_stat_statements_info" => "pg_stat_statements",
+        "pgstattuple" => "pgstattuple",
+        "pg_buffercache" => "pg_buffercache"
+      }.freeze
+
       module_function
 
       # Returns a Hash with :title, :detail, :hint, :code, :raw_message.
@@ -23,6 +33,8 @@ module PgReports
         when "28000", "28P01" then auth_failed(message)
         when "08001", "08006", "08000", "08003", "08004" then connection_refused(message)
         when "53300" then too_many_connections(message)
+        when "42P01" then undefined_table(message)
+        when "42883" then undefined_function(message)
         else generic(error)
         end
 
@@ -89,6 +101,37 @@ module PgReports
           title: "Too many connections",
           detail: "PostgreSQL refused the connection because max_connections is reached.",
           hint: "Wait, increase max_connections, or use a connection pooler (PgBouncer)."
+        }
+      end
+
+      # A report asked for a relation this database doesn't have. Almost always an
+      # extension that exists on one database in the cluster but not the one
+      # currently selected — extensions are per-database, the dashboard is not.
+      def undefined_table(message)
+        target = extract_object(message, /relation "([^"]+)" does not exist/)
+
+        if target && EXTENSION_RELATIONS.key?(target)
+          extension = EXTENSION_RELATIONS.fetch(target)
+          return {
+            title: "#{extension} not available",
+            detail: "This report reads \"#{target}\", which does not exist on the selected database.",
+            hint: "CREATE EXTENSION IF NOT EXISTS #{extension};"
+          }
+        end
+
+        {
+          title: "Relation not found",
+          detail: target ? "The selected database has no relation named \"#{target}\"." : "The report referenced a relation that does not exist on the selected database.",
+          hint: nil
+        }
+      end
+
+      def undefined_function(message)
+        target = extract_object(message, /function ([\w.]+)\(/)
+        {
+          title: "Function not found",
+          detail: target ? "The selected database has no function named \"#{target}\"." : "The report called a function that does not exist on the selected database.",
+          hint: "It is usually provided by an extension that is not installed on this database."
         }
       end
 

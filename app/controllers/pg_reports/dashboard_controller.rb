@@ -26,7 +26,7 @@ module PgReports
     helper_method :category_disabled_reason, :category_disabled?
 
     def index
-      @pg_stat_status = PgReports.pg_stat_statements_status
+      @pg_stat_status = pg_stat_status
       @current_database = PgReports.system.current_database
     end
 
@@ -140,7 +140,7 @@ module PgReports
 
       @report = execute_report(@category, @report_key)
     rescue => e
-      @error = e.message
+      @error = report_error_message(e)
       @report = nil
     end
 
@@ -181,7 +181,7 @@ module PgReports
         problem_explanations: problem_explanations
       }
     rescue => e
-      render json: {success: false, error: e.message}, status: :unprocessable_entity
+      render json: {success: false, error: report_error_message(e)}, status: :unprocessable_entity
     end
 
     def send_to_telegram
@@ -198,7 +198,7 @@ module PgReports
 
       render json: {success: true, message: I18n.t("pg_reports.ui.success.telegram_sent")}
     rescue => e
-      render json: {success: false, error: e.message}, status: :unprocessable_entity
+      render json: {success: false, error: report_error_message(e)}, status: :unprocessable_entity
     end
 
     def download
@@ -227,7 +227,7 @@ module PgReports
           disposition: "attachment"
       end
     rescue => e
-      render json: {success: false, error: e.message}, status: :unprocessable_entity
+      render json: {success: false, error: report_error_message(e)}, status: :unprocessable_entity
     end
 
     def explain_analyze
@@ -752,6 +752,18 @@ module PgReports
     # otherwise a localized string explaining why it is disabled. Exposed to
     # views via helper_method.
     def category_disabled_reason(category)
+      # pg_stat_statements is created per-database. A category that reads it is
+      # available on one database in the cluster and missing on the next, so the
+      # check belongs here — where every entry point (show, run, download,
+      # telegram) already asks — rather than in the dashboard template alone.
+      # Only meaningful once we know the connection itself works: an unreachable
+      # database has its own banner and must not be reported as a missing
+      # extension.
+      if Dashboard::ReportsRegistry.requires(category) == :pg_stat_statements &&
+          pg_stat_status[:connected] && !pg_stat_status[:ready]
+        return pg_stat_unavailable_reason
+      end
+
       constraint = Dashboard::ReportsRegistry.target_constraint(category)
       return nil unless constraint == :primary_default_database_only
 
@@ -775,6 +787,44 @@ module PgReports
 
     def category_disabled?(category)
       category_disabled_reason(category).present?
+    end
+
+    # A report failing because the selected database lacks an extension-provided
+    # relation is the common case here (extensions are per-database, the
+    # dashboard's database picker is not), and "PG::UndefinedTable: ERROR:
+    # relation ... does not exist LINE 11:" is not something to show a user.
+    def report_error_message(error)
+      info = Connection::ErrorTranslator.translate(error)
+      [info[:detail], info[:hint]].reject { |part| part.to_s.strip.empty? }.join(" ")
+    rescue
+      error.message
+    end
+
+    # Scoped to the request's selected database by the surrounding
+    # #within_selected_database, and memoized because the dashboard asks once
+    # per category while rendering the grid.
+    def pg_stat_status
+      @pg_stat_status ||= PgReports.pg_stat_statements_status
+    end
+
+    # The two failure modes need different remedies: an extension that was never
+    # created here can be created, one that isn't preloaded needs a restart.
+    def pg_stat_unavailable_reason
+      database = @selected_database.presence || PgReports.system.current_database
+
+      if pg_stat_status[:extension_installed]
+        I18n.t("pg_reports.ui.categories.pg_stat_not_preloaded_reason",
+          database: database,
+          default: "Requires pg_stat_statements. The extension exists on " \
+            "\"%{database}\" but is not in shared_preload_libraries, so it " \
+            "returns no data until PostgreSQL is restarted with it preloaded.")
+      else
+        I18n.t("pg_reports.ui.categories.pg_stat_missing_reason",
+          database: database,
+          default: "Requires pg_stat_statements, which is not installed on " \
+            "\"%{database}\". Create the extension there, or switch to a " \
+            "database that has it.")
+      end
     end
 
     # SQL Query Monitor taps ActiveSupport::Notifications in the host

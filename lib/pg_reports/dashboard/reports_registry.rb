@@ -237,6 +237,10 @@ module PgReports
           name: "Queries",
           icon: "⚡",
           color: "#6366f1",
+          # Every report here reads the pg_stat_statements view. The extension is
+          # created per-database, so availability has to be re-checked against
+          # whichever database the dashboard is pointed at — not once at boot.
+          requires: :pg_stat_statements,
           reports: {
             slow_queries: {name: "Slow Queries", description: "Queries with high mean execution time"},
             heavy_queries: {name: "Heavy Queries", description: "Most frequently called queries"},
@@ -411,6 +415,12 @@ module PgReports
       # which depends on ActiveRecord::Base.descendants of the host app.
       def self.target_constraint(category)
         REPORTS.dig(category.to_sym, :target_constraint)
+      end
+
+      # A database-level dependency the whole category needs, or nil. Currently
+      # only :pg_stat_statements — the caller resolves what "available" means.
+      def self.requires(category)
+        REPORTS.dig(category.to_sym, :requires)
       end
     end
   end

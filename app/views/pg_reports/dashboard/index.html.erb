@@ -383,16 +383,12 @@ end</pre>
 %>
 <div class="categories-grid">
   <% @categories.each do |category_key, category| %>
-    <%
-      requires_pg_stat = (category_key == :queries && !@pg_stat_status[:ready])
-      target_disabled_reason = category_disabled_reason(category_key)
-      is_disabled = requires_pg_stat || target_disabled_reason.present?
-    %>
-    <div class="category-card<%= ' disabled' if is_disabled %>">
-      <% if requires_pg_stat || target_disabled_reason %>
+    <% disabled_reason = category_disabled_reason(category_key) %>
+    <div class="category-card<%= ' disabled' if disabled_reason %>">
+      <% if disabled_reason %>
         <div class="category-warning">
           <svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg>
-          <span><%= requires_pg_stat ? t("pg_reports.ui.categories.requires_pg_stat") : target_disabled_reason %></span>
+          <span><%= disabled_reason %></span>
         </div>
       <% end %>
       <div class="category-header">
@@ -403,7 +399,7 @@ end</pre>
 
       <div class="reports-list">
         <% category[:reports].each do |report_key, report| %>
-          <% if is_disabled %>
+          <% if disabled_reason %>
             <div class="report-link disabled">
               <div class="report-link-info">
                 <span class="report-link-name">

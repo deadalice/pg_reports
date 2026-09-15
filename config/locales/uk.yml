@@ -672,6 +672,8 @@ uk:
         percent_used_suffix: "% використано"
       categories:
         requires_pg_stat: "Потрібен pg_stat_statements"
+        pg_stat_missing_reason: "Потрібен pg_stat_statements, але розширення не встановлено в базі «%{database}». Створіть його там або перемкніться на базу, де воно є."
+        pg_stat_not_preloaded_reason: "Потрібен pg_stat_statements. Розширення є в базі «%{database}», але відсутнє в shared_preload_libraries — даних не буде, доки PostgreSQL не перезапустять із ним."
         reports_count_suffix: "звітів"
         primary_only_reason: "Ця категорія працює лише на первинній базі — вона перевіряє моделі хост-застосунку. Щоб користуватися, перемкніться на базу за замовчуванням."
         standalone_no_host_app_reason: "Недоступно в автономному режимі — ця категорія перевіряє моделі хост-застосунку, а при самостійному запуску дашборда хост-застосунку немає."

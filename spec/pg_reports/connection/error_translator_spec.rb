@@ -24,6 +24,36 @@ RSpec.describe PgReports::Connection::ErrorTranslator do
       expect(result[:hint]).to include("GRANT SELECT ON public.users")
     end
 
+    it "names the extension behind a missing extension-provided relation" do
+      error = build_pg_error("42P01", %(relation "pg_stat_statements" does not exist\nLINE 11: FROM pg_stat_statements s))
+
+      result = described_class.translate(error)
+
+      expect(result[:title]).to include("pg_stat_statements")
+      expect(result[:detail]).to include("does not exist on the selected database")
+      expect(result[:hint]).to eq("CREATE EXTENSION IF NOT EXISTS pg_stat_statements;")
+      expect(result[:code]).to eq("42P01")
+    end
+
+    it "falls back to a plain message for a missing ordinary relation" do
+      error = build_pg_error("42P01", %(relation "widgets" does not exist))
+
+      result = described_class.translate(error)
+
+      expect(result[:title]).to eq("Relation not found")
+      expect(result[:detail]).to include("widgets")
+      expect(result[:hint]).to be_nil
+    end
+
+    it "translates a missing function" do
+      error = build_pg_error("42883", %(function pgstattuple(unknown) does not exist))
+
+      result = described_class.translate(error)
+
+      expect(result[:title]).to eq("Function not found")
+      expect(result[:detail]).to include("pgstattuple")
+    end
+
     it "translates 'database does not exist'" do
       error = build_pg_error("3D000", %(database "nope" does not exist))
 

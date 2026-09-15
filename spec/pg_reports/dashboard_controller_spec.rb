@@ -26,6 +26,17 @@ RSpec.describe PgReports::DashboardController do
     controller.instance_variable_set(:@target_default_database, target_default_database)
   end
 
+  # The pg_stat_statements gate short-circuits on the memoized status, so the
+  # tests set it directly rather than reaching for a database.
+  def stub_pg_stat(connected: true, extension_installed: true, preloaded: true)
+    controller.instance_variable_set(:@pg_stat_status, {
+      connected: connected,
+      extension_installed: extension_installed,
+      preloaded: preloaded,
+      ready: connected && extension_installed && preloaded
+    })
+  end
+
   describe "#on_primary_default_database?" do
     it "is true when selection points at the primary's default DB" do
       stub_selection(selected_target: :primary, selected_database: "primary_db")
@@ -50,12 +61,54 @@ RSpec.describe PgReports::DashboardController do
   end
 
   describe "#category_disabled_reason" do
+    before { stub_pg_stat }
+
     it "returns nil for an unconstrained category regardless of selection" do
       stub_selection(selected_target: :primary, selected_database: "logs")
 
-      expect(controller.send(:category_disabled_reason, :queries)).to be_nil
       expect(controller.send(:category_disabled_reason, :indexes)).to be_nil
       expect(controller.send(:category_disabled_reason, :tables)).to be_nil
+      expect(controller.send(:category_disabled_reason, :connections)).to be_nil
+    end
+
+    context "when a category requires pg_stat_statements" do
+      before { stub_selection(selected_target: :primary, selected_database: "logs") }
+
+      it "returns nil when the extension is ready on the selected database" do
+        stub_pg_stat(extension_installed: true, preloaded: true)
+
+        expect(controller.send(:category_disabled_reason, :queries)).to be_nil
+      end
+
+      it "explains that the extension is missing on the selected database" do
+        stub_pg_stat(extension_installed: false, preloaded: false)
+
+        reason = controller.send(:category_disabled_reason, :queries)
+        expect(reason).to include("pg_stat_statements")
+        expect(reason).to include("logs")
+      end
+
+      it "distinguishes an installed-but-unpreloaded extension" do
+        stub_pg_stat(extension_installed: true, preloaded: false)
+
+        reason = controller.send(:category_disabled_reason, :queries)
+        expect(reason).to include("shared_preload_libraries")
+      end
+
+      # An unreachable database gets its own error banner; reporting it as a
+      # missing extension would send the user to fix the wrong thing.
+      it "stays silent when the database is not reachable at all" do
+        stub_pg_stat(connected: false, extension_installed: false, preloaded: false)
+
+        expect(controller.send(:category_disabled_reason, :queries)).to be_nil
+      end
+
+      it "gates every entry point, not just the dashboard grid" do
+        stub_pg_stat(extension_installed: false, preloaded: false)
+
+        expect { controller.send(:execute_report, :queries, :slow_queries) }
+          .to raise_error(ArgumentError, /pg_stat_statements/)
+      end
     end
 
     it "returns nil for schema_analysis when on primary's default DB" do
@@ -98,7 +151,7 @@ RSpec.describe PgReports::DashboardController do
       it "still returns nil for unconstrained categories" do
         stub_selection(selected_target: :primary, selected_database: "primary_db")
 
-        expect(controller.send(:category_disabled_reason, :queries)).to be_nil
+        expect(controller.send(:category_disabled_reason, :indexes)).to be_nil
         expect(controller.send(:category_disabled_reason, :tables)).to be_nil
       end
     end

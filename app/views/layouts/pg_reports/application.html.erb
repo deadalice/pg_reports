@@ -743,6 +743,11 @@
       color: var(--accent-rose);
     }
 
+    /* Page-level flash sits above the header, like .db-error-banner. */
+    .page-notice {
+      margin-bottom: 1.25rem;
+    }
+
     /* Toast notification — one definition for every page. */
     .toast {
       position: fixed;
@@ -1479,6 +1484,21 @@
   </svg>
 
   <div class="container">
+    <%# Redirects out of an unavailable report set flash[:alert]; without this
+        the user would just land back on the dashboard with no explanation. %>
+    <% if flash[:alert].present? %>
+      <div class="callout callout-warning page-notice" role="alert">
+        <svg class="icon" aria-hidden="true"><use href="#i-alert"></use></svg>
+        <span><%= flash[:alert] %></span>
+      </div>
+    <% end %>
+    <% if flash[:notice].present? %>
+      <div class="callout page-notice" role="status">
+        <svg class="icon" aria-hidden="true"><use href="#i-info"></use></svg>
+        <span><%= flash[:notice] %></span>
+      </div>
+    <% end %>
+
     <%= yield %>
   </div>
 
