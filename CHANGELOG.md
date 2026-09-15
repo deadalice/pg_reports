@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-09-16
+
 ### Changed
 - **The CI matrix now resolves against committed lockfiles.** `gemfiles/*.gemfile.lock` were gitignored, so every matrix job re-resolved dependencies from scratch and drifted with whatever was newest on the day — which is how the Rails 6.1 job silently moved onto a json 3.x that ActiveSupport 6.1 cannot use, turning green builds red with no code change. Each lockfile is generated with that entry's own Ruby and pinned to the runner's `x86_64-linux` platform. The Rails 6.1 lockfile deliberately pins json 3.0.2, so the incompatibility that started this stays covered rather than being pinned away.
 - **Updated `json`, `loofah` and `rails-html-sanitizer`** in the root lockfile to clear open advisories (`bundler-audit`).
