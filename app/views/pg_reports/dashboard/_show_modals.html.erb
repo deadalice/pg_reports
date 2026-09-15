@@ -71,7 +71,7 @@
         <div id="explain-params-inputs"></div>
       </div>
       <div class="explain-actions">
-        <button class="btn btn-secondary" onclick="executeExplainAnalyze()" id="btn-explain">
+        <button class="btn btn-primary" onclick="executeExplainAnalyze()" id="btn-explain">
           <%= t("pg_reports.ui.actions.explain_analyze") %>
         </button>
         <button class="btn btn-secondary" onclick="executeQuery()" id="btn-execute">
@@ -94,12 +94,15 @@
       <button class="modal-close" onclick="closeMigrationModal()">&times;</button>
     </div>
     <div class="modal-body" id="migration-modal-body">
-      <div class="migration-warning" style="background: rgba(255, 152, 0, 0.1); border: 1px solid rgba(255, 152, 0, 0.3); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-        <p style="margin: 0 0 0.5rem 0; font-weight: 600; color: #ffb74d;"><%= t("pg_reports.ui.documentation.threshold_warning_label").chomp(":") %></p>
-        <p style="margin: 0; color: #ffcc80; font-size: 0.875rem; line-height: 1.5;">
-          <%= t("pg_reports.ui.modals.migration_warning") %>
-          <strong><%= t("pg_reports.ui.modals.migration_warning_dev_only") %></strong>
-        </p>
+      <div class="callout callout-warning">
+        <svg class="icon" aria-hidden="true"><use href="#i-alert"></use></svg>
+        <div>
+          <strong><%= t("pg_reports.ui.documentation.threshold_warning_label").chomp(":") %></strong>
+          <p>
+            <%= t("pg_reports.ui.modals.migration_warning") %>
+            <strong><%= t("pg_reports.ui.modals.migration_warning_dev_only") %></strong>
+          </p>
+        </div>
       </div>
       <p class="settings-label"><%= t("pg_reports.ui.modals.migration_subtitle") %></p>
       <div id="migration-code" class="migration-code"></div>

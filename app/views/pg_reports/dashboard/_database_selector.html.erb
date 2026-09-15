@@ -34,6 +34,7 @@
   </span>
 <% elsif @database_error %>
   <span class="db-selector-error" title="<%= @database_error[:detail] %>">
-    ⚠ <%= @database_error[:title] %>
+    <svg class="icon" aria-hidden="true"><use href="#i-alert"></use></svg>
+    <%= @database_error[:title] %>
   </span>
 <% end %>

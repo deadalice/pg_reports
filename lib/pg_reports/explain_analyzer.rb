@@ -313,15 +313,12 @@ module PgReports
       if @summary[:critical_problems] > 0
         @summary[:status] = "critical"
         @summary[:status_text] = "Critical issues detected"
-        @summary[:status_icon] = "🔴"
       elsif @summary[:warnings] > 0
         @summary[:status] = "warning"
         @summary[:status_text] = "Potential issues detected"
-        @summary[:status_icon] = "🟡"
       else
         @summary[:status] = "good"
         @summary[:status_text] = "No issues detected"
-        @summary[:status_icon] = "🟢"
       end
 
       # Group problems by type for summary

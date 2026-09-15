@@ -12,26 +12,25 @@
 
 <header class="header">
   <div class="logo">
-    <div class="logo-icon">🐘</div>
-    <div class="logo-text">
-      <h1>
-        <%= t("pg_reports.ui.branding.title") %>
-        <span class="logo-version">v<%= PgReports::VERSION %></span>
-      </h1>
-      <span class="logo-subtitle"><%= t("pg_reports.ui.branding.subtitle") %></span>
-    </div>
+    <h1>
+      <%= t("pg_reports.ui.branding.title") %>
+      <span class="logo-version">v<%= PgReports::VERSION %></span>
+    </h1>
+    <span class="logo-subtitle"><%= t("pg_reports.ui.branding.subtitle") %></span>
   </div>
 
   <div class="header-actions">
-    <button class="btn btn-small btn-primary" onclick="showRunQueryModal()" id="run-query-open-btn">
+    <button class="btn btn-primary" onclick="showRunQueryModal()" id="run-query-open-btn">
       <%= t("pg_reports.ui.actions.run_query") %>
     </button>
     <% if @pg_stat_status[:ready] %>
-      <button class="btn btn-small btn-muted" onclick="showResetConfirmModal()" id="reset-btn">
+      <button class="btn btn-muted" onclick="showResetConfirmModal()" id="reset-btn">
         <%= t("pg_reports.ui.actions.reset_statistics") %>
       </button>
     <% end %>
-    <button class="btn-info" onclick="showIdeSettingsModal()" title="<%= t("pg_reports.ui.actions.ide_settings_button_title") %>">⚙️</button>
+    <button type="button" class="btn-icon" onclick="showIdeSettingsModal()" title="<%= t("pg_reports.ui.actions.ide_settings_button_title") %>" aria-label="<%= t("pg_reports.ui.actions.ide_settings_button_title") %>">
+      <svg class="icon icon-lg"><use href="#i-settings"></use></svg>
+    </button>
 
     <% if !@pg_stat_status[:connected] %>
       <div class="header-badge" id="pg-stat-badge">
@@ -48,14 +47,14 @@
               onclick="showPgStatInfo()" title="<%= t("pg_reports.ui.status.click_for_details") %>">
         <span class="badge-dot warning"></span>
         <span><%= t("pg_reports.ui.status.not_preloaded") %></span>
-        <span class="badge-info-icon" aria-hidden="true">ⓘ</span>
+        <svg class="icon badge-info-icon" aria-hidden="true"><use href="#i-info"></use></svg>
       </button>
     <% else %>
       <button type="button" class="header-badge header-badge-clickable" id="pg-stat-badge"
               onclick="showCreateExtensionModal()" title="<%= t("pg_reports.ui.status.click_for_details") %>">
         <span class="badge-dot warning"></span>
         <span><%= t("pg_reports.ui.status.extension_missing") %></span>
-        <span class="badge-info-icon" aria-hidden="true">ⓘ</span>
+        <svg class="icon badge-info-icon" aria-hidden="true"><use href="#i-info"></use></svg>
       </button>
     <% end %>
   </div>
@@ -191,15 +190,13 @@ pg_stat_statements.track = all</pre>
         <div id="run-query-content"></div>
       <% else %>
         <div class="error-message">
-          <strong><%= t("pg_reports.ui.modals.query_execution_disabled_title") %></strong><br><br>
-          <%= t("pg_reports.ui.modals.query_execution_disabled_intro") %><br>
-          <code style="display: block; margin-top: 0.5rem; padding: 0.5rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
-PgReports.configure do |config|<br>
-&nbsp;&nbsp;config.allow_raw_query_execution = true<br>
-end
-          </code>
-          <p style="margin-top: 0.75rem;"><%= t("pg_reports.ui.modals.query_execution_disabled_env_note") %></p>
-          <code style="display: block; margin-top: 0.5rem; padding: 0.5rem; background: rgba(0,0,0,0.2); border-radius: 4px;">PG_REPORTS_ALLOW_RAW_QUERY_EXECUTION=true</code>
+          <p class="error-title"><%= t("pg_reports.ui.modals.query_execution_disabled_title") %></p>
+          <p><%= t("pg_reports.ui.modals.query_execution_disabled_intro") %></p>
+          <pre class="code-block">PgReports.configure do |config|
+  config.allow_raw_query_execution = true
+end</pre>
+          <p><%= t("pg_reports.ui.modals.query_execution_disabled_env_note") %></p>
+          <pre class="code-block">PG_REPORTS_ALLOW_RAW_QUERY_EXECUTION=true</pre>
         </div>
       <% end %>
     </div>
@@ -217,8 +214,8 @@ end
     </div>
     <div class="live-monitoring-controls">
       <span class="live-monitoring-interval"><%= t("pg_reports.ui.monitoring.update_interval") %></span>
-      <button class="btn-toggle-live" onclick="toggleLiveMonitoring()" title="<%= t("pg_reports.ui.monitoring.toggle_title") %>">
-        <span id="toggle-icon">⏸</span>
+      <button type="button" class="btn-icon btn-small" onclick="toggleLiveMonitoring()" title="<%= t("pg_reports.ui.monitoring.toggle_title") %>" aria-label="<%= t("pg_reports.ui.monitoring.toggle_title") %>">
+        <svg class="icon" id="toggle-icon"><use href="#i-pause"></use></svg>
       </button>
     </div>
   </div>
@@ -227,7 +224,7 @@ end
     <!-- Connections -->
     <div class="live-metric-card" data-metric="connections">
       <div class="metric-header">
-        <span class="metric-icon" style="background: rgba(107, 159, 232, 0.12); color: var(--accent-blue);">🔗</span>
+        <svg class="icon metric-icon"><use href="#i-link"></use></svg>
         <span class="metric-name"><%= t("pg_reports.ui.metrics.connections_label") %></span>
       </div>
       <div class="metric-body">
@@ -248,7 +245,7 @@ end
     <!-- TPS -->
     <div class="live-metric-card" data-metric="tps">
       <div class="metric-header">
-        <span class="metric-icon" style="background: rgba(95, 184, 154, 0.12); color: var(--accent-green);">⚡</span>
+        <svg class="icon metric-icon"><use href="#i-activity"></use></svg>
         <span class="metric-name"><%= t("pg_reports.ui.metrics.tps_label") %></span>
       </div>
       <div class="metric-body">
@@ -269,7 +266,7 @@ end
     <!-- Cache Hit Ratio -->
     <div class="live-metric-card" data-metric="cache">
       <div class="metric-header">
-        <span class="metric-icon" style="background: rgba(157, 140, 214, 0.12); color: var(--accent-purple);">💾</span>
+        <svg class="icon metric-icon"><use href="#i-database"></use></svg>
         <span class="metric-name"><%= t("pg_reports.ui.metrics.cache_hit_label") %></span>
       </div>
       <div class="metric-body">
@@ -288,7 +285,7 @@ end
     <!-- Long Running Queries -->
     <div class="live-metric-card" data-metric="longrunning">
       <div class="metric-header">
-        <span class="metric-icon" style="background: rgba(212, 160, 86, 0.12); color: var(--accent-amber);">🐢</span>
+        <svg class="icon metric-icon"><use href="#i-clock"></use></svg>
         <span class="metric-name"><%= t("pg_reports.ui.metrics.long_queries_label") %></span>
       </div>
       <div class="metric-body">
@@ -307,7 +304,7 @@ end
     <!-- Blocked Queries -->
     <div class="live-metric-card" data-metric="blocked">
       <div class="metric-header">
-        <span class="metric-icon" style="background: rgba(217, 112, 132, 0.12); color: var(--accent-rose);">🔒</span>
+        <svg class="icon metric-icon"><use href="#i-lock"></use></svg>
         <span class="metric-name"><%= t("pg_reports.ui.metrics.blocked_label") %></span>
       </div>
       <div class="metric-body">
@@ -343,17 +340,17 @@ end
       </span>
     </div>
     <div class="query-monitoring-controls">
-      <button class="btn btn-small btn-primary" onclick="startQueryMonitoring(this)" id="start-monitor-btn">
+      <button class="btn btn-primary" onclick="startQueryMonitoring(this)" id="start-monitor-btn">
         <%= t("pg_reports.ui.actions.start_monitoring") %>
       </button>
-      <button class="btn btn-small btn-danger" onclick="stopQueryMonitoring(this)" id="stop-monitor-btn" style="display: none;">
+      <button class="btn btn-danger" onclick="stopQueryMonitoring(this)" id="stop-monitor-btn" style="display: none;">
         <%= t("pg_reports.ui.actions.stop_monitoring") %>
       </button>
-      <button class="btn btn-small btn-secondary" onclick="loadQueryHistory(this)" id="load-history-btn">
+      <button class="btn btn-secondary" onclick="loadQueryHistory(this)" id="load-history-btn">
         <%= t("pg_reports.ui.actions.load_history") %>
       </button>
       <div class="download-dropdown" id="monitor-download-dropdown" style="display: none;">
-        <button class="btn btn-small btn-secondary" onclick="toggleMonitorDownloadMenu(event)">
+        <button class="btn btn-secondary" onclick="toggleMonitorDownloadMenu(event)">
           <%= t("pg_reports.ui.actions.download") %>
         </button>
         <div class="download-menu" id="monitor-download-menu" style="display: none;">
@@ -376,6 +373,14 @@ end
 </div>
 <% end %>
 
+<%
+  # Sprite ids for the category glyphs defined in the layout. The registry's own
+  # :icon/:color keys stay untouched — they are part of its public shape.
+  category_icons = {
+    queries: "queries", indexes: "indexes", tables: "tables",
+    connections: "connections", system: "system", schema_analysis: "schema"
+  }
+%>
 <div class="categories-grid">
   <% @categories.each do |category_key, category| %>
     <%
@@ -384,19 +389,14 @@ end
       is_disabled = requires_pg_stat || target_disabled_reason.present?
     %>
     <div class="category-card<%= ' disabled' if is_disabled %>">
-      <% if requires_pg_stat %>
+      <% if requires_pg_stat || target_disabled_reason %>
         <div class="category-warning">
-          <%= t("pg_reports.ui.categories.requires_pg_stat") %>
-        </div>
-      <% elsif target_disabled_reason %>
-        <div class="category-warning">
-          <%= target_disabled_reason %>
+          <svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg>
+          <span><%= requires_pg_stat ? t("pg_reports.ui.categories.requires_pg_stat") : target_disabled_reason %></span>
         </div>
       <% end %>
       <div class="category-header">
-        <div class="category-icon" style="background: <%= category[:color] %>20; color: <%= category[:color] %>;">
-          <%= category[:icon] %>
-        </div>
+        <svg class="icon category-icon" aria-hidden="true"><use href="#i-<%= category_icons.fetch(category_key, "tables") %>"></use></svg>
         <span class="category-title"><%= category[:name] %></span>
         <span class="category-count"><%= category[:reports].size %> <%= t("pg_reports.ui.categories.reports_count_suffix") %></span>
       </div>
@@ -412,7 +412,7 @@ end
                 </span>
                 <span class="report-link-desc"><%= report[:description] %></span>
               </div>
-              <span class="lock">🔒</span>
+              <svg class="icon lock" aria-hidden="true"><use href="#i-lock"></use></svg>
             </div>
           <% else %>
             <%= link_to report_path(category: category_key, report: report_key), class: "report-link" do %>
@@ -423,7 +423,7 @@ end
                 </span>
                 <span class="report-link-desc"><%= report[:description] %></span>
               </div>
-              <span class="arrow">→</span>
+              <svg class="icon arrow" aria-hidden="true"><use href="#i-chevron-right"></use></svg>
             <% end %>
           <% end %>
         <% end %>
@@ -456,7 +456,7 @@ end
     text-decoration: none;
   }
   .dashboard-footer a:hover {
-    color: var(--accent-purple);
+    color: var(--text-primary);
     text-decoration: underline;
   }
   .dashboard-footer .footer-sep {
@@ -469,104 +469,45 @@ end
     gap: 0.5rem;
   }
 
-  .btn.btn-small {
-    padding: 0.5rem 1rem;
-    font-size: 0.8rem;
-  }
-
-  /* Keep the header action button the same height as the status badge and
-     the settings button (all 2.125rem); inline-flex centers the label so no
-     vertical padding is needed. */
-  .header-actions .btn {
-    height: 2.125rem;
-    padding: 0 1rem;
-  }
-
-  .btn-info {
-    width: 2.125rem;
-    height: 2.125rem;
-    padding: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--bg-tertiary);
-    color: var(--text-muted);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .btn-info:hover {
-    background: var(--accent-purple);
-    color: white;
-    border-color: var(--accent-purple);
-  }
-
-  .btn.btn-danger {
-    background: var(--accent-rose);
-    border-color: var(--accent-rose);
-  }
-  .btn.btn-danger:hover {
-    background: #c45a6e;
-    border-color: #c45a6e;
-  }
-
-  .btn.btn-secondary {
-    background: var(--bg-tertiary);
-    border-color: var(--border-color);
-    color: var(--text-secondary);
-  }
-  .btn.btn-secondary:hover {
-    background: var(--bg-card);
-    color: var(--text-primary);
-  }
-
-  .btn.btn-muted {
-    background: var(--bg-tertiary);
-    border-color: var(--accent-rose);
-    color: var(--text-secondary);
-  }
-  .btn.btn-muted:hover {
-    background: var(--bg-card);
-    color: var(--text-primary);
-  }
-
   .badge-dot.error { background: var(--accent-rose); }
 
   .category-card.disabled {
     opacity: 0.7;
   }
 
+  /* Why a category is unavailable. The icon carries the state; the reason
+     itself is body copy, not a wall of amber. */
   .category-warning {
-    padding: 0.625rem 1rem;
-    margin: -1rem -1rem 1rem -1rem;
-    background: rgba(245, 158, 11, 0.1);
-    border-bottom: 1px solid rgba(245, 158, 11, 0.2);
-    border-radius: 6px 6px 0 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.45rem;
+    padding: 0.5rem 1rem;
+    margin: -1rem -1rem 1rem;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+    border-radius: var(--radius) var(--radius) 0 0;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    line-height: 1.5;
+  }
+
+  .category-warning .icon {
+    width: 0.8125rem;
+    height: 0.8125rem;
+    margin-top: 0.25rem;
     color: var(--accent-amber);
-    font-size: 0.8rem;
-    font-weight: 500;
-    text-align: center;
   }
 
   .report-link.disabled {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem 1rem;
-    background: var(--bg-tertiary);
-    border: 1px solid transparent;
-    border-radius: 6px;
+    background: transparent;
     color: var(--text-muted);
-    font-size: 0.9rem;
     cursor: not-allowed;
   }
 
   .report-link .lock {
-    font-size: 0.75rem;
-    opacity: 0.5;
+    width: 0.8125rem;
+    height: 0.8125rem;
+    opacity: 0.6;
   }
 
   .report-link-info {
@@ -594,66 +535,8 @@ end
     color: var(--text-secondary);
   }
 
-  /* Modal */
-  .modal {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    backdrop-filter: blur(4px);
-  }
-
-  .modal-content {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    max-width: 600px;
-    width: 90%;
-    max-height: 80vh;
-    overflow: auto;
-  }
-
-  .modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid var(--border-color);
-  }
-
-  .modal-header h3 {
-    font-size: 1.125rem;
-    font-weight: 600;
-  }
-
-  .modal-close {
-    width: 32px;
-    height: 32px;
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    color: var(--text-muted);
-    font-size: 1.25rem;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-
-  .modal-close:hover {
-    background: var(--accent-rose);
-    border-color: var(--accent-rose);
-    color: white;
-  }
-
-  .modal-body {
-    padding: 1.5rem;
-  }
-
   .modal-body p {
     color: var(--text-secondary);
-    margin-bottom: 1rem;
   }
 
   .modal-body ol {
@@ -661,33 +544,14 @@ end
     color: var(--text-secondary);
   }
 
-  .modal-body li {
-    margin-bottom: 1.25rem;
-  }
-
   .modal-body strong {
     color: var(--text-primary);
   }
 
-  .modal-body pre {
+  /* A step's label and its snippet are one unit — tighter than the gap
+     between steps. */
+  .modal-body li > strong + pre {
     margin-top: 0.5rem;
-    padding: 1rem;
-    background: var(--bg-primary);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.8rem;
-    color: var(--accent-green);
-    overflow-x: auto;
-  }
-
-  .modal-small {
-    max-width: 420px;
-  }
-
-  .modal-header-danger {
-    background: rgba(244, 63, 94, 0.1);
-    border-bottom-color: rgba(244, 63, 94, 0.2);
   }
 
   .modal-header-danger h3 {
@@ -695,58 +559,55 @@ end
   }
 
   .warning-text {
-    font-size: 1rem;
+    font-size: 0.9375rem;
     font-weight: 500;
-    color: var(--text-primary) !important;
-    margin-bottom: 0.5rem !important;
+    color: var(--text-primary);
   }
 
   .warning-subtext {
-    font-size: 0.875rem;
-    color: var(--text-muted) !important;
-    margin-bottom: 1.5rem !important;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
   }
 
   .modal-actions {
     display: flex;
-    gap: 0.75rem;
+    gap: 0.5rem;
     justify-content: flex-end;
-  }
-
-  .modal-actions .btn {
-    padding: 0.625rem 1.25rem;
-    font-size: 0.875rem;
   }
 
   /* Live Monitoring Panel */
   .live-monitoring-panel {
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     background: var(--bg-card);
     border: 1px solid var(--border-color);
-    border-radius: 6px;
-    padding: 1.25rem 1.5rem;
+    border-radius: var(--radius);
+    padding: 0.875rem 1rem;
   }
 
   .live-monitoring-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 1.25rem;
-    padding-bottom: 1rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.875rem;
+    padding-bottom: 0.75rem;
     border-bottom: 1px solid var(--border-color);
   }
 
   .live-monitoring-title {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.625rem;
     font-weight: 600;
-    font-size: 1rem;
+    font-size: 0.875rem;
+    min-width: 0;
   }
 
   .live-indicator {
-    width: 8px;
-    height: 8px;
+    width: 7px;
+    height: 7px;
+    flex: none;
     border-radius: 50%;
     background: var(--accent-green);
     animation: pulse 2s infinite;
@@ -768,29 +629,11 @@ end
     color: var(--text-muted);
   }
 
-  .btn-toggle-live {
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    color: var(--text-muted);
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-
-  .btn-toggle-live:hover {
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-  }
-
   /* Metrics Grid */
   .live-metrics-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 1rem;
+    gap: 0.75rem;
   }
 
   @media (max-width: 1200px) {
@@ -811,73 +654,68 @@ end
     }
   }
 
-  /* Metric Card */
+  /* Metric Card — a plain bordered tile. Status is carried by the dot, the
+     value colour and the sparkline, never by a coloured edge: "healthy" is
+     the common case and should read as quiet, not decorated. */
   .live-metric-card {
     background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
-    border-radius: 6px;
-    padding: 1rem;
+    border-radius: var(--radius);
+    padding: 0.875rem 1rem;
     position: relative;
-    transition: all 0.2s;
-  }
-
-  .live-metric-card:hover {
-    border-color: var(--accent-purple);
-  }
-
-  .live-metric-card.status-ok {
-    border-left: 3px solid var(--accent-green);
+    transition: border-color 0.12s ease;
   }
 
   .live-metric-card.status-warning {
-    border-left: 3px solid var(--accent-amber);
+    border-color: var(--amber-line);
   }
 
   .live-metric-card.status-critical {
-    border-left: 3px solid var(--accent-rose);
+    border-color: var(--rose-line);
   }
 
   .metric-header {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.625rem;
   }
 
   .metric-icon {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.875rem;
+    width: 0.9375rem;
+    height: 0.9375rem;
+    color: var(--text-muted);
   }
 
   .metric-name {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 500;
+    letter-spacing: 0.02em;
     color: var(--text-secondary);
   }
 
   .metric-body {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.1875rem;
   }
 
   .metric-value {
     display: flex;
     align-items: baseline;
-    gap: 0.25rem;
+    gap: 0.3rem;
   }
 
   .metric-value span:first-child {
-    font-size: 1.5rem;
-    font-weight: 700;
+    font-size: 1.625rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
     color: var(--text-primary);
-    line-height: 1;
+    line-height: 1.1;
   }
+
+  .status-warning .metric-value span:first-child { color: var(--accent-amber); }
+  .status-critical .metric-value span:first-child { color: var(--accent-rose); }
 
   .metric-unit {
     font-size: 0.75rem;
@@ -887,70 +725,40 @@ end
   .metric-detail {
     font-size: 0.7rem;
     color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* Sparkline */
   .metric-sparkline {
-    height: 30px;
-    margin-top: 0.5rem;
+    height: 28px;
+    margin-top: 0.625rem;
+    color: var(--text-muted);
   }
+
+  .status-warning .metric-sparkline { color: var(--accent-amber); }
+  .status-critical .metric-sparkline { color: var(--accent-rose); }
 
   .metric-sparkline svg {
     width: 100%;
     height: 100%;
+    display: block;
   }
 
   /* Status indicator */
   .metric-status {
     position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
+    top: 0.75rem;
+    right: 0.75rem;
     width: 6px;
     height: 6px;
     border-radius: 50%;
+    background: var(--border-strong);
   }
 
-  .metric-status.ok { background: var(--accent-green); }
   .metric-status.warning { background: var(--accent-amber); }
   .metric-status.critical { background: var(--accent-rose); }
-
-  /* Toast Notifications */
-  .toast {
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    padding: 1rem 1.5rem;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    color: var(--text-primary);
-    font-size: 0.875rem;
-    font-weight: 500;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-    z-index: 9999;
-    opacity: 0;
-    transform: translateY(20px);
-    transition: all 0.3s ease;
-  }
-
-  .toast.show {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  .toast.toast-success {
-    border-left: 3px solid var(--accent-green);
-  }
-
-  .toast.toast-error {
-    border-left: 3px solid var(--accent-rose);
-    background: rgba(244, 63, 94, 0.1);
-    border-color: var(--accent-rose);
-  }
-
-  .toast.toast-warning {
-    border-left: 3px solid var(--accent-amber);
-  }
 
   /* Run Query Modal */
   .modal-run-query {
@@ -960,62 +768,57 @@ end
 
   .explain-label {
     display: block;
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: 0.06em;
     color: var(--text-muted);
     text-transform: uppercase;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
   }
 
   .run-query-textarea {
     width: 100%;
     min-height: 180px;
-    padding: 1rem;
+    padding: 0.875rem;
     background: var(--bg-primary);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     color: var(--text-primary);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.85rem;
-    line-height: 1.5;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    line-height: 1.6;
     resize: vertical;
   }
 
-  .run-query-textarea:focus {
-    outline: none;
+  .run-query-textarea:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: -1px;
     border-color: var(--accent-blue);
-    box-shadow: 0 0 0 2px rgba(107, 159, 232, 0.2);
   }
 
   .run-query-textarea::placeholder {
     color: var(--text-muted);
-    font-style: italic;
   }
 
   .run-query-actions {
     display: flex;
-    gap: 0.75rem;
-    margin: 1rem 0;
-  }
-
-  .run-query-actions .btn {
-    flex: 1;
+    gap: 0.5rem;
   }
 
   /* Query Results Table (mirrors _show_styles.html.erb — index.html.erb has
      its own <style> block and isn't loaded through that partial) */
   .query-results-wrapper {
-    margin-top: 1rem;
     max-height: 400px;
     overflow: auto;
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: var(--radius);
   }
 
   .query-results-table {
     width: 100%;
     border-collapse: collapse;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono);
     font-size: 0.75rem;
   }
 
@@ -1054,8 +857,7 @@ end
     justify-content: space-between;
     padding: 0.75rem 1rem;
     background: var(--bg-tertiary);
-    border-radius: 8px;
-    margin-top: 1rem;
+    border-radius: var(--radius);
     font-size: 0.8rem;
     color: var(--text-secondary);
   }
@@ -1121,15 +923,7 @@ end
 
     if (!allowRawQueryExecution) {
       showToast(PG_REPORTS_I18N.errors.execute_disabled_toast, 'error');
-      content.innerHTML = `<div class="error-message">
-        <strong>${PG_REPORTS_I18N.modals.query_execution_disabled_title}</strong><br><br>
-        ${PG_REPORTS_I18N.modals.query_execution_disabled_intro}<br>
-        <code style="display: block; margin-top: 0.5rem; padding: 0.5rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
-PgReports.configure do |config|<br>
-&nbsp;&nbsp;config.allow_raw_query_execution = true<br>
-end
-        </code>
-      </div>`;
+      content.innerHTML = pgReportsDisabledNotice(PG_REPORTS_I18N.modals.query_execution_disabled_title);
       return;
     }
 
@@ -1425,14 +1219,12 @@ end
   function updateToggleUI() {
     const icon = document.getElementById('toggle-icon');
     const indicator = document.querySelector('.live-indicator');
+    const use = icon && icon.querySelector('use');
 
-    if (liveMonitoringEnabled) {
-      icon.textContent = '⏸';
-      indicator.classList.remove('paused');
-    } else {
-      icon.textContent = '▶';
-      indicator.classList.add('paused');
+    if (use) {
+      use.setAttribute('href', liveMonitoringEnabled ? '#i-pause' : '#i-play');
     }
+    indicator.classList.toggle('paused', !liveMonitoringEnabled);
   }
 
   async function fetchLiveMetrics() {
@@ -1505,17 +1297,17 @@ end
     addToHistory('longrunning', metrics.long_running_count);
     addToHistory('blocked', metrics.blocked_count);
 
-    renderSparkline('connections', metricsHistory.connections, 'var(--accent-blue)');
-    renderSparkline('tps', metricsHistory.tps, 'var(--accent-green)');
-    renderSparkline('cache', metricsHistory.cache, 'var(--accent-purple)');
-    renderSparkline('longrunning', metricsHistory.longrunning, 'var(--accent-amber)');
-    renderSparkline('blocked', metricsHistory.blocked, 'var(--accent-rose)');
-
     updateStatus('connections', metrics.connections.percent, 'higher');
     updateStatus('tps', tps, null);
     updateStatus('cache', metrics.cache_hit_ratio, 'lower');
     updateStatus('longrunning', metrics.long_running_count, 'higher');
     updateStatus('blocked', metrics.blocked_count, 'higher');
+
+    renderSparkline('connections', metricsHistory.connections);
+    renderSparkline('tps', metricsHistory.tps);
+    renderSparkline('cache', metricsHistory.cache);
+    renderSparkline('longrunning', metricsHistory.longrunning);
+    renderSparkline('blocked', metricsHistory.blocked);
 
     previousMetrics = metrics;
   }
@@ -1533,7 +1325,7 @@ end
     return num.toString();
   }
 
-  function renderSparkline(metric, data, color) {
+  function renderSparkline(metric, data) {
     const svg = document.getElementById(`sparkline-${metric}`);
     if (!svg || data.length < 2) return;
 
@@ -1561,15 +1353,16 @@ end
 
     const area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     area.setAttribute('d', areaD);
-    area.setAttribute('fill', color);
-    area.setAttribute('opacity', '0.15');
+    area.setAttribute('fill', 'currentColor');
+    area.setAttribute('opacity', '0.12');
     svg.appendChild(area);
 
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.setAttribute('d', pathD);
     path.setAttribute('fill', 'none');
-    path.setAttribute('stroke', color);
-    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('stroke', 'currentColor');
+    path.setAttribute('stroke-width', '1.25');
+    path.setAttribute('vector-effect', 'non-scaling-stroke');
     path.setAttribute('stroke-linecap', 'round');
     path.setAttribute('stroke-linejoin', 'round');
     svg.appendChild(path);
@@ -1581,24 +1374,22 @@ end
     if (!card || !statusDot) return;
 
     const thresholds = LIVE_CONFIG.thresholds[metric];
-    if (!thresholds.warning && !thresholds.critical) {
-      card.className = 'live-metric-card status-ok';
-      statusDot.className = 'metric-status ok';
-      return;
-    }
-
     let status = 'ok';
 
-    if (badDirection === 'higher') {
-      if (value >= thresholds.critical) status = 'critical';
-      else if (value >= thresholds.warning) status = 'warning';
-    } else if (badDirection === 'lower') {
-      if (value <= thresholds.critical) status = 'critical';
-      else if (value <= thresholds.warning) status = 'warning';
+    if (thresholds.warning || thresholds.critical) {
+      if (badDirection === 'higher') {
+        if (value >= thresholds.critical) status = 'critical';
+        else if (value >= thresholds.warning) status = 'warning';
+      } else if (badDirection === 'lower') {
+        if (value <= thresholds.critical) status = 'critical';
+        else if (value <= thresholds.warning) status = 'warning';
+      }
     }
 
-    card.className = `live-metric-card status-${status}`;
-    statusDot.className = `metric-status ${status}`;
+    card.classList.remove('status-ok', 'status-warning', 'status-critical');
+    card.classList.add(`status-${status}`);
+    statusDot.classList.remove('ok', 'warning', 'critical');
+    statusDot.classList.add(status);
   }
 
   document.addEventListener('DOMContentLoaded', initLiveMonitoring);

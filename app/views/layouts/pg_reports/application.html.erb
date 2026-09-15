@@ -5,30 +5,69 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="pg-reports-root" content="<%= request.script_name.presence || PgReports::Engine.routes.url_helpers.root_path %>">
   <title><%= t("pg_reports.ui.branding.page_title") %></title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%234f46e5'/%3E%3Crect x='5' y='18' width='5' height='9' rx='1' fill='%23fff'/%3E%3Crect x='13.5' y='12' width='5' height='15' rx='1' fill='%23fff'/%3E%3Crect x='22' y='6' width='5' height='21' rx='1' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%235561d4'/%3E%3Crect x='5' y='18' width='5' height='9' rx='1' fill='%23fff'/%3E%3Crect x='13.5' y='12' width='5' height='15' rx='1' fill='%23fff'/%3E%3Crect x='22' y='6' width='5' height='21' rx='1' fill='%23fff'/%3E%3C/svg%3E">
   <% if PgReports.config.load_external_fonts %>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <% end %>
   <style>
     :root {
-      --bg-primary: #151719;
-      --bg-secondary: #1c1f22;
-      --bg-tertiary: #232629;
-      --bg-card: #1c1f22;
-      --border-color: #2e3235;
-      --text-primary: #c9cbcd;
-      --text-secondary: #888d93;
-      --text-muted: #5e6369;
+      --bg-primary: #141618;
+      --bg-secondary: #1a1d20;
+      --bg-tertiary: #212427;
+      --bg-card: #1a1d20;
+      --bg-hover: #272b2f;
+      --border-color: #2c3034;
+      --border-strong: #3b4045;
+
+      --text-primary: #d3d6d9;
+      --text-secondary: #8d9299;
+      --text-muted: #666b71;
+      --text-tertiary: #666b71;
+
       --accent-purple: #7c8af6;
       --accent-blue: #5c9eed;
       --accent-green: #45a87a;
       --accent-amber: #c89030;
       --accent-rose: #d45d6e;
-      --accent-indigo: #7c8af6;
-      --gradient-start: #7c8af6;
-      --gradient-end: #7c8af6;
+      --accent-red: #d45d6e;
+
+      /* Tints derived from the accents above. Every status surface uses these
+         two levels — fill and hairline — so tinted areas stay in one family. */
+      --purple-soft: rgba(124, 138, 246, 0.10);
+      --purple-line: rgba(124, 138, 246, 0.32);
+      --blue-soft: rgba(92, 158, 237, 0.10);
+      --blue-line: rgba(92, 158, 237, 0.32);
+      --green-soft: rgba(69, 168, 122, 0.10);
+      --green-line: rgba(69, 168, 122, 0.32);
+      --amber-soft: rgba(200, 144, 48, 0.10);
+      --amber-line: rgba(200, 144, 48, 0.34);
+      --rose-soft: rgba(212, 93, 110, 0.10);
+      --rose-line: rgba(212, 93, 110, 0.34);
+
+      --btn-primary-bg: #5561d4;
+      --btn-primary-bg-hover: #616de0;
+      --btn-primary-bg-active: #4a55c2;
+      --btn-danger-bg: #b64d5c;
+      --btn-danger-bg-hover: #c45a6a;
+      --btn-danger-bg-active: #a34351;
+
+      --flow-gap: 0.875rem;
+      --flow-gap-lg: 1.25rem;
+
+      --radius-sm: 4px;
+      --radius: 6px;
+      --radius-lg: 8px;
+      --control-h: 2.125rem;
+      --control-h-sm: 1.75rem;
+
+      --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-2: 0 6px 20px rgba(0, 0, 0, 0.38);
+      --shadow-3: 0 12px 40px rgba(0, 0, 0, 0.45);
+
+      --font-sans: <%= PgReports.config.load_external_fonts ? "'Inter', " : "" %>-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+      --font-mono: <%= PgReports.config.load_external_fonts ? "'JetBrains Mono', " : "" %>ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     }
 
     * {
@@ -38,11 +77,28 @@
     }
 
     body {
-      font-family: <%= PgReports.config.load_external_fonts ? "'Plus Jakarta Sans', " : "" %>-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+      font-family: var(--font-sans);
       background: var(--bg-primary);
       color: var(--text-primary);
       min-height: 100vh;
-      line-height: 1.6;
+      line-height: 1.5;
+      font-size: 0.875rem;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Numbers that refresh in place must not reflow as digits change. */
+    .results-table,
+    .query-results-table,
+    .metric-value,
+    .explain-stat-value {
+      font-variant-numeric: tabular-nums;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--accent-blue);
+      outline-offset: 2px;
+      border-radius: var(--radius-sm);
     }
 
     .container {
@@ -63,88 +119,71 @@
 
     .logo {
       display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
-    .logo-icon {
-      width: 32px;
-      height: 32px;
-      background: var(--accent-purple);
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1rem;
-    }
-
-    .logo-text {
-      display: flex;
       flex-direction: column;
-      gap: 5px;
-      line-height: 1.15;
+      gap: 0.125rem;
+      min-width: 0;
     }
 
-    .logo-text h1 {
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: var(--text-primary);
-      line-height: 1.15;
-      margin-top: -3px;
+    .logo h1 {
       display: flex;
       align-items: baseline;
       gap: 0.5rem;
+      font-size: 1.0625rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+      line-height: 1.2;
     }
 
     .logo-version {
-      font-size: 0.7rem;
-      font-weight: 500;
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 400;
       color: var(--text-muted);
-      letter-spacing: 0.02em;
     }
 
     .logo-subtitle {
-      font-size: 0.7rem;
+      font-size: 0.75rem;
       color: var(--text-muted);
-      line-height: 1.15;
+      line-height: 1.2;
     }
 
     .header-badge {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 0.4rem;
-      height: 2.125rem;
+      height: var(--control-h);
       padding: 0 0.75rem;
       background: var(--bg-tertiary);
       border: 1px solid var(--border-color);
-      border-radius: 4px;
+      border-radius: var(--radius-sm);
       font-size: 0.75rem;
+      color: var(--text-secondary);
     }
 
     .header-badge-clickable {
       cursor: pointer;
       font-family: inherit;
-      color: inherit;
-      transition: border-color 0.15s ease, background 0.15s ease;
+      transition: border-color 0.12s ease, background-color 0.12s ease;
     }
 
     .header-badge-clickable:hover {
-      background: var(--bg-card);
-      border-color: var(--text-muted);
+      background: var(--bg-hover);
+      border-color: var(--border-strong);
+      color: var(--text-primary);
     }
 
     .badge-info-icon {
       color: var(--text-muted);
-      font-size: 0.85rem;
-      line-height: 1;
+      line-height: 0;
     }
 
     .badge-dot {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
+      flex: none;
       border-radius: 50%;
       background: var(--accent-green);
-      animation: pulse 2s infinite;
     }
 
     .badge-dot.warning {
@@ -153,13 +192,14 @@
 
     @keyframes pulse {
       0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+      50% { opacity: 0.45; }
     }
 
     /* Categories Grid */
     .categories-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      align-items: start;
       gap: 1rem;
       margin-bottom: 1.5rem;
     }
@@ -167,12 +207,13 @@
     .category-card {
       background: var(--bg-card);
       border: 1px solid var(--border-color);
-      border-radius: 6px;
+      border-radius: var(--radius);
       padding: 1rem;
+      transition: border-color 0.12s ease;
     }
 
     .category-card:hover {
-      border-color: #3e4347;
+      border-color: var(--border-strong);
     }
 
     .category-header {
@@ -183,28 +224,25 @@
     }
 
     .category-icon {
-      width: 28px;
-      height: 28px;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.95rem;
-      background: transparent !important;
-      color: var(--text-secondary) !important;
+      width: 1rem;
+      height: 1rem;
+      color: var(--text-secondary);
     }
 
     .category-title {
-      font-size: 1rem;
+      font-size: 0.9375rem;
       font-weight: 600;
+      letter-spacing: -0.01em;
     }
 
     .category-count {
       margin-left: auto;
-      padding: 0.2rem 0.6rem;
+      padding: 0.15rem 0.45rem;
       background: var(--bg-tertiary);
-      border-radius: 4px;
-      font-size: 0.7rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      font-size: 0.6875rem;
+      font-variant-numeric: tabular-nums;
       color: var(--text-muted);
     }
 
@@ -217,15 +255,16 @@
     .report-link {
       display: flex;
       align-items: center;
+      gap: 0.75rem;
       justify-content: space-between;
-      padding: 0.45rem 0.7rem;
+      padding: 0.4rem 0.6rem;
       background: transparent;
       border: 1px solid transparent;
-      border-radius: 4px;
+      border-radius: var(--radius-sm);
       color: var(--text-secondary);
       text-decoration: none;
-      font-size: 0.82rem;
-      transition: background 0.1s, color 0.1s;
+      font-size: 0.8125rem;
+      transition: background-color 0.1s ease, color 0.1s ease;
     }
 
     .report-link:hover {
@@ -234,26 +273,29 @@
     }
 
     .report-link .arrow {
+      width: 0.8125rem;
+      height: 0.8125rem;
+      color: var(--text-muted);
       opacity: 0;
-      transform: translateX(-4px);
-      transition: all 0.15s ease;
+      transition: opacity 0.12s ease;
     }
 
-    .report-link:hover .arrow {
+    .report-link:hover .arrow,
+    .report-link:focus-visible .arrow {
       opacity: 1;
-      transform: translateX(0);
     }
 
     .report-badge-new {
       display: inline-block;
       margin-left: 0.4rem;
-      padding: 0.1rem 0.35rem;
-      font-size: 0.55rem;
+      padding: 0.05rem 0.3rem;
+      font-size: 0.5625rem;
       font-weight: 600;
-      letter-spacing: 0.04em;
-      line-height: 1.2;
+      letter-spacing: 0.06em;
+      line-height: 1.4;
       color: var(--accent-green);
-      background: rgba(69, 168, 122, 0.12);
+      background: var(--green-soft);
+      border: 1px solid var(--green-line);
       border-radius: 3px;
       vertical-align: middle;
     }
@@ -269,6 +311,7 @@
       display: flex;
       align-items: center;
       gap: 0.4rem;
+      min-height: var(--control-h);
       font-size: 0.75rem;
       color: var(--text-muted);
     }
@@ -276,11 +319,39 @@
     .breadcrumb a {
       color: var(--text-secondary);
       text-decoration: none;
-      transition: color 0.15s;
+      transition: color 0.12s ease, background-color 0.12s ease;
     }
 
     .breadcrumb a:hover {
       color: var(--text-primary);
+    }
+
+    /* First crumb doubles as the back action — the arrow makes the affordance
+       explicit without a second control duplicating it in the header. */
+    .breadcrumb-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-left: -0.4rem;
+      padding: 0.2rem 0.45rem;
+      border-radius: var(--radius-sm);
+    }
+
+    .breadcrumb-back:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .breadcrumb-back .icon {
+      width: 0.8125rem;
+      height: 0.8125rem;
+    }
+
+    .breadcrumb-sep {
+      color: var(--border-strong);
+    }
+
+    .breadcrumb-current {
+      color: var(--text-secondary);
     }
 
     .report-header {
@@ -306,61 +377,162 @@
       gap: 0.5rem;
     }
 
+    /* Buttons — one solid, classic control. Height, radius and weight come from
+       the tokens so every variant and every page lines up on the same grid. */
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 0.4rem;
-      height: 36px;
-      padding: 0 1rem;
+      height: var(--control-h);
+      padding: 0 0.875rem;
       border: 1px solid transparent;
-      border-radius: 4px;
+      border-radius: var(--radius-sm);
       font-family: inherit;
-      font-size: 0.8rem;
+      font-size: 0.8125rem;
       font-weight: 500;
+      line-height: 1;
       cursor: pointer;
-      transition: background 0.1s;
+      user-select: none;
       white-space: nowrap;
       text-decoration: none;
+      transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
     }
 
     .btn-primary {
-      background: rgba(124, 138, 246, 0.14);
-      color: var(--accent-purple);
-      border-color: rgba(124, 138, 246, 0.35);
+      background: var(--btn-primary-bg);
+      border-color: var(--btn-primary-bg);
+      color: #fff;
     }
 
     .btn-primary:hover {
-      background: rgba(124, 138, 246, 0.24);
-      border-color: rgba(124, 138, 246, 0.55);
+      background: var(--btn-primary-bg-hover);
+      border-color: var(--btn-primary-bg-hover);
     }
 
-    .btn-secondary {
-      background: var(--bg-tertiary);
-      color: var(--text-secondary);
-      border: 1px solid var(--border-color);
+    .btn-primary:active {
+      background: var(--btn-primary-bg-active);
+      border-color: var(--btn-primary-bg-active);
     }
 
-    .btn-secondary:hover {
-      background: #2a2d31;
-      color: var(--text-primary);
-    }
-
+    .btn-secondary,
     .btn-telegram {
       background: var(--bg-tertiary);
-      color: var(--text-secondary);
-      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      border-color: var(--border-color);
     }
 
+    .btn-secondary:hover,
     .btn-telegram:hover {
-      background: #2a2d31;
+      background: var(--bg-hover);
+      border-color: var(--border-strong);
+    }
+
+    .btn-secondary:active,
+    .btn-telegram:active {
+      background: var(--bg-tertiary);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border-color: transparent;
+    }
+
+    .btn-ghost:hover {
+      background: var(--bg-tertiary);
       color: var(--text-primary);
     }
 
-    .btn:disabled {
-      opacity: 0.5;
+    .btn-danger {
+      background: var(--btn-danger-bg);
+      border-color: var(--btn-danger-bg);
+      color: #fff;
+    }
+
+    .btn-danger:hover {
+      background: var(--btn-danger-bg-hover);
+      border-color: var(--btn-danger-bg-hover);
+    }
+
+    .btn-danger:active {
+      background: var(--btn-danger-bg-active);
+      border-color: var(--btn-danger-bg-active);
+    }
+
+    /* Destructive, but not the page's main action: neutral until hovered. */
+    .btn-muted {
+      background: var(--bg-tertiary);
+      border-color: var(--border-color);
+      color: var(--text-secondary);
+    }
+
+    .btn-muted:hover {
+      background: var(--rose-soft);
+      border-color: var(--rose-line);
+      color: var(--accent-rose);
+    }
+
+    .btn-small {
+      height: var(--control-h-sm);
+      padding: 0 0.625rem;
+      font-size: 0.75rem;
+    }
+
+    /* Square control sized to match .btn — for a lone icon with no label. */
+    .btn-icon {
+      width: var(--control-h);
+      height: var(--control-h);
+      padding: 0;
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+    }
+
+    .btn-icon:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-strong);
+      color: var(--text-primary);
+    }
+
+    .btn-small.btn-icon {
+      width: var(--control-h-sm);
+      height: var(--control-h-sm);
+    }
+
+    .btn:disabled,
+    .btn-icon:disabled {
+      opacity: 0.45;
       cursor: not-allowed;
     }
+
+    .btn:disabled:hover,
+    .btn-icon:disabled:hover {
+      background: inherit;
+      border-color: inherit;
+    }
+
+    /* Icons — stroke-drawn, inherit the parent's colour and optical size. */
+    .icon {
+      width: 1em;
+      height: 1em;
+      flex: none;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.75;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .icon-lg { width: 1.125rem; height: 1.125rem; }
+    .icon-sm { width: 0.875rem; height: 0.875rem; }
 
     /* Results Table */
     .results-container {
@@ -468,63 +640,172 @@
     }
 
     /* Error state */
-    .error-message {
-      padding: 0.875rem;
-      background: rgba(244, 63, 94, 0.1);
-      border: 1px solid rgba(244, 63, 94, 0.3);
-      border-radius: 6px;
+    .error-title {
+      font-weight: 600;
       color: var(--accent-rose);
-      font-size: 0.85rem;
     }
 
-    /* Toast notification */
+    .error-message {
+      padding: 0.875rem 1rem;
+      background: var(--rose-soft);
+      border: 1px solid var(--rose-line);
+      border-radius: var(--radius);
+      color: var(--accent-rose);
+      font-size: 0.8125rem;
+      line-height: 1.6;
+    }
+
+    .error-message .code-block {
+      color: var(--text-primary);
+    }
+
+    /* Vertical rhythm. The global `* { margin: 0 }` reset leaves prose
+       containers with no spacing of their own, and per-element margins drifted
+       into asymmetric gaps (1rem above a code block, 0 below). One rule per
+       container spaces any two siblings identically, whatever their tags. */
+    .modal-body > * + *,
+    .modal-body li > * + *,
+    .error-message > * + *,
+    .problem-modal-body > * + *,
+    .doc-block > * + *,
+    .explain-query-section > * + *,
+    .explain-params-section > * + *,
+    #explain-content > * + *,
+    #run-query-content > * + *,
+    .callout-body > * + * {
+      margin-top: var(--flow-gap);
+    }
+
+    .modal-body > ol > li + li {
+      margin-top: var(--flow-gap-lg);
+    }
+
+    .modal-body > .modal-actions,
+    .modal-body > .migration-actions {
+      margin-top: var(--flow-gap-lg);
+    }
+
+    /* Code block — one definition for every fenced snippet in the UI. */
+    .code-block,
+    .modal-body pre {
+      display: block;
+      padding: 0.6875rem 0.875rem;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      line-height: 1.6;
+      color: var(--text-primary);
+      white-space: pre;
+      overflow-x: auto;
+      tab-size: 2;
+    }
+
+    .code-block-wrap {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* Callout — an inline notice inside a panel or modal. */
+    .callout {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      padding: 0.75rem 0.875rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      margin-bottom: 1rem;
+      font-size: 0.8125rem;
+      line-height: 1.6;
+    }
+
+    .callout .icon {
+      margin-top: 0.22rem;
+      width: 0.875rem;
+      height: 0.875rem;
+    }
+
+    .callout p {
+      margin: 0.25rem 0 0;
+      color: var(--text-secondary);
+    }
+
+    .callout-warning {
+      background: var(--amber-soft);
+      border-color: var(--amber-line);
+      color: var(--accent-amber);
+    }
+
+    .callout-danger {
+      background: var(--rose-soft);
+      border-color: var(--rose-line);
+      color: var(--accent-rose);
+    }
+
+    /* Toast notification — one definition for every page. */
     .toast {
       position: fixed;
       bottom: 1.5rem;
       right: 1.5rem;
-      padding: 0.75rem 1rem;
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
+      max-width: 26rem;
+      padding: 0.625rem 0.875rem;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
       color: var(--text-primary);
-      font-size: 0.85rem;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      transform: translateY(100px);
+      font-size: 0.8125rem;
+      box-shadow: var(--shadow-2);
+      transform: translateY(0.5rem);
       opacity: 0;
-      transition: all 0.3s ease;
-      z-index: 1000;
+      visibility: hidden;
+      transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+      z-index: 2000;
     }
 
     .toast.show {
       transform: translateY(0);
       opacity: 1;
+      visibility: visible;
     }
 
-    .toast.success {
-      border-color: var(--accent-green);
+    .toast.success,
+    .toast.toast-success {
+      border-color: var(--green-line);
+      background: var(--green-soft);
     }
 
-    .toast.error {
-      border-color: var(--accent-rose);
+    .toast.error,
+    .toast.toast-error {
+      border-color: var(--rose-line);
+      background: var(--rose-soft);
+    }
+
+    .toast.warning,
+    .toast.toast-warning {
+      border-color: var(--amber-line);
+      background: var(--amber-soft);
     }
 
     /* Modal */
     .modal {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(10, 11, 12, 0.72);
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 1.5rem;
       z-index: 1000;
     }
 
     .modal-content {
       background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-3);
       max-width: 900px;
-      width: 90%;
+      width: 100%;
       max-height: 90vh;
       overflow: auto;
       scrollbar-width: thin;
@@ -578,21 +859,25 @@
     }
 
     .modal-close {
-      width: 28px;
-      height: 28px;
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border-color);
-      border-radius: 4px;
+      width: 1.75rem;
+      height: 1.75rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
       color: var(--text-muted);
       font-size: 1.125rem;
+      line-height: 1;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: background-color 0.12s ease, color 0.12s ease;
     }
 
     .modal-close:hover {
-      background: var(--accent-rose);
-      border-color: var(--accent-rose);
-      color: white;
+      background: var(--bg-tertiary);
+      border-color: var(--border-color);
+      color: var(--text-primary);
     }
 
     .modal-body {
@@ -677,7 +962,7 @@
       color: var(--text-secondary);
       border: 1px solid var(--border-color);
       border-radius: 6px;
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+      box-shadow: var(--shadow-2);
       font-size: 0.75rem;
       font-weight: 400;
       line-height: 1.5;
@@ -797,7 +1082,7 @@
     }
 
     .query-item:hover {
-      border-color: var(--accent-purple);
+      border-color: var(--border-strong);
     }
 
     .query-item:last-child {
@@ -917,7 +1202,7 @@
       background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: 6px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      box-shadow: var(--shadow-2);
       z-index: 1000;
       min-width: 160px;
       overflow: hidden;
@@ -961,7 +1246,7 @@
       background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: 6px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      box-shadow: var(--shadow-2);
       z-index: 100;
       overflow: hidden;
     }
@@ -983,24 +1268,6 @@
     .download-menu a:hover {
       background: var(--bg-tertiary);
       color: var(--text-primary);
-    }
-
-    .btn-small {
-      height: 30px;
-      padding: 0 0.875rem;
-      font-size: 0.75rem;
-      line-height: 1;
-    }
-
-    .btn-danger {
-      background: var(--accent-rose);
-      color: white;
-      border-color: var(--accent-rose);
-    }
-
-    .btn-danger:hover {
-      opacity: 0.9;
-      transform: translateY(-1px);
     }
 
     /* IDE Settings Modal */
@@ -1029,13 +1296,13 @@
     }
 
     .ide-option:hover {
-      background: var(--bg-secondary);
-      border-color: var(--accent-purple);
+      background: var(--bg-hover);
+      border-color: var(--border-strong);
     }
 
     .ide-option:has(input:checked) {
-      background: rgba(157, 140, 214, 0.15);
-      border-color: var(--accent-purple);
+      background: var(--purple-soft);
+      border-color: var(--purple-line);
     }
 
     .ide-option input[type="radio"] {
@@ -1081,12 +1348,14 @@
     }
 
     .db-selector {
-      background: var(--bg-card, rgba(255, 255, 255, 0.04));
+      background: var(--bg-tertiary);
       color: var(--text-primary);
-      border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
-      border-radius: 6px;
-      padding: 0.375rem 0.625rem;
-      font-size: 0.875rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      height: var(--control-h-sm);
+      padding: 0 0.5rem;
+      font-family: inherit;
+      font-size: 0.8125rem;
       cursor: pointer;
       width: auto;
       max-width: 100%;
@@ -1098,13 +1367,12 @@
     }
 
     .db-selector:hover {
-      border-color: var(--accent-blue, #6b9fe8);
+      border-color: var(--border-strong);
     }
 
-    .db-selector:focus {
-      outline: none;
-      border-color: var(--accent-blue, #6b9fe8);
-      box-shadow: 0 0 0 2px rgba(107, 159, 232, 0.2);
+    .db-selector:focus-visible {
+      outline: 2px solid var(--accent-blue);
+      outline-offset: 1px;
     }
 
     .db-selector-static {
@@ -1124,11 +1392,11 @@
       align-items: center;
       gap: 0.375rem;
       padding: 0.375rem 0.625rem;
-      background: rgba(232, 107, 107, 0.1);
-      border: 1px solid rgba(232, 107, 107, 0.3);
-      border-radius: 6px;
+      background: var(--rose-soft);
+      border: 1px solid var(--rose-line);
+      border-radius: var(--radius-sm);
       font-size: 0.8125rem;
-      color: var(--accent-red, #e86b6b);
+      color: var(--accent-red);
       cursor: help;
     }
 
@@ -1136,46 +1404,80 @@
       flex: 1;
     }
 
-    .breadcrumb {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
     .db-error-banner {
-      background: rgba(232, 107, 107, 0.08);
-      border: 1px solid rgba(232, 107, 107, 0.3);
-      border-radius: 8px;
-      padding: 0.875rem 1.125rem;
+      background: var(--rose-soft);
+      border: 1px solid var(--rose-line);
+      border-radius: var(--radius);
+      padding: 0.875rem 1rem;
       margin-bottom: 1rem;
       display: flex;
       flex-direction: column;
-      gap: 0.375rem;
+      align-items: flex-start;
+      gap: var(--flow-gap);
     }
 
     .db-error-banner strong {
-      color: var(--accent-red, #e86b6b);
-      font-size: 0.9375rem;
+      color: var(--accent-red);
+      font-weight: 600;
     }
 
     .db-error-banner span {
-      font-size: 0.875rem;
       color: var(--text-secondary);
     }
 
     .db-error-banner code {
-      font-family: ui-monospace, SFMono-Regular, monospace;
-      font-size: 0.8125rem;
-      background: rgba(0, 0, 0, 0.25);
-      padding: 0.375rem 0.625rem;
-      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      line-height: 1.6;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--radius-sm);
       color: var(--text-primary);
-      display: inline-block;
-      width: fit-content;
+      max-width: 100%;
+      overflow-x: auto;
     }
   </style>
 </head>
 <body>
+  <%# Icon sprite. One definition per glyph, referenced with
+      <svg class="icon"><use href="#i-name"></use></svg>. Stroke-drawn and
+      colourless so every icon inherits its context's colour and size. %>
+  <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+    <defs>
+      <symbol id="i-queries" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></symbol>
+      <symbol id="i-indexes" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
+      <symbol id="i-tables" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9.5h18M9 9.5V20"/></symbol>
+      <symbol id="i-connections" viewBox="0 0 24 24"><path d="M9 2v6M15 2v6M6 8h12v4a6 6 0 0 1-12 0V8ZM12 18v4"/></symbol>
+      <symbol id="i-system" viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></symbol>
+      <symbol id="i-schema" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4.2-4.2"/></symbol>
+      <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7L11.8 5.2"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></symbol>
+      <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3 8 4-16 3 8h4"/></symbol>
+      <symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5.5" rx="8" ry="3.5"/><path d="M4 5.5v13c0 1.9 3.6 3.5 8 3.5s8-1.6 8-3.5v-13M4 12c0 1.9 3.6 3.5 8 3.5s8-1.6 8-3.5"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5.2l3.2 2"/></symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="10.5" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></symbol>
+      <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 14.6a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 8.9 19.3a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.7 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9.1A1.7 1.7 0 0 0 10.13 3V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.08A1.7 1.7 0 0 0 21 10.13H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1.03Z"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="m4.5 12.5 5 5 10-11"/></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5 2.8 19.5h18.4L12 3.5Z"/><path d="M12 9.5v4.2M12 17h.01"/></symbol>
+      <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8h.01"/></symbol>
+      <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5-13-7.5Z"/></symbol>
+      <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 4.5v15M15 4.5v15"/></symbol>
+      <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9.5 5.5 6.5 6.5-6.5 6.5"/></symbol>
+      <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M20 12H4.5M10.5 5.5 4 12l6.5 6.5"/></symbol>
+      <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3.5v12M7 11l5 5 5-5M4 20h16"/></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M15 6V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h1"/></symbol>
+      <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3 3 10.5l7 3 3 7L21 3Z"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 6.5h16M9.5 6.5V4h5v2.5M6.5 6.5 7.4 20a1 1 0 0 0 1 1h7.2a1 1 0 0 0 1-1l.9-13.5"/></symbol>
+      <symbol id="i-pin" viewBox="0 0 24 24"><path d="M9 3.5h6l-.8 5.2 3.3 3.3H6.5l3.3-3.3L9 3.5ZM12 12v8.5"/></symbol>
+      <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5"/></symbol>
+      <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v15H5.5A1.5 1.5 0 0 0 4 19.5v-15ZM4 19.5A1.5 1.5 0 0 0 5.5 21H19v-3"/></symbol>
+      <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-8.5 8.5"/><path d="M18 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5"/></symbol>
+      <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9.5 18h5M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.3 1 2.1h5c0-.8.4-1.6 1-2.1A6 6 0 0 0 12 3Z"/></symbol>
+      <symbol id="i-question" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.2-.9.8-.9 1.4v.6M12 16.8h.01"/></symbol>
+      <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
+    </defs>
+  </svg>
+
   <div class="container">
     <%= yield %>
   </div>
@@ -1218,6 +1520,24 @@
         modal.style.display = 'none';
       }
     });
+
+    // The "feature is disabled, here is how to enable it" panel. Four callers
+    // had drifted into hand-spaced copies of this markup (<br><br>, &nbsp;
+    // indentation, inline styles); they all render through here now.
+    window.pgReportsDisabledNotice = function(title) {
+      const i18n = PG_REPORTS_I18N.modals;
+      const esc = (t) => String(t == null ? '' : t)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return [
+        '<div class="error-message">',
+        '<p class="error-title">' + esc(title) + '</p>',
+        '<p>' + esc(i18n.query_execution_disabled_intro) + '</p>',
+        '<pre class="code-block">PgReports.configure do |config|\n  config.allow_raw_query_execution = true\nend</pre>',
+        '<p>' + esc(i18n.query_execution_disabled_env_note) + '</p>',
+        '<pre class="code-block">PG_REPORTS_ALLOW_RAW_QUERY_EXECUTION=true</pre>',
+        '</div>'
+      ].join('');
+    };
 
     function showToast(message, type = 'success') {
       const toast = document.getElementById('toast');

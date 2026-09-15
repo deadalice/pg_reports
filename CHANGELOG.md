@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Dashboard visual overhaul — a single design system instead of three drifting stylesheets.** The three `<style>` blocks (layout, `index`, `_show_styles`) had grown independent, conflicting copies of the same components: `.modal-close` was 28px in one and 32px in another, `.modal-small` was 360px and 420px, `.toast` and the whole `.btn` family were defined twice with different colours, and `.explain-stats` / `.explain-result` were each declared twice within one file. All shared components now live once in the layout, and the per-page blocks only hold what is genuinely page-specific. `_show_styles.html.erb` shrank from 1678 to ~1500 lines with no loss of coverage.
+  - **Design tokens.** New `:root` tokens for radii (`--radius-sm`/`--radius`/`--radius-lg`), control height, shadows, fonts, and an accent-tint scale (`--amber-soft`/`--amber-line`, …) derived from the actual `--accent-*` values. Every hard-coded `rgba()`/hex tint was replaced — many were leftover Tailwind-palette values (`#ef4444`, `rgba(59,130,246,…)`) that no longer matched the accent they bordered.
+  - **Fixed two undeclared variables.** `--text-tertiary` and `--accent-red` were referenced but never defined, so those rules silently fell back to inherited colour; both are now declared. Removed the unused `--accent-indigo`, `--gradient-start` and `--gradient-end`.
+- **Buttons are solid, classic controls.** `.btn-primary` was a translucent tinted outline (`rgba(124,138,246,.14)` fill, accent text, accent border); it is now a filled button with white text, plus proper `:active` and `:focus-visible` states. `.btn-secondary`/`.btn-danger`/`.btn-muted`/`.btn-ghost`/`.btn-icon` share one height, radius and transition, and every variant is declared in exactly one place.
+- **Status is no longer signalled by coloured left stripes.** The live metric cards carried a 3px green/amber/rose `border-left` — "healthy" was as decorated as "critical". Status now reads from the corner dot, the value colour and the sparkline, with the card's own border tinting only for warning and critical. The same treatment replaced the coloured rails and `linear-gradient` washes on EXPLAIN summary cards, problem cards and stat tiles.
+  - Table problem rows used `border-left` on `<tr>`, which does not render under `border-collapse: collapse`; they now use an inset shadow on the first cell, so the marker is actually visible.
+- **Sparkline colour encodes state, not identity.** Each metric drew its trend in its own hue (blue/green/purple/amber/rose), which read as decoration. All five now draw in a muted neutral, switching to amber or rose only when that metric crosses its threshold.
+- **Emoji replaced with an inline SVG icon sprite.** Emoji were used as UI icons throughout — the header logo tile, category and metric icons, the settings gear, lock, play/pause, and as prefixes baked into ~48 locale strings per language (`"📋 Copy"`, `"⬇ Export"`, `"🔒 Requires pg_stat_statements"`). They rendered differently on every OS and could not be coloured. All are now stroke-drawn `<symbol>`s defined once in the layout and referenced with `<use>`, inheriting colour and size from their context. Locale strings carry text only.
+- **Removed the header logo tile.** The wordmark and version carry the branding.
+- **Dropped the decorative motion.** Hover lifts (`translateY(-1px/-2px)`, `translateX(4px)` plus shadow), the glassmorphism `backdrop-filter: blur()` on modals, and the pulsing animation on the static status-badge dot are gone. Non-interactive panels no longer light up in accent purple on hover.
+- **Typography.** Plus Jakarta Sans → Inter, body line-height 1.6 → 1.5, and a consistent type scale for a dense dashboard. Numeric surfaces (result tables, live metric values, EXPLAIN stats) use `tabular-nums` so digits stop reflowing as values refresh.
+- **Accessibility.** Added `:focus-visible` rings on buttons, inputs and textareas; icon-only buttons carry `aria-label`; decorative icons are `aria-hidden`.
+- **The report page's "Back" button moved into the breadcrumb.** It sat at the far right of the action row — away from the navigation context, and a second control doing what the "Dashboard" crumb already did. The first crumb is now the back action, with a left-arrow icon making the affordance explicit.
+- **One vertical rhythm for text and code blocks.** The global `* { margin: 0 }` reset leaves prose containers with no spacing of their own, and the per-element margins that filled the gap had drifted into asymmetry — a `<pre>` inherited 1rem above (from the preceding `<p>`'s `margin-bottom`) and 0 below, so snippets floated away from their intro line and collided with the line under them. Spacing is now owned by one `> * + *` rule per container, driven by a `--flow-gap` token, with the ad-hoc `margin-bottom`/`margin-top` on each block removed.
+- **One code-block definition.** The same "here is how to enable this feature" panel existed in five hand-spaced copies (`<br><br>` for paragraph breaks, `&nbsp;&nbsp;` for indentation, inline `style=` for the box) across the SQL Console, EXPLAIN, Execute Query and migration flows. All five now render through a shared `pgReportsDisabledNotice()` helper using a real `<pre class="code-block">`, so indentation is actual whitespace and every snippet in the UI is styled identically.
+- **One field-label definition.** `.explain-label`, `.explain-stat-label`, `.row-detail-label`, `.problem-field-label`, `.saved-record-field-name` and `.saved-record-detail-label` were six variants of "small-caps label above a value", spread across 0.65–0.8rem, three letter-spacings and two colours. Collapsed into a single rule.
+
+### Fixed
+
+- **Migration-disabled toast was hardcoded Russian** in an otherwise fully translated UI. Now goes through `errors.migration_disabled_toast` (added to all three locales).
+- **Migration-disabled panel title was hardcoded English.** Now goes through `modals.migration_disabled_title` (added to all three locales).
+- `ExplainAnalyzer` no longer emits a `status_icon` emoji from the analysis layer; the dashboard picks the icon from `status`.
+
 ## [0.8.2] - 2026-07-10
 
 ### Added

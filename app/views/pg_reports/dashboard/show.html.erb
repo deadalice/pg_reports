@@ -2,11 +2,14 @@
 
 <div class="report-page">
   <nav class="breadcrumb">
-    <%= link_to t("pg_reports.ui.navigation.dashboard"), root_path %>
-    <span>/</span>
+    <%= link_to root_path, class: "breadcrumb-back", title: t("pg_reports.ui.navigation.back") do %>
+      <svg class="icon" aria-hidden="true"><use href="#i-arrow-left"></use></svg>
+      <span><%= t("pg_reports.ui.navigation.dashboard") %></span>
+    <% end %>
+    <span class="breadcrumb-sep">/</span>
     <span><%= @categories[@category][:name] %></span>
-    <span>/</span>
-    <span><%= @report_info[:name] %></span>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current"><%= @report_info[:name] %></span>
 
     <span class="breadcrumb-spacer"></span>
     <%= render "target_selector" %>
@@ -35,7 +38,7 @@
           <a href="#" onclick="downloadReport('json'); return false;"><%= t("pg_reports.ui.actions.download_json") %></a>
           <% if @documentation && @documentation[:ai_prompt].present? %>
             <div class="dropdown-divider"></div>
-            <a href="#" id="ai-prompt-btn" onclick="copyAiPrompt(this); return false;"><span class="ai-icon">AI</span> <%= t("pg_reports.ui.actions.copy_ai_prompt") %></a>
+            <a href="#" id="ai-prompt-btn" onclick="copyAiPrompt(this); return false;"><span class="ai-icon">AI</span><%= t("pg_reports.ui.actions.copy_ai_prompt") %></a>
           <% end %>
         </div>
       </div>
@@ -45,10 +48,9 @@
           <%= t("pg_reports.ui.actions.send_telegram") %>
         </button>
       <% end %>
-      <button class="btn btn-icon" onclick="showIdeSettingsModal()" title="<%= t("pg_reports.ui.actions.ide_settings_button_title") %>">
-        ⚙️
+      <button type="button" class="btn-icon" onclick="showIdeSettingsModal()" title="<%= t("pg_reports.ui.actions.ide_settings_button_title") %>" aria-label="<%= t("pg_reports.ui.actions.ide_settings_button_title") %>">
+        <svg class="icon icon-lg"><use href="#i-settings"></use></svg>
       </button>
-      <%= link_to t("pg_reports.ui.navigation.back"), root_path, class: "btn btn-secondary" %>
     </div>
   </div>
 
@@ -63,7 +65,7 @@
     <% if @documentation && @documentation[:what].present? %>
       <details class="documentation-section">
         <summary class="documentation-toggle">
-          <span class="toggle-icon">▶</span>
+          <svg class="icon toggle-icon" aria-hidden="true"><use href="#i-chevron-right"></use></svg>
           <span><%= t("pg_reports.ui.documentation.toggle_title") %></span>
         </summary>
         <div class="documentation-content">
@@ -118,7 +120,7 @@
       <div class="filter-section">
         <details class="filter-details">
           <summary class="filter-toggle">
-            <span class="toggle-icon">▶</span>
+            <svg class="icon toggle-icon" aria-hidden="true"><use href="#i-chevron-right"></use></svg>
             <span><%= t("pg_reports.ui.filters.title") %></span>
           </summary>
           <div class="filter-content">
@@ -176,7 +178,7 @@
     </div>
 
     <div id="empty-state" class="empty-state" style="display: none;">
-      <div class="empty-state-icon">✓</div>
+      <svg class="icon empty-state-icon" aria-hidden="true"><use href="#i-check"></use></svg>
       <p><%= t("pg_reports.ui.results.empty_message") %></p>
     </div>
 

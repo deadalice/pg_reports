@@ -1,4 +1,5 @@
 <script>
+  const svgIcon = (name, cls) => `<svg class="icon ${cls || ''}"><use href="#i-${name}"></use></svg>`;
   let currentReportData = null;
   let currentProblemExplanations = {};
   const category = '<%= @category %>';
@@ -126,7 +127,7 @@
       if (problemInfo && problemInfo.level) {
         rowClass += problemInfo.level === 'critical' ? ' critical-row' : ' warning-row';
         const indicatorClass = problemInfo.level === 'critical' ? 'critical' : 'warning';
-        const indicatorIcon = problemInfo.level === 'critical' ? '🔴' : '⚠️';
+        const indicatorIcon = svgIcon('alert');
         problemIndicator = `<span class="problem-indicator ${indicatorClass}" onclick="event.stopPropagation(); showProblemModal(${JSON.stringify(problemInfo.problems).replace(/"/g, '&quot;')}, ${JSON.stringify(row).replace(/"/g, '&quot;')})">${indicatorIcon}</span>`;
       }
 
@@ -642,7 +643,7 @@
     const rowJson = JSON.stringify(row).replace(/"/g, '&quot;');
 
     html += `<div class="detail-actions">`;
-    html += `<button class="btn-save ${isSaved ? 'saved' : ''}" onclick="event.stopPropagation(); toggleSaveRecord('${rowId}', ${rowJson}, this)">${isSaved ? '📌 Saved' : '📌 Save for Comparison'}</button>`;
+    html += `<button class="btn-save ${isSaved ? 'saved' : ''}" onclick="event.stopPropagation(); toggleSaveRecord('${rowId}', ${rowJson}, this)">${svgIcon('pin')}${isSaved ? PG_REPORTS_I18N.actions.saved_marker : PG_REPORTS_I18N.actions.save_for_comparison}</button>`;
 
     if (hasQuery) {
       // Only show EXPLAIN ANALYZE for SELECT queries
@@ -651,7 +652,7 @@
         // Use data attribute to pass query hash for security
         const queryBase64 = btoa(unescape(encodeURIComponent(row.query)));
         const queryHash = row.query_hash || '';
-        html += `<button class="btn-explain" data-query-b64="${queryBase64}" data-query-hash="${queryHash}" onclick="event.stopPropagation(); runExplainAnalyzeFromButton(this)">📊 EXPLAIN ANALYZE</button>`;
+        html += `<button class="btn-explain" data-query-b64="${queryBase64}" data-query-hash="${queryHash}" onclick="event.stopPropagation(); runExplainAnalyzeFromButton(this)">${svgIcon('activity')}EXPLAIN ANALYZE</button>`;
       }
     }
 
@@ -661,9 +662,9 @@
       const tableName = row.table_name || row.tablename || '';
       const schemaName = row.schema_name || row.schemaname || 'public';
       if (isDevelopment) {
-        html += `<button class="btn-migration" onclick="event.stopPropagation(); showMigrationModal('${escapeHtml(indexName)}', '${escapeHtml(tableName)}', '${escapeHtml(schemaName)}')">🗑️ Generate Migration</button>`;
+        html += `<button class="btn-migration" onclick="event.stopPropagation(); showMigrationModal('${escapeHtml(indexName)}', '${escapeHtml(tableName)}', '${escapeHtml(schemaName)}')">${svgIcon('trash')}Generate Migration</button>`;
       } else {
-        html += `<button class="btn-migration" disabled title="Migration generation is only available in development environment" style="opacity: 0.5; cursor: not-allowed;">🗑️ Generate Migration (Development Only)</button>`;
+        html += `<button class="btn-migration" disabled title="Migration generation is only available in development environment" >${svgIcon('trash')}Generate Migration (Development Only)</button>`;
       }
     }
 
@@ -1158,15 +1159,15 @@
     if (data.summary && data.summary.total_problems > 0) {
       html += '<div class="explain-summary explain-summary-' + data.summary.status + '">';
       html += '<div class="explain-summary-header">';
-      html += '<span class="explain-summary-icon">' + data.summary.status_icon + '</span>';
+      html += svgIcon(data.summary.status === 'good' ? 'check' : 'alert', 'explain-summary-icon');
       html += '<span class="explain-summary-title">' + escapeHtml(data.summary.status_text) + '</span>';
       html += '</div>';
       html += '<div class="explain-summary-stats">';
       if (data.summary.critical_problems > 0) {
-        html += '<span class="explain-summary-stat critical">🔴 ' + data.summary.critical_problems + ' critical</span>';
+        html += '<span class="explain-summary-stat critical">' + svgIcon('alert') + data.summary.critical_problems + ' critical</span>';
       }
       if (data.summary.warnings > 0) {
-        html += '<span class="explain-summary-stat warning">⚠️ ' + data.summary.warnings + ' warnings</span>';
+        html += '<span class="explain-summary-stat warning">' + svgIcon('alert') + data.summary.warnings + ' warnings</span>';
       }
       html += '</div>';
       html += '</div>';
@@ -1212,7 +1213,7 @@
 
       data.problems.forEach(problem => {
         const severityClass = 'problem-' + problem.severity;
-        const severityIcon = problem.severity === 'critical' ? '🔴' : (problem.severity === 'warning' ? '⚠️' : 'ℹ️');
+        const severityIcon = svgIcon(problem.severity === 'info' ? 'info' : 'alert');
 
         html += '<div class="explain-problem ' + severityClass + '">';
         html += '<div class="explain-problem-header">';
@@ -1226,7 +1227,7 @@
           html += '<div class="explain-problem-details">' + escapeHtml(problem.details) + '</div>';
         }
         if (problem.recommendation) {
-          html += '<div class="explain-problem-recommendation">💡 ' + escapeHtml(problem.recommendation) + '</div>';
+          html += '<div class="explain-problem-recommendation">' + svgIcon('bulb') + escapeHtml(problem.recommendation) + '</div>';
         }
         html += '</div>';
       });
@@ -1301,7 +1302,7 @@
 
         // Problem indicator
         if (lineProblem) {
-          const problemIcon = lineProblem.severity === 'critical' ? '🔴' : '⚠️';
+          const problemIcon = svgIcon('alert');
           html += '<span class="explain-line-problem-indicator" title="' + escapeHtml(lineProblem.message) + '">' + problemIcon + '</span>';
         }
 
@@ -1338,15 +1339,7 @@
     // Security check
     if (!allowRawQueryExecution) {
       showToast(PG_REPORTS_I18N.errors.explain_disabled_toast, 'error');
-      content.innerHTML = `<div class="error-message">
-        <strong>${PG_REPORTS_I18N.modals.query_execution_disabled_title}</strong><br><br>
-        ${PG_REPORTS_I18N.modals.query_execution_disabled_intro}<br>
-        <code style="display: block; margin-top: 0.5rem; padding: 0.5rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
-PgReports.configure do |config|<br>
-&nbsp;&nbsp;config.allow_raw_query_execution = true<br>
-end
-        </code>
-      </div>`;
+      content.innerHTML = pgReportsDisabledNotice(PG_REPORTS_I18N.modals.query_execution_disabled_title);
       return;
     }
 
@@ -1387,15 +1380,7 @@ end
     // Security check
     if (!allowRawQueryExecution) {
       showToast(PG_REPORTS_I18N.errors.execute_disabled_toast, 'error');
-      content.innerHTML = `<div class="error-message">
-        <strong>${PG_REPORTS_I18N.modals.query_execution_disabled_title}</strong><br><br>
-        ${PG_REPORTS_I18N.modals.query_execution_disabled_intro}<br>
-        <code style="display: block; margin-top: 0.5rem; padding: 0.5rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
-PgReports.configure do |config|<br>
-&nbsp;&nbsp;config.allow_raw_query_execution = true<br>
-end
-        </code>
-      </div>`;
+      content.innerHTML = pgReportsDisabledNotice(PG_REPORTS_I18N.modals.query_execution_disabled_title);
       return;
     }
 
@@ -1552,24 +1537,15 @@ end
 
     // Security check
     if (!allowRawQueryExecution) {
-      const message = '⚠️ Создание миграций отключено. Включите в конфигурации: config.allow_raw_query_execution = true';
+      const message = PG_REPORTS_I18N.errors.migration_disabled_toast;
       showToast(message, 'error');
 
       const modalBody = document.getElementById('migration-modal-body');
       if (modalBody) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-message';
-        errorDiv.style.marginTop = '1rem';
-        errorDiv.innerHTML = `
-          <strong>⚠️ Migration creation is disabled</strong><br><br>
-          To enable this feature, add to your configuration:<br>
-          <code style="display: block; margin-top: 0.5rem; padding: 0.5rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
-PgReports.configure do |config|<br>
-&nbsp;&nbsp;config.allow_raw_query_execution = true<br>
-end
-          </code>
-        `;
-        modalBody.appendChild(errorDiv);
+        modalBody.insertAdjacentHTML(
+          'beforeend',
+          pgReportsDisabledNotice(PG_REPORTS_I18N.modals.migration_disabled_title)
+        );
       }
       return;
     }
