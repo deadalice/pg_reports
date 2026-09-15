@@ -488,24 +488,29 @@
     const line = parsed.lineNumber ? ':' + parsed.lineNumber : '';
     const cut = shortened.lastIndexOf('/');
 
-    if (cut < 0) return `<span class="source-file">${escapeHtml(shortened + line)}</span>`;
+    const ellipsis = '<span class="source-ellipsis" aria-hidden="true">…</span>';
+    const file = (text) => `<span class="source-file"><span>${escapeHtml(text)}</span></span>`;
 
-    return '<span class="source-ellipsis" aria-hidden="true">…</span>' +
+    if (cut < 0) return ellipsis + file(shortened + line);
+
+    return ellipsis +
       `<span class="source-dir"><span>${escapeHtml(shortened.slice(0, cut))}</span></span>` +
-      `<span class="source-file">${escapeHtml(shortened.slice(cut) + line)}</span>`;
+      file(shortened.slice(cut) + line);
   }
 
-  // Whether a directory actually overflows can only be known after layout, and
-  // the leading ellipsis must not appear when it doesn't. Measured on the inner
-  // span, not the container: the overflow here runs off the *start* edge, and
+  // Whether a part actually overflows can only be known after layout, and the
+  // leading ellipsis must not appear when nothing is cut. Measured on the inner
+  // span, not on its container: the overflow here runs off the *start* edge, and
   // scrollWidth only ever reports overflow past the end edge.
   function markClippedSources(root) {
-    (root || document).querySelectorAll('.source-dir').forEach(dir => {
-      const badge = dir.closest('.source-badge');
-      const inner = dir.firstElementChild;
-      if (!badge || !inner) return;
+    (root || document).querySelectorAll('.source-badge').forEach(badge => {
+      const parts = badge.querySelectorAll('.source-dir, .source-file');
+      const clipped = Array.prototype.some.call(parts, part => {
+        const inner = part.firstElementChild;
+        return inner && inner.getBoundingClientRect().width > part.clientWidth + 1;
+      });
 
-      badge.classList.toggle('is-clipped', inner.getBoundingClientRect().width > dir.clientWidth + 1);
+      badge.classList.toggle('is-clipped', clipped);
     });
   }
 

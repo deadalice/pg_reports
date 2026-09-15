@@ -472,8 +472,10 @@
   .source-badge {
     display: inline-flex;
     align-items: baseline;
-    max-width: 22rem;
+    /* Never wider than the cell it sits in, whatever the path looks like. */
+    max-width: min(22rem, 100%);
     min-width: 0;
+    overflow: hidden;
     padding: 0.15rem 0.4rem;
     background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
@@ -487,29 +489,35 @@
     transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
   }
 
-  /* The directory gives up space first and is clipped at its *start*: the tail of
-     a path (file name and line) is what identifies the call site, so it has to
-     survive. justify-content: flex-end pins the inner span's right edge, letting
-     the overflow fall off the left where the parent clips it.
+  /* Both halves are clipped at their *start*: the tail of a path (file name and
+     line) is what identifies the call site, so it is the last thing to go.
+     justify-content: flex-end pins the inner span's right edge and lets the
+     overflow fall off the left, where the parent clips it.
      Not `direction: rtl` + text-overflow — bidi reorders numeric path segments
      (a gem's "3.4.0" jumps out of place). */
-  .source-dir {
-    flex: 0 1 auto;
+  .source-dir,
+  .source-file {
     min-width: 0;
     display: flex;
     justify-content: flex-end;
     overflow: hidden;
+  }
+
+  .source-dir > span,
+  .source-file > span {
+    flex: none;
+    white-space: nowrap;
+  }
+
+  /* The directory is given up first and almost entirely; the file name only
+     starts losing characters once there is no directory left to drop. */
+  .source-dir {
+    flex: 0 1000 auto;
     color: var(--text-muted);
   }
 
-  .source-dir > span {
-    flex: none;
-    white-space: nowrap;
-  }
-
   .source-file {
-    flex: none;
-    white-space: nowrap;
+    flex: 0 1 auto;
   }
 
   /* Only shown once layout proves the directory really is cut off. */
