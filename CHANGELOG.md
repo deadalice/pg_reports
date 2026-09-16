@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-09-16
+
 ### Added
 
 - **Settings modal.** The gear used to open an IDE-only dialog that existed as two separate copies — one inlined in the dashboard, one in the report-page partial, each with its own duplicate of the JavaScript. It is now a single shared partial with one copy of the script in the layout, titled **Settings** and split into sections, so there is somewhere to put the next preference. Language is the first section; the IDE choice is the second. Picking a language reloads the page (everything on it has to re-render in the new language), so the modal is reopened afterwards rather than vanishing mid-edit.
