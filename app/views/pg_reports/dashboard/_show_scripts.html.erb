@@ -854,7 +854,7 @@
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
       closeProblemModal();
-      closeIdeSettingsModal();
+      closeSettingsModal();
       closeExplainModal();
       closeMigrationModal();
     }
@@ -864,44 +864,6 @@
   document.getElementById('problem-modal')?.addEventListener('click', function(e) {
     if (e.target === this) {
       closeProblemModal();
-    }
-  });
-
-  // IDE Settings functions
-  function showIdeSettingsModal() {
-    const modal = document.getElementById('ide-settings-modal');
-    modal.style.display = 'flex';
-    loadIdeSettingsState();
-  }
-
-  function closeIdeSettingsModal() {
-    document.getElementById('ide-settings-modal').style.display = 'none';
-  }
-
-  function setDefaultIde(ideKey) {
-    if (ideKey) {
-      localStorage.setItem('pgReportsDefaultIde', ideKey);
-    } else {
-      localStorage.removeItem('pgReportsDefaultIde');
-    }
-  }
-
-  function getDefaultIde() {
-    return localStorage.getItem('pgReportsDefaultIde') || '';
-  }
-
-  function loadIdeSettingsState() {
-    const currentIde = getDefaultIde();
-    const radios = document.querySelectorAll('input[name="default-ide"]');
-    radios.forEach(radio => {
-      radio.checked = (radio.value === currentIde);
-    });
-  }
-
-  // Close IDE settings modal on backdrop click
-  document.getElementById('ide-settings-modal')?.addEventListener('click', function(e) {
-    if (e.target === this) {
-      closeIdeSettingsModal();
     }
   });
 

@@ -28,7 +28,7 @@
         <%= t("pg_reports.ui.actions.reset_statistics") %>
       </button>
     <% end %>
-    <button type="button" class="btn-icon" onclick="showIdeSettingsModal()" title="<%= t("pg_reports.ui.actions.ide_settings_button_title") %>" aria-label="<%= t("pg_reports.ui.actions.ide_settings_button_title") %>">
+    <button type="button" class="btn-icon" onclick="showSettingsModal()" title="<%= t("pg_reports.ui.actions.settings_button_title") %>" aria-label="<%= t("pg_reports.ui.actions.settings_button_title") %>">
       <svg class="icon icon-lg"><use href="#i-settings"></use></svg>
     </button>
 
@@ -127,47 +127,7 @@ pg_stat_statements.track = all</pre>
 </div>
 
 <!-- IDE Settings Modal -->
-<div id="ide-settings-modal" class="modal" style="display: none;">
-  <div class="modal-content modal-small">
-    <div class="modal-header">
-      <h3><%= t("pg_reports.ui.modals.ide_settings_title") %></h3>
-      <button class="modal-close" onclick="closeIdeSettingsModal()">&times;</button>
-    </div>
-    <div class="modal-body">
-      <p class="settings-label"><%= t("pg_reports.ui.settings.default_ide_label") %></p>
-      <div class="ide-options">
-        <label class="ide-option">
-          <input type="radio" name="default-ide" value="" onchange="setDefaultIde('')">
-          <span><%= t("pg_reports.ui.settings.ide_show_menu") %></span>
-        </label>
-        <label class="ide-option">
-          <input type="radio" name="default-ide" value="vscode-wsl" onchange="setDefaultIde('vscode-wsl')">
-          <span><%= t("pg_reports.ui.settings.ide_vscode_wsl") %></span>
-        </label>
-        <label class="ide-option">
-          <input type="radio" name="default-ide" value="vscode" onchange="setDefaultIde('vscode')">
-          <span><%= t("pg_reports.ui.settings.ide_vscode") %></span>
-        </label>
-        <label class="ide-option">
-          <input type="radio" name="default-ide" value="rubymine" onchange="setDefaultIde('rubymine')">
-          <span><%= t("pg_reports.ui.settings.ide_rubymine") %></span>
-        </label>
-        <label class="ide-option">
-          <input type="radio" name="default-ide" value="intellij" onchange="setDefaultIde('intellij')">
-          <span><%= t("pg_reports.ui.settings.ide_intellij") %></span>
-        </label>
-        <label class="ide-option">
-          <input type="radio" name="default-ide" value="cursor-wsl" onchange="setDefaultIde('cursor-wsl')">
-          <span><%= t("pg_reports.ui.settings.ide_cursor_wsl") %></span>
-        </label>
-        <label class="ide-option">
-          <input type="radio" name="default-ide" value="cursor" onchange="setDefaultIde('cursor')">
-          <span><%= t("pg_reports.ui.settings.ide_cursor") %></span>
-        </label>
-      </div>
-    </div>
-  </div>
-</div>
+<%= render "settings_modal" %>
 
 <!-- Run Query Modal -->
 <div id="run-query-modal" class="modal" style="display: none;">
@@ -1408,10 +1368,6 @@ end</pre>
     'cursor': 5
   };
 
-  function getDefaultIde() {
-    return localStorage.getItem('pgReportsDefaultIde') || '';
-  }
-
   function generateIdeUrls(filePath, lineNumber) {
     if (!filePath) return [];
 
@@ -1509,41 +1465,6 @@ end</pre>
     document.getElementById('ide-menu')?.classList.remove('show');
     document.getElementById('ide-dropdown-overlay')?.classList.remove('show');
   }
-
-  function showIdeSettingsModal() {
-    const modal = document.getElementById('ide-settings-modal');
-    modal.style.display = 'flex';
-    loadIdeSettingsState();
-  }
-
-  function closeIdeSettingsModal() {
-    document.getElementById('ide-settings-modal').style.display = 'none';
-  }
-
-  function setDefaultIde(ideKey) {
-    if (ideKey) {
-      localStorage.setItem('pgReportsDefaultIde', ideKey);
-    } else {
-      localStorage.removeItem('pgReportsDefaultIde');
-    }
-  }
-
-  function loadIdeSettingsState() {
-    const currentIde = getDefaultIde();
-    const radios = document.querySelectorAll('input[name="default-ide"]');
-    radios.forEach(radio => {
-      radio.checked = (radio.value === currentIde);
-    });
-  }
-
-  // Close IDE settings modal on backdrop click
-  document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('ide-settings-modal')?.addEventListener('click', function(e) {
-      if (e.target === this) {
-        closeIdeSettingsModal();
-      }
-    });
-  });
 
   // ============================================
   // Query Monitoring

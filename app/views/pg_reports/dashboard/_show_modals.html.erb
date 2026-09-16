@@ -1,45 +1,4 @@
-<!-- IDE Settings Modal -->
-<div id="ide-settings-modal" class="modal" style="display: none;">
-  <div class="modal-content modal-small">
-    <div class="modal-header">
-      <h3><%= t("pg_reports.ui.modals.ide_settings_title") %></h3>
-      <button class="modal-close" onclick="closeIdeSettingsModal()">&times;</button>
-    </div>
-    <div class="modal-body">
-      <p class="settings-label"><%= t("pg_reports.ui.settings.default_ide_label") %></p>
-      <div class="ide-options">
-        <label class="ide-option">
-          <input type="radio" name="default-ide" value="" onchange="setDefaultIde('')">
-          <span><%= t("pg_reports.ui.settings.ide_show_menu") %></span>
-        </label>
-        <label class="ide-option">
-          <input type="radio" name="default-ide" value="vscode-wsl" onchange="setDefaultIde('vscode-wsl')">
-          <span><%= t("pg_reports.ui.settings.ide_vscode_wsl") %></span>
-        </label>
-        <label class="ide-option">
-          <input type="radio" name="default-ide" value="vscode" onchange="setDefaultIde('vscode')">
-          <span><%= t("pg_reports.ui.settings.ide_vscode") %></span>
-        </label>
-        <label class="ide-option">
-          <input type="radio" name="default-ide" value="rubymine" onchange="setDefaultIde('rubymine')">
-          <span><%= t("pg_reports.ui.settings.ide_rubymine") %></span>
-        </label>
-        <label class="ide-option">
-          <input type="radio" name="default-ide" value="intellij" onchange="setDefaultIde('intellij')">
-          <span><%= t("pg_reports.ui.settings.ide_intellij") %></span>
-        </label>
-        <label class="ide-option">
-          <input type="radio" name="default-ide" value="cursor-wsl" onchange="setDefaultIde('cursor-wsl')">
-          <span><%= t("pg_reports.ui.settings.ide_cursor_wsl") %></span>
-        </label>
-        <label class="ide-option">
-          <input type="radio" name="default-ide" value="cursor" onchange="setDefaultIde('cursor')">
-          <span><%= t("pg_reports.ui.settings.ide_cursor") %></span>
-        </label>
-      </div>
-    </div>
-  </div>
-</div>
+<%= render "settings_modal" %>
 
 <!-- Problem Explanation Modal -->
 <div id="problem-modal" class="problem-modal" style="display: none;">

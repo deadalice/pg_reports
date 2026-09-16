@@ -12,6 +12,7 @@ module PgReports
     protect_from_forgery with: :exception
 
     before_action :authenticate_dashboard!, if: -> { PgReports.config.dashboard_auth.present? }
+    around_action :within_selected_locale
     before_action :set_categories
     before_action :resolve_database_selection
     around_action :within_selected_database
@@ -24,6 +25,7 @@ module PgReports
     ]
 
     helper_method :category_disabled_reason, :category_disabled?
+    helper_method :dashboard_locales, :selected_locale
 
     def index
       @pg_stat_status = pg_stat_status
@@ -48,6 +50,21 @@ module PgReports
     # POST /switch_target
     # Persists the chosen target in session, clears the database choice (each
     # target has its own list of databases), and redirects back.
+    # POST /switch_locale
+    # Persists the chosen language in session; #within_selected_locale applies it
+    # to this and every later request.
+    def switch_locale
+      requested = params[:locale].to_s
+
+      if requested.empty?
+        session.delete(:pg_reports_locale)
+      elsif dashboard_locales.any? { |locale| locale.to_s == requested }
+        session[:pg_reports_locale] = requested
+      end
+
+      redirect_back fallback_location: root_path
+    end
+
     def switch_target
       requested = params[:target].to_s
 
@@ -627,6 +644,36 @@ module PgReports
 
     def set_categories
       @categories = Dashboard::ReportsRegistry.all
+    end
+
+    # I18n.locale is global to the process, so assigning it outright would leak
+    # the dashboard's language into the host application's own rendering (and
+    # into whatever request runs next on this thread). with_locale restores the
+    # previous value once the action and its view are done.
+    def within_selected_locale(&block)
+      I18n.with_locale(selected_locale, &block)
+    end
+
+    def selected_locale
+      @selected_locale ||= begin
+        stored = session[:pg_reports_locale].to_s
+        match = dashboard_locales.find { |locale| locale.to_s == stored }
+        match || I18n.locale
+      end
+    end
+
+    # Only locales that actually carry pg_reports translations. A host app can
+    # have dozens of its own locales while translating none of this dashboard,
+    # and offering those would just switch the UI to fallback English. Picked by
+    # probing one key rather than by listing the shipped files, so a host app
+    # that supplies its own pg_reports translations is offered too.
+    def dashboard_locales
+      @dashboard_locales ||= begin
+        translated = I18n.available_locales.select do |locale|
+          I18n.exists?("pg_reports.ui.branding.title", locale)
+        end
+        translated.presence || [I18n.default_locale]
+      end
     end
 
     # Resolves which target/database every action should run against, based on:

@@ -554,6 +554,9 @@ ru:
         title: "PgReports"
         subtitle: "Дашборд анализа PostgreSQL"
         page_title: "PgReports — Дашборд"
+      language:
+        label: "Язык"
+        name: "Русский"
       navigation:
         dashboard: "Дашборд"
         back: "Назад"
@@ -584,7 +587,7 @@ ru:
         confirm_reset: "Да, сбросить"
         create_extension: "Создать расширение"
         creating: "Создание..."
-        ide_settings_button_title: "Настройки IDE"
+        settings_button_title: "Настройки"
         explain_analyze: "EXPLAIN ANALYZE"
         execute_query: "Выполнить запрос"
         run_query: "SQL-консоль"
@@ -619,7 +622,7 @@ ru:
         reset_stats_title: "Сброс статистики"
         reset_stats_confirm: "Вы уверены, что хотите сбросить статистику pg_stat_statements?"
         reset_stats_warning: "Это действие очистит всю собранную статистику запросов и не может быть отменено."
-        ide_settings_title: "Настройки IDE"
+        settings_title: "Настройки"
         problem_detected_title: "Обнаружена проблема"
         query_analyzer_title: "Анализатор запроса"
         query_label: "Запрос:"
@@ -635,7 +638,7 @@ ru:
         run_query_title: "SQL-консоль"
         run_query_placeholder: "SELECT * FROM users LIMIT 10;"
       settings:
-        default_ide_label: "IDE по умолчанию для ссылок на исходники:"
+        default_ide_label: "IDE по умолчанию для ссылок на исходники"
         ide_show_menu: "Показывать меню (по умолчанию)"
         ide_vscode_wsl: "VS Code (WSL)"
         ide_vscode: "VS Code"

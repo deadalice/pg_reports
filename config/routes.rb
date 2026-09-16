@@ -9,6 +9,7 @@ PgReports::Engine.routes.draw do
 
   post "switch_database", to: "dashboard#switch_database", as: :switch_database
   post "switch_target", to: "dashboard#switch_target", as: :switch_target
+  post "switch_locale", to: "dashboard#switch_locale", as: :switch_locale
 
   post "enable_pg_stat_statements", to: "dashboard#enable_pg_stat_statements", as: :enable_pg_stat_statements
   post "reset_statistics", to: "dashboard#reset_statistics", as: :reset_statistics

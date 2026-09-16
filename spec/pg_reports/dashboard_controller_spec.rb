@@ -60,6 +60,72 @@ RSpec.describe PgReports::DashboardController do
     end
   end
 
+  describe "language selection" do
+    describe "#dashboard_locales" do
+      it "offers only locales that actually carry pg_reports translations" do
+        allow(I18n).to receive(:available_locales).and_return(%i[en ru zz])
+        allow(I18n).to receive(:exists?).with("pg_reports.ui.branding.title", :en).and_return(true)
+        allow(I18n).to receive(:exists?).with("pg_reports.ui.branding.title", :ru).and_return(true)
+        allow(I18n).to receive(:exists?).with("pg_reports.ui.branding.title", :zz).and_return(false)
+
+        expect(controller.send(:dashboard_locales)).to eq(%i[en ru])
+      end
+
+      # A host app can carry dozens of its own locales and translate none of the
+      # dashboard; offering those would only switch the UI to fallback English.
+      it "falls back to the default locale when none are translated" do
+        allow(I18n).to receive(:available_locales).and_return(%i[fr de])
+        allow(I18n).to receive(:exists?).and_return(false)
+
+        expect(controller.send(:dashboard_locales)).to eq([I18n.default_locale])
+      end
+    end
+
+    describe "#selected_locale" do
+      before { allow(controller).to receive(:dashboard_locales).and_return(%i[en ru uk]) }
+
+      it "uses the locale stored in the session" do
+        allow(controller).to receive(:session).and_return({pg_reports_locale: "ru"})
+
+        expect(controller.send(:selected_locale)).to eq(:ru)
+      end
+
+      it "ignores a stored locale that is not on offer" do
+        allow(controller).to receive(:session).and_return({pg_reports_locale: "klingon"})
+
+        expect(controller.send(:selected_locale)).to eq(I18n.locale)
+      end
+
+      it "falls back to the ambient locale when nothing is stored" do
+        allow(controller).to receive(:session).and_return({})
+
+        expect(controller.send(:selected_locale)).to eq(I18n.locale)
+      end
+    end
+
+    # I18n.locale is global to the process. Assigning it outright would carry the
+    # dashboard's language into the host application's own rendering, and into
+    # whatever request runs next on the same thread.
+    describe "#within_selected_locale" do
+      around do |example|
+        previous = I18n.config.available_locales
+        I18n.config.available_locales = %i[en ru]
+        example.run
+        I18n.config.available_locales = previous
+      end
+
+      it "applies the selection inside the block and restores it after" do
+        allow(controller).to receive(:dashboard_locales).and_return(%i[en ru])
+        allow(controller).to receive(:session).and_return({pg_reports_locale: "ru"})
+
+        inside = nil
+        expect { controller.send(:within_selected_locale) { inside = I18n.locale } }
+          .not_to change { I18n.locale }
+        expect(inside).to eq(:ru)
+      end
+    end
+  end
+
   describe "#category_disabled_reason" do
     before { stub_pg_stat }
 

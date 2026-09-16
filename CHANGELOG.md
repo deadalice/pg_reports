@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Settings modal.** The gear used to open an IDE-only dialog that existed as two separate copies — one inlined in the dashboard, one in the report-page partial, each with its own duplicate of the JavaScript. It is now a single shared partial with one copy of the script in the layout, titled **Settings** and split into sections, so there is somewhere to put the next preference. Language is the first section; the IDE choice is the second. Picking a language reloads the page (everything on it has to re-render in the new language), so the modal is reopened afterwards rather than vanishing mid-edit.
+- **Language switcher on the dashboard.** The engine ships English, Russian and Ukrainian translations covering the whole UI — including category and report names — but there was no way to choose between them; the dashboard simply followed the host application's `I18n.locale`. A section in the settings modal now stores the choice in the session (the same pattern as the database and target switchers) and it applies to every page. Only locales that actually carry `pg_reports` translations are offered, detected by probing a key rather than by listing the shipped files, so a host app supplying its own translation is offered too. The locale is applied with `I18n.with_locale` around the action: `I18n.locale` is process-global, and assigning it outright would carry the dashboard's language into the host application's own rendering.
+
 ## [0.9.0] - 2026-09-16
 
 ### Changed

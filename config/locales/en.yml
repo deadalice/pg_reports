@@ -589,6 +589,9 @@ en:
         title: "PgReports"
         subtitle: "PostgreSQL Analysis Dashboard"
         page_title: "PgReports Dashboard"
+      language:
+        label: "Language"
+        name: "English"
       navigation:
         dashboard: "Dashboard"
         back: "Back"
@@ -619,7 +622,7 @@ en:
         confirm_reset: "Yes, Reset"
         create_extension: "Create Extension"
         creating: "Creating..."
-        ide_settings_button_title: "IDE Settings"
+        settings_button_title: "Settings"
         explain_analyze: "EXPLAIN ANALYZE"
         execute_query: "Execute Query"
         run_query: "SQL Console"
@@ -654,7 +657,7 @@ en:
         reset_stats_title: "Reset Statistics"
         reset_stats_confirm: "Are you sure you want to reset pg_stat_statements statistics?"
         reset_stats_warning: "This action will clear all collected query statistics and cannot be undone."
-        ide_settings_title: "IDE Settings"
+        settings_title: "Settings"
         problem_detected_title: "Problem Detected"
         query_analyzer_title: "Query Analyzer"
         query_label: "Query:"
@@ -670,7 +673,7 @@ en:
         run_query_title: "SQL Console"
         run_query_placeholder: "SELECT * FROM users LIMIT 10;"
       settings:
-        default_ide_label: "Default IDE for source links:"
+        default_ide_label: "Default IDE for source links"
         ide_show_menu: "Show menu (default)"
         ide_vscode_wsl: "VS Code (WSL)"
         ide_vscode: "VS Code"

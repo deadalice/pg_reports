@@ -1,0 +1,55 @@
+<%# Shared by the dashboard and the report pages. Language is persisted server
+    side (session, via a form post); the IDE choice is client side in
+    localStorage — hence one <form> section and one plain section. %>
+<div id="settings-modal" class="modal" style="display: none;">
+  <div class="modal-content modal-small">
+    <div class="modal-header">
+      <h3><%= t("pg_reports.ui.modals.settings_title") %></h3>
+      <button class="modal-close" onclick="closeSettingsModal()" aria-label="<%= t("pg_reports.ui.actions.cancel") %>">&times;</button>
+    </div>
+    <div class="modal-body">
+      <% if dashboard_locales.size > 1 %>
+        <section class="settings-section">
+          <h4 class="settings-section-title"><%= t("pg_reports.ui.language.label") %></h4>
+          <form class="settings-options"
+                action="<%= switch_locale_path %>"
+                method="post"
+                data-turbo="false">
+            <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+            <% dashboard_locales.each do |locale| %>
+              <%# Each option is named in its own language, not the current one. %>
+              <label class="settings-option">
+                <input type="radio"
+                       name="locale"
+                       value="<%= locale %>"
+                       <%= "checked" if locale.to_s == selected_locale.to_s %>
+                       onchange="rememberSettingsOpen(); this.form.submit()">
+                <span><%= t("pg_reports.ui.language.name", locale: locale, default: locale.to_s.upcase) %></span>
+              </label>
+            <% end %>
+          </form>
+        </section>
+      <% end %>
+
+      <section class="settings-section">
+        <h4 class="settings-section-title"><%= t("pg_reports.ui.settings.default_ide_label") %></h4>
+        <div class="settings-options">
+          <% {
+               "" => "ide_show_menu",
+               "vscode-wsl" => "ide_vscode_wsl",
+               "vscode" => "ide_vscode",
+               "rubymine" => "ide_rubymine",
+               "intellij" => "ide_intellij",
+               "cursor-wsl" => "ide_cursor_wsl",
+               "cursor" => "ide_cursor"
+             }.each do |value, key| %>
+            <label class="settings-option">
+              <input type="radio" name="default-ide" value="<%= value %>" onchange="setDefaultIde('<%= value %>')">
+              <span><%= t("pg_reports.ui.settings.#{key}") %></span>
+            </label>
+          <% end %>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
